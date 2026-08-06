@@ -1,0 +1,21 @@
+2026-08-06 — Created system_design.md at repo root.
+
+Documents the full system architecture ahead of writing any module code:
+stack (React Native/Expo + Django REST + PostgreSQL/pgvector + Zustand + JWT + FCM),
+monorepo layout (/mobile, /backend, /docs/api-contracts, /docs/decisions),
+mobile structure (Expo Router as thin routing layer, feature-first src/ with
+barrel-file-only cross-feature imports), backend structure (Django app-per-module,
+accounts+common shared base, cross-app reads via services.py), the API
+contract-first workflow, shared conventions (JWT auth routes, pagination,
+filtering, uploads, generic Thread/Message messaging, centralized notify(),
+admin-only moderation), the AI chatbot's RAG design (pgvector, anti-hallucination
+similarity gate), corrections applied to bugs/gaps found in SRS.md (ratings ERD FK,
+missing admin app, unnamed real-time mechanism, vague storage, account
+deactivation, unvalidated concurrency NFR), named scope cuts (printing, ride
+matching, sale listings, moderation, chatbot KB, offline support), and the
+build order (User Profiles base module first, then SRS High-priority modules,
+then Medium-priority modules).
+
+Next: build the User Profiles base module (custom Django User model with LGU
+email verification, JWT endpoints, Expo Router auth screens, Zustand session
+store) per system_design.md.

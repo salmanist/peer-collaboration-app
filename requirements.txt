@@ -1,0 +1,24 @@
+# Tools required to work on this project — not a pip install target.
+# Python package requirements will live in backend/requirements.txt once
+# the backend is scaffolded (see system_design.md, "Build Order").
+
+# System tools
+Node.js >= 20 (installed: v23.11.0)
+npm (installed: 11.6.2)
+Python >= 3.11 (installed: 3.12.8)
+PostgreSQL >= 14 (NOT YET INSTALLED on this machine — required before backend/accounts can run migrations)
+Git
+
+# Mobile (installed on demand via npx, no global install needed)
+Expo CLI            -> npx create-expo-app / npx expo ...
+EAS CLI             -> npx eas-cli ... (native builds only, not needed for local dev)
+
+# Backend Python packages (to be pinned in backend/requirements.txt when /backend is created)
+Django
+djangorestframework
+djangorestframework-simplejwt
+psycopg[binary]
+django-filter
+drf-spectacular
+python-dotenv
+pgvector          # added when the AI Chatbot module is built, not upfront
