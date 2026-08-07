@@ -6,6 +6,8 @@ Reference architecture for the whole app. Every module (built independently, som
 
 Mobile-first platform for Lahore Garrison University students, gated by institutional email verification, covering 9 functional surfaces: User Profiles (base), Ride Sharing, Resource Sharing, Peer Tutoring & Mentorship, Lost & Found, Digital Library, Community & Announcements, Printing Services, AI Chatbot.
 
+Institutional email domain for registration/verification: **`lgu.edu.pk`** — any registration email not ending in `@lgu.edu.pk` is rejected.
+
 - **Mobile:** React Native + Expo (managed workflow, EAS Build), TypeScript
 - **Backend:** Django + Django REST Framework
 - **Database:** PostgreSQL (+ pgvector extension for the chatbot's retrieval index)

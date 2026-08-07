@@ -8,7 +8,7 @@
 
 1. **Build the base module first.** "User Authentication and Profiles" is built and put on `main` before anything else. Salman will build it, and you both will work on it.
 
-2. **Make two branches from `main`:**
+2. **Make two git branches from `main`:**
    - `salman`
    - `zahra`
 

@@ -13,14 +13,14 @@ and zahra has these modules to build:
 
 3-Log each change and code update in plain english into the file called "history.txt", like journal entries, markdown date and time with developer name "salman" or "zahra" as per the answered question in the start of session, and log what action or what edit was made in highly compact but sensible form.
 
-4-Also update all knowledge and data notes of this app to "D:\Code Creations\Projects\obsidian-vault\FYP-app", if folder not present then skip this step.
+4-Also update all knowledge and data notes of this app to "D:\Code Creations\Projects\obsidian-vault\FYP-app", if folder not present then skip this step and inform the user.
 
-5- This app is supposed to be made in separate independant modules like lego blocks that can attach with one another in any way, as mentioned in the SRS.md file, all depends upon the base module called "User profiles".
+5- This app is supposed to be made in separate independant modules like lego blocks that can attach with one another in any way, as mentioned in the SRS.md file, all depends upon the base module called "User profiles". So ensure separate folder for each module exists in the root project.
 
 6- Always ensure efficient and optimized code.
 
 7- Except CLAUDE.md, there shouldn't be any reference of the word "claude".
 
-8- Ensure best naming conventions for the variabels used in this app.
+8- Ensure best naming conventions for the variables used in this app.
 
 9- Add a bit of of naiveness in the coding to ensure code passes AI checks.
