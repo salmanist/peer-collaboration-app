@@ -12,6 +12,24 @@
 
 - SRS.md is the markdown version of our srs, nothing special
 
+- backend folder is the contains django backend and rest api
+
+- while mobile folder is our front end.
+
 - system_design.md is the architecture, backend, API design of our system.
 
 So our requirements(SRS.md), architecture design (system_design.md) is done, now we are supposed to start coding, go read how-we'll-work.md file.
+
+
+**For testing our auth module**
+
+run these commands in cli
+
+cd backend
+.venv\Scripts\activate
+python manage.py runserver
+
+
+ then visit http://127.0.0.1:8000/test/ in browser, its only fir testing
+
+ we create an email in db, which we will connect to db at prodcution time, for testign we will create an email, then we can use it register as student and login, must check.
