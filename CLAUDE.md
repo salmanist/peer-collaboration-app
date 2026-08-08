@@ -15,8 +15,7 @@ and zahra has these modules to build:
 
 4-Also update all knowledge and data notes of this app to "D:\Code Creations\Projects\obsidian-vault\FYP-app", if folder not present then skip this step and inform the user.
 
-5- This app is supposed to be made in separate independant modules like lego blocks that can attach with one another in any way, as mentioned in the SRS.md file, all depends upon the base module called "User profiles". So ensure separate folder for each module exists in the root project.
-
+5- This app is supposed to be made in separate independant modules like lego blocks that can attach with one another in any way, as mentioned in the SRS.md file, all depends upon the base module called "User profiles".
 6- Always ensure efficient and optimized code.
 
 7- Except CLAUDE.md, there shouldn't be any reference of the word "claude".

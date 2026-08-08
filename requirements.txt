@@ -6,14 +6,13 @@
 Node.js >= 20 (installed: v23.11.0)
 npm (installed: 11.6.2)
 Python >= 3.11 (installed: 3.12.8)
-PostgreSQL >= 14 (NOT YET INSTALLED on this machine — required before backend/accounts can run migrations)
-Git
+PostgreSQL >= 14 (installed: 18.4 — dev db "fyp_dev" created, see backend/.env)
 
 # Mobile (installed on demand via npx, no global install needed)
 Expo CLI            -> npx create-expo-app / npx expo ...
 EAS CLI             -> npx eas-cli ... (native builds only, not needed for local dev)
 
-# Backend Python packages (to be pinned in backend/requirements.txt when /backend is created)
+# Backend Python packages — pinned in backend/requirements.txt (backend/ now scaffolded)
 Django
 djangorestframework
 djangorestframework-simplejwt
@@ -21,4 +20,5 @@ psycopg[binary]
 django-filter
 drf-spectacular
 python-dotenv
+django-cors-headers
 pgvector          # added when the AI Chatbot module is built, not upfront

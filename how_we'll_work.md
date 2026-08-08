@@ -12,7 +12,7 @@
    - `salman`
    - `zahra`
 
-3. **Each of us builds our own modules on our own branch.** Salman works only on the `salman` branch, Zahra works only on the `zahra` branch. Each module connects to User Profiles, but not to each other's modules.
+3. **Each of us builds our own modules on our own branch.** Salman works only on the `salman` branch, Zahra works only on the `zahra` branch. Each module connects to User Profiles, but not to each other's modules. Use the command "git push origin zahra" instead of "git push origin main". Make a .gitignore file and for ignoring files and mention in them files that arent yours or shared for commiting to github safely.
 
 4. **We keep working on our branches until we are both fully done** with all our modules. We do not merge early, one module at a time.
 

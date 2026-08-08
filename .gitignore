@@ -1,0 +1,23 @@
+# Backend (Django/Python)
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+backend/.env
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+
+# Mobile (Expo/Node)
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/.env
+mobile/*.log
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

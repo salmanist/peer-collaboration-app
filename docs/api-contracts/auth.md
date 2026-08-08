@@ -1,0 +1,130 @@
+# API Contract — User Profiles + Auth
+
+Base path: `/api/auth/`
+Auth scheme: JWT bearer token (`Authorization: Bearer <access>`), issued by `djangorestframework-simplejwt`.
+Only `@lgu.edu.pk` email addresses that also appear on the official student roster (`accounts.StudentRoster`, loaded via `manage.py import_roster <csv>`) may register — the domain suffix alone isn't enough.
+
+Once the backend is running, the live, always-current version of this is at `/api/docs/` (Swagger UI) — treat this file as the pre-build reference, Swagger as the source of truth afterwards.
+
+## POST `register/`
+
+Auth: none.
+
+Request:
+```json
+{
+  "email": "ali.raza@lgu.edu.pk",
+  "password": "SuperSecure123!",
+  "full_name": "Ali Raza",
+  "department": "CS",
+  "enrollment_year": 2023
+}
+```
+
+Response `201`:
+```json
+{ "detail": "Registered. Check your email for a verification code." }
+```
+
+Response `400` — bad domain, not on the roster, weak password, or email already registered:
+```json
+{ "email": ["Registration is only open to @lgu.edu.pk email addresses."] }
+```
+```json
+{ "email": ["This email isn't on the official LGU student roster. Contact your department if this is a mistake."] }
+```
+
+Account is created inactive (`is_active=false`) until verified. A 6-digit OTP is emailed (console-logged in dev), expires in 15 minutes.
+
+## POST `verify-email/`
+
+Auth: none.
+
+Request:
+```json
+{ "email": "ali.raza@lgu.edu.pk", "code": "505945" }
+```
+
+Response `200`:
+```json
+{ "detail": "Email verified. You can now log in." }
+```
+
+Response `400` — wrong/expired code or unknown email:
+```json
+{ "detail": "Invalid or expired code." }
+```
+
+## POST `login/`
+
+Auth: none.
+
+Request:
+```json
+{ "email": "ali.raza@lgu.edu.pk", "password": "SuperSecure123!" }
+```
+
+Response `200`:
+```json
+{
+  "access": "<jwt>",
+  "refresh": "<jwt>",
+  "user": {
+    "id": 1,
+    "email": "ali.raza@lgu.edu.pk",
+    "full_name": "Ali Raza",
+    "department": "CS",
+    "enrollment_year": 2023,
+    "role": "student",
+    "is_email_verified": true,
+    "created_at": "2026-08-07T07:03:41.939998Z"
+  }
+}
+```
+
+Response `401` — wrong credentials, or account not yet verified (same message either way, so unverified accounts aren't distinguishable from wrong passwords to an attacker):
+```json
+{ "detail": "No active account found with the given credentials" }
+```
+
+## POST `refresh/`
+
+Auth: none (body carries the refresh token).
+
+Request:
+```json
+{ "refresh": "<jwt>" }
+```
+
+Response `200`:
+```json
+{ "access": "<jwt>", "refresh": "<jwt>" }
+```
+
+Refresh tokens rotate on use — always store the new one returned here.
+
+## GET `me/`
+
+Auth: required.
+
+Response `200`: same `user` object shape as in `login/`.
+
+## PATCH `me/`
+
+Auth: required. Editable fields: `full_name`, `department`, `enrollment_year`. `email`, `role`, `is_email_verified` are read-only.
+
+Request:
+```json
+{ "department": "Software Engineering" }
+```
+
+Response `200`: full updated `user` object.
+
+## Token lifetimes
+
+- Access: 30 minutes.
+- Refresh: 14 days, rotates on every use.
+
+## Fields every other module can rely on (`accounts.User`)
+
+`id`, `email`, `full_name`, `department`, `enrollment_year`, `role` (`student`/`admin`), `is_email_verified`, `is_active`, `created_at`. FK into this via `settings.AUTH_USER_MODEL`, never a hardcoded app label.
