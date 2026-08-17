@@ -8,7 +8,6 @@ import { updateMe } from "../data/authApi";
 export default function ProfileScreen() {
   const user = useSessionStore((state) => state.user);
   const updateUser = useSessionStore((state) => state.updateUser);
-  const clearSession = useSessionStore((state) => state.clearSession);
 
   const [department, setDepartment] = useState(user?.department ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -23,11 +22,6 @@ export default function ProfileScreen() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleLogout = async () => {
-    await clearSession();
-    router.replace("/(auth)/login");
   };
 
   return (
@@ -47,9 +41,34 @@ export default function ProfileScreen() {
         {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
       </Pressable>
 
-      <Pressable style={styles.logout} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Log out</Text>
+      <Pressable
+        style={styles.resourcesButton}
+        onPress={() => router.push("/resources")}
+      >
+        <Text style={styles.resourcesButtonText}>Browse Resources</Text>
       </Pressable>
+
+      <Pressable
+        style={styles.resourcesButton}
+        onPress={() => router.push("/resources/mine")}
+      >
+        <Text style={styles.resourcesButtonText}>My Resources</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.resourcesButton}
+        onPress={() => router.push("/resources/wanted")}
+      >
+        <Text style={styles.resourcesButtonText}>Request Resources</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.resourcesButton}
+        onPress={() => router.push("/resources/requests")}
+      >
+        <Text style={styles.resourcesButtonText}>Interest Requests</Text>
+      </Pressable>
+
     </View>
   );
 }
@@ -62,6 +81,16 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12 },
   button: { backgroundColor: "#1d4ed8", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
   buttonText: { color: "#fff", fontWeight: "600" },
-  logout: { padding: 14, alignItems: "center", marginTop: 24 },
-  logoutText: { color: "#dc2626", fontWeight: "600" },
+  resourcesButton: {
+    borderWidth: 1,
+    borderColor: "#1d4ed8",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  resourcesButtonText: {
+    color: "#1d4ed8",
+    fontWeight: "600",
+  },
 });

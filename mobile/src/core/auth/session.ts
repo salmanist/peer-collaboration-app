@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { create } from "zustand";
 
 export type AccountRole = "student" | "admin";
@@ -30,6 +31,40 @@ const ACCESS_KEY = "auth_access_token";
 const REFRESH_KEY = "auth_refresh_token";
 const USER_KEY = "auth_user";
 
+function getBrowserStorage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return window.localStorage;
+}
+
+async function getStoredValue(key: string) {
+  if (Platform.OS === "web") {
+    return getBrowserStorage()?.getItem(key) ?? null;
+  }
+
+  return SecureStore.getItemAsync(key);
+}
+
+async function setStoredValue(key: string, value: string) {
+  if (Platform.OS === "web") {
+    getBrowserStorage()?.setItem(key, value);
+    return;
+  }
+
+  await SecureStore.setItemAsync(key, value);
+}
+
+async function deleteStoredValue(key: string) {
+  if (Platform.OS === "web") {
+    getBrowserStorage()?.removeItem(key);
+    return;
+  }
+
+  await SecureStore.deleteItemAsync(key);
+}
+
 export const useSessionStore = create<SessionState>((set, get) => ({
   user: null,
   accessToken: null,
@@ -38,9 +73,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   hydrate: async () => {
     const [access, refresh, rawUser] = await Promise.all([
-      SecureStore.getItemAsync(ACCESS_KEY),
-      SecureStore.getItemAsync(REFRESH_KEY),
-      SecureStore.getItemAsync(USER_KEY),
+      getStoredValue(ACCESS_KEY),
+      getStoredValue(REFRESH_KEY),
+      getStoredValue(USER_KEY),
     ]);
     set({
       accessToken: access,
@@ -52,28 +87,28 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   setSession: async (tokens, user) => {
     await Promise.all([
-      SecureStore.setItemAsync(ACCESS_KEY, tokens.access),
-      SecureStore.setItemAsync(REFRESH_KEY, tokens.refresh),
-      SecureStore.setItemAsync(USER_KEY, JSON.stringify(user)),
+      setStoredValue(ACCESS_KEY, tokens.access),
+      setStoredValue(REFRESH_KEY, tokens.refresh),
+      setStoredValue(USER_KEY, JSON.stringify(user)),
     ]);
     set({ accessToken: tokens.access, refreshToken: tokens.refresh, user });
   },
 
   setAccessToken: async (access) => {
-    await SecureStore.setItemAsync(ACCESS_KEY, access);
+    await setStoredValue(ACCESS_KEY, access);
     set({ accessToken: access });
   },
 
   updateUser: (user) => {
-    SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    void setStoredValue(USER_KEY, JSON.stringify(user));
     set({ user });
   },
 
   clearSession: async () => {
     await Promise.all([
-      SecureStore.deleteItemAsync(ACCESS_KEY),
-      SecureStore.deleteItemAsync(REFRESH_KEY),
-      SecureStore.deleteItemAsync(USER_KEY),
+      deleteStoredValue(ACCESS_KEY),
+      deleteStoredValue(REFRESH_KEY),
+      deleteStoredValue(USER_KEY),
     ]);
     set({ user: null, accessToken: null, refreshToken: null });
   },

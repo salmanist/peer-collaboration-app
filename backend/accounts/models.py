@@ -36,6 +36,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150)
     department = models.CharField(max_length=100, blank=True)
     enrollment_year = models.PositiveIntegerField(null=True, blank=True)
+    # The existing Neon schema stores this legacy column as varchar(6).
+    # "other" keeps new accounts compatible without making gender required in the app.
+    gender = models.CharField(max_length=6, default="other")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
 
     is_email_verified = models.BooleanField(default=False)
@@ -79,6 +82,10 @@ class StudentRoster(models.Model):
     checks against this instead of trusting the email domain alone."""
 
     email = models.EmailField(unique=True)
+    department = models.CharField(max_length=100, blank=True, default="")
+    enrollment_year = models.PositiveIntegerField(null=True, blank=True)
+    full_name = models.CharField(max_length=150, blank=True, default="")
+    gender = models.CharField(max_length=6, default="other")
     imported_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

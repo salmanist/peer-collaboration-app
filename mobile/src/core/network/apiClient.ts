@@ -1,8 +1,11 @@
 import axios, { AxiosError } from "axios";
+import { Platform } from "react-native";
 
 import { getSessionSnapshot } from "../auth/session";
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api";
+export const API_BASE_URL = Platform.OS === "web"
+  ? process.env.EXPO_PUBLIC_WEB_API_URL ?? "http://localhost:8000/api"
+  : process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 export const apiClient = axios.create({ baseURL: API_BASE_URL });
 

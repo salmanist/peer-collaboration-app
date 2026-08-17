@@ -1,9 +1,27 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import axios from "axios";
 
 import { useSessionStore } from "../../../core/auth/session";
 import { login } from "../data/authApi";
+
+function getLoginErrorMessage(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return "Something went wrong. Please try again.";
+  }
+
+  if (!error.response) {
+    return "Cannot reach the server. Confirm the backend is running and both devices are on the same Wi-Fi.";
+  }
+
+  const detail = error.response.data?.detail;
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  return "Login failed. Check your email and password.";
+}
 
 export default function LoginScreen() {
   const setSession = useSessionStore((state) => state.setSession);
@@ -19,8 +37,8 @@ export default function LoginScreen() {
       const data = await login(email.trim().toLowerCase(), password);
       await setSession({ access: data.access, refresh: data.refresh }, data.user);
       router.replace("/(app)/profile");
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? "Login failed.");
+    } catch (error) {
+      setError(getLoginErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

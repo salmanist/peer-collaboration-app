@@ -132,3 +132,62 @@ even though the file existed on disk. Fix was checking `netstat -ano` for
 port 8000 and force-killing the orphaned PID before restarting. Worth
 remembering if a future change to this backend "isn't taking effect" after
 a restart — check for a leftover process on the port first.
+
+Resource Sharing Module
+Backend Django app: `resource_sharing`.
+This module will manage resource listings, interest requests, real-time chat, and post-exchange ratings.
+
+Mobile Resource Sharing currently includes typed API helpers and an authenticated Resource Feed screen. The route is `/resources` within the authenticated Expo Router group and displays active listings with pull-to-refresh, loading, empty, and error states.
+Authenticated users can open the Resource Feed from the Profile screen through the Browse Resources button.
+
+For testing with Expo Go on a physical device, `mobile/.env.local` sets `EXPO_PUBLIC_API_URL` to the development computer's current local-network address. The phone and computer must be on the same Wi-Fi network.
+
+The mobile project currently uses Expo SDK 54 so that it is compatible with Expo Go 54 on Zahra's phone. Its Expo, Expo Router, React Native, React, and supporting package versions were aligned using Expo's compatibility checker. Run `npx expo start` from `mobile` and scan the displayed QR code with Expo Go; do not use `--android` unless testing with an Android emulator.
+
+The computer's Wi-Fi IP can change when it reconnects to a network. If the browser or Expo Go reports that it cannot reach Django, update `EXPO_PUBLIC_API_URL` in the ignored `mobile/.env.local` file to the current Wi-Fi IPv4 address, then restart Expo with a cleared cache.
+
+For this local setup, `EXPO_PUBLIC_WEB_API_URL` points to localhost for the browser, while `EXPO_PUBLIC_API_URL` points to the computer's Wi-Fi IPv4 address for Expo Go on the phone. Restart Expo after changing either value.
+
+The mobile login form reports a clear connection message when it cannot reach Django. Server-supplied authentication messages, such as an unverified email or invalid credentials, are displayed directly to the student.
+
+Students can add a resource from the Resource Feed. The authenticated `/resources/create` screen collects its title, optional course, category, condition, sharing type, optional sale price, and description. It validates required fields locally, sends the listing to `POST /api/resources/`, and returns to the feed after a successful publish.
+
+The Resource Sharing route group has its own stack navigator. It explicitly registers the feed (`/resources`) and create-listing (`/resources/create`) screens so they work consistently in Expo Go.
+
+The authenticated app group also has a stack navigator. It registers the profile and Resource Sharing navigator, allowing Expo Router to resolve the nested Resource Sharing routes on a physical device.
+
+The Resource Detail screen lives at `/resources/[id]`. It requests one listing from `GET /api/resources/<id>/` and displays its exchange terms, metadata, owner, and description. The interest button is visual at this stage; request creation is the next Resource Sharing feature.
+
+Resource Interest Requests are now functional. From a listing owned by another student, a requester can submit an optional message through `POST /api/resources/<resource_id>/requests/`. The Resource Requests screen shows incoming and sent requests. Owners can accept, decline, and complete a request, while requesters can cancel a pending or accepted request. `PATCH /api/resources/requests/<request_id>/status/` applies those permissions and transitions the related listing between active, reserved, and unavailable where appropriate.
+
+The same Expo app can be run in a browser. On Android and iOS, session tokens remain in Expo SecureStore. On web, the session store uses browser localStorage because the SecureStore native implementation is not available there. Web storage is suitable for local development; the native app remains the preferred place for mobile-session testing.
+
+The My Resources dashboard at `/resources/mine` shows only the authenticated owner's listings through `GET /api/resources/mine/`. Owners can set a listing to active, reserved, or unavailable using the existing protected status API. The Profile screen provides direct links to Browse Resources, My Resources, and Resource Requests.
+
+Resource Sharing now has three clear areas. Browse Resources (`/resources`) shows offers to sell, lend, exchange, give free, or rent. Request Resources (`/resources/wanted`) shows public posts from students looking for an item. My Resources (`/resources/mine`) is a hub with My Listings and My Requests. Students create public wanted posts at `/resources/wanted/create` and manage their own posts at `/resources/wanted/mine`, including marking a request fulfilled or cancelled. These posts are backed by `PublicResourceRequest`, with migration `resource_sharing.0002_alter_resourcelisting_exchange_type_and_more` applied to the local database. Private responses to a particular offer remain available separately as Interest Requests.
+
+Browse Resources is intentionally read-only. Students add offers through My Resources > My Listings, and create public wanted-resource posts through My Resources > My Requests.
+
+My Listings supports editing and deleting a listing. The edit screen uses the existing owner-protected `PATCH /api/resources/<id>/` endpoint, while deletion uses `DELETE /api/resources/<id>/`. A confirmation prompt appears before deletion. Only the listing owner can perform either action.
+
+Live chat is available only after an interest request is accepted. The listing owner and accepted requester can open the chat from Interest Requests. Previous messages are retrieved through `GET /api/resources/requests/<request_id>/messages/`; new messages are sent and received live using `ws://<backend-host>/ws/resources/requests/<request_id>/chat/?token=<access-token>`. Messages are stored in Neon as `ResourceChatMessage` (migration `resource_sharing.0003_resourcechatmessage`). Daphne is first in `INSTALLED_APPS`, so `manage.py runserver` is WebSocket-capable in development. The current development setup uses Channels' in-memory layer, which supports real-time chat while one Django server process is running. A deployed multi-process backend needs a Redis channel layer.
+
+The connected Neon database already contained legacy `gender` and roster-profile columns. Accounts migrations `0003_align_existing_neon_profile_columns` and `0004_align_gender_with_existing_neon_schema` align Django's models with that schema without deleting existing data. The default gender value is `other` because Neon stores that legacy field as `varchar(6)`. Registration still requires a roster entry, then creates the user and a six-digit OTP verification record normally.
+
+The development-only browser authentication test console and `/test/` route have been removed. The actual authenticated API remains under `/api/auth/`; the DEBUG-only roster helper is retained for local development.
+
+In My Resources > My Requests, a student can edit an open public resource request or delete any request they own after a confirmation prompt. Editing uses `PATCH /api/resources/wanted/<id>/`; deletion uses `DELETE /api/resources/wanted/<id>/`. Both endpoints remain owner-protected by the backend.
+
+Every authenticated screen now shares the same project navigation. On wider web layouts it is a permanent left sidebar; on Expo Go and narrow screens, the Menu button opens the same sidebar. Logout is deliberately positioned at the top of this navigation and clears the stored session before returning to Login.
+
+Public Resource Requests now support offers of help. A student browsing another student's open request can select Send Offer and add an optional message. This creates a `PublicResourceOffer` through `POST /api/resources/wanted/<request_id>/offers/`. The original requester sees these under My Resources > My Requests and can accept or decline each offer. Accepting an offer sets the public request to fulfilled and automatically declines any competing pending offers. The helper's sent-offer status is visible in Request Resources. The feature is stored in Neon through migration `resource_sharing.0004_publicresourceoffer`.
+
+My Resources > My Requests also contains Offers I Sent. It shows each public request a student responded to, the offer message, and its pending, accepted, declined, or cancelled status. A student can cancel only their own pending offer.
+
+To keep this area easy to scan, My Resources > My Requests uses three tabs: My Requests, Received Offers, and Sent Offers. Each tab shows only its relevant list while retaining the same creation, management, acceptance, decline, and cancellation actions.
+
+The authenticated sidebar checks every 30 seconds for new active Browse Resources listings and new incoming Interest Requests. A green dot appears beside the relevant sidebar item when something was created after that user last opened its list. Opening Browse Resources or Interest Requests marks that list as read and removes its dot. These per-user read times are stored securely on a mobile device and in browser local storage for web development. Live chat now includes a one-line header summary naming the resource being discussed.
+
+The sidebar groups all Resource Sharing navigation beneath an expandable Share Point section: Browse Resources, My Resources, Request Resources, and Interest Requests. This keeps the project navigation shorter while retaining direct access to each feature.
+
+Both Resource Sharing agreement flows now have real-time chat. An accepted Browse Resources interest request uses `ResourceChatMessage`; an accepted public resource offer uses `PublicResourceOfferChatMessage` (migration `resource_sharing.0005_publicresourceofferchatmessage`). In both cases, only the two participants can read the history or connect to the WebSocket. Public-offer history is available at `GET /api/resources/wanted/offers/<offer_id>/messages/` and its live WebSocket is `ws://<backend-host>/ws/resources/offers/<offer_id>/chat/?token=<access-token>`. The requester and helper receive an Open Chat button after acceptance.

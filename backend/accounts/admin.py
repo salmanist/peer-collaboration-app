@@ -13,7 +13,7 @@ class AccountAdmin(UserAdmin):
     search_fields = ["email", "full_name"]
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profile", {"fields": ("full_name", "department", "enrollment_year", "role")}),
+        ("Profile", {"fields": ("full_name", "department", "enrollment_year", "gender", "role")}),
         ("Status", {"fields": ("is_email_verified", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login",)}),
     )
