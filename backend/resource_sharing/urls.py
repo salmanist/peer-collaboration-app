@@ -19,10 +19,12 @@ from .views import (
     ResourceListingDetailView,
     ResourceListingListCreateView,
     ResourceListingStatusUpdateView,
+    ResourceNotificationSummaryView,
 )
 
 urlpatterns = [
     path("", ResourceListingListCreateView.as_view(), name="resource-list-create"),
+    path("summary/", ResourceNotificationSummaryView.as_view(), name="resource-summary"),
     path("mine/", MyResourceListingListView.as_view(), name="my-resource-listings"),
     path("wanted/", PublicResourceRequestListCreateView.as_view(), name="public-resource-request-list-create"),
     path("wanted/mine/", MyPublicResourceRequestListView.as_view(), name="my-public-resource-requests"),
@@ -65,3 +67,5 @@ urlpatterns = [
     ),
     path("<int:pk>/", ResourceListingDetailView.as_view(), name="resource-detail"),
 ]
+
+

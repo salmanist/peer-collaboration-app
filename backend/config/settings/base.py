@@ -5,9 +5,8 @@ what actually differs between them (DEBUG, ALLOWED_HOSTS, etc).
 
 from datetime import timedelta
 from pathlib import Path
-
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -32,6 +31,7 @@ INSTALLED_APPS = [
     "accounts",
     "common",
     "resource_sharing",
+    "lost_and_found",
 ]
 
 MIDDLEWARE = [
@@ -65,8 +65,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# The in-memory layer is enough for one local Django process during development.
-# Deploy Redis as the channel layer when the backend is hosted in production.
 CHANNEL_LAYERS = {
     "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }
@@ -79,7 +77,6 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("DB_PORT", "5432"),
-        # Neon (and most managed Postgres) requires TLS; harmless against local Postgres too.
         "OPTIONS": {"sslmode": os.environ.get("DB_SSLMODE", "prefer")},
     }
 }
@@ -99,10 +96,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Dev default: prints the OTP to the runserver console instead of sending real
-# email. Swap to an SMTP backend when the project has a provider to hand.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 REST_FRAMEWORK = {
@@ -130,8 +127,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
 }
 
-# Expo's dev server runs on a LAN IP with a random-ish port; keep this loose
-# for local development, tighten for prod.
 CORS_ALLOW_ALL_ORIGINS = True
 
 LGU_EMAIL_DOMAIN = "lgu.edu.pk"

@@ -1,8 +1,10 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
+    Image,
+    Platform,
     Pressable,
     StyleSheet,
     Text,
@@ -11,8 +13,18 @@ import {
 
 import { fetchResourceListings } from "../data/resourcesApi";
 import { useSessionStore } from "../../../core/auth/session";
+import { API_BASE_URL } from "../../../core/network/apiClient";
 import { useResourceNotificationStore } from "../resourceNotifications";
 import type { ResourceListing } from "../resources";
+
+function getImageUrl(imagePath: string | null) {
+    if (!imagePath) return null;
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+        return imagePath;
+    }
+    const host = API_BASE_URL.replace(/\/api\/?$/, "");
+    return `${host}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
+}
 
 function getExchangeLabel(listing: ResourceListing) {
     if (listing.exchange_type === "sell" && listing.price) {
@@ -26,6 +38,9 @@ export default function ResourceFeedScreen() {
     const [listings, setListings] = useState<ResourceListing[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasNextPage, setHasNextPage] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const user = useSessionStore((state) => state.user);
     const markResourcesRead = useResourceNotificationStore((state) => state.markResourcesRead);
@@ -42,8 +57,11 @@ export default function ResourceFeedScreen() {
         try {
             const response = await fetchResourceListings({
                 status: "active",
+                page: 1,
             });
             setListings(response.results);
+            setPage(1);
+            setHasNextPage(Boolean(response.next));
             if (user) void markResourcesRead(user.id);
         } catch {
             setErrorMessage("Could not load resources. Please try again.");
@@ -53,9 +71,59 @@ export default function ResourceFeedScreen() {
         }
     };
 
+    const loadMoreListings = async () => {
+        if (!hasNextPage || isLoadingMore || isLoading || isRefreshing) return;
+
+        setIsLoadingMore(true);
+        const nextPage = page + 1;
+
+        try {
+            const response = await fetchResourceListings({
+                status: "active",
+                page: nextPage,
+            });
+            setListings((current) => [...current, ...response.results]);
+            setPage(nextPage);
+            setHasNextPage(Boolean(response.next));
+        } catch {
+            // Silently retain current page if next fails
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
     useEffect(() => {
         void loadListings();
     }, [user, markResourcesRead]);
+
+    const renderItem = useCallback(({ item }: { item: ResourceListing }) => {
+        const thumbUrl = getImageUrl(item.image);
+        return (
+            <Pressable
+                style={styles.card}
+                onPress={() => router.push(`/resources/${item.id}`)}
+            >
+                {thumbUrl ? (
+                    <Image source={{ uri: thumbUrl }} style={styles.cardThumb} />
+                ) : null}
+                <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                        <Text style={styles.cardTitle}>{item.title}</Text>
+                        <Text style={styles.price}>{getExchangeLabel(item)}</Text>
+                    </View>
+
+                    <Text style={styles.description} numberOfLines={2}>
+                        {item.description}
+                    </Text>
+
+                    <Text style={styles.meta}>
+                        {item.category.replace("_", " ")} · {item.condition} · Posted by{" "}
+                        {item.owner_name}
+                    </Text>
+                </View>
+            </Pressable>
+        );
+    }, []);
 
     if (isLoading) {
         return (
@@ -72,7 +140,6 @@ export default function ResourceFeedScreen() {
                     <Text style={styles.title}>Resource Sharing</Text>
                     <Text style={styles.subtitle}>Find useful items from LGU students.</Text>
                 </View>
-
             </View>
 
             {errorMessage ? (
@@ -88,6 +155,12 @@ export default function ResourceFeedScreen() {
                     keyExtractor={(item) => String(item.id)}
                     refreshing={isRefreshing}
                     onRefresh={() => void loadListings(true)}
+                    onEndReached={() => void loadMoreListings()}
+                    onEndReachedThreshold={0.4}
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    removeClippedSubviews={Platform.OS === "android"}
                     contentContainerStyle={
                         listings.length === 0 ? styles.emptyList : styles.list
                     }
@@ -96,26 +169,16 @@ export default function ResourceFeedScreen() {
                             No active resources are available yet.
                         </Text>
                     }
-                    renderItem={({ item }) => (
-                        <Pressable
-                            style={styles.card}
-                            onPress={() => router.push(`/resources/${item.id}`)}
-                        >
-                            <View style={styles.cardHeader}>
-                                <Text style={styles.cardTitle}>{item.title}</Text>
-                                <Text style={styles.price}>{getExchangeLabel(item)}</Text>
-                            </View>
-
-                            <Text style={styles.description} numberOfLines={2}>
-                                {item.description}
-                            </Text>
-
-                            <Text style={styles.meta}>
-                                {item.category.replace("_", " ")} · {item.condition} · Posted by{" "}
-                                {item.owner_name}
-                            </Text>
-                        </Pressable>
-                    )}
+                    ListFooterComponent={
+                        isLoadingMore ? (
+                            <ActivityIndicator
+                                size="small"
+                                color="#1d4ed8"
+                                style={{ marginVertical: 12 }}
+                            />
+                        ) : null
+                    }
+                    renderItem={renderItem}
                 />
             )}
         </View>
@@ -161,10 +224,18 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: "#ffffff",
         borderRadius: 12,
-        padding: 16,
-        gap: 8,
+        overflow: "hidden",
         borderWidth: 1,
         borderColor: "#e2e8f0",
+    },
+    cardThumb: {
+        width: "100%",
+        height: 160,
+        resizeMode: "cover",
+    },
+    cardContent: {
+        padding: 16,
+        gap: 8,
     },
     cardHeader: {
         flexDirection: "row",

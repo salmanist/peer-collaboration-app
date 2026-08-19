@@ -32,4 +32,5 @@ python manage.py runserver
 
  then visit http://127.0.0.1:8000/test/ in browser, its only fir testing
 
+
  we create an email in db, which we will connect to db at prodcution time, for testign we will create an email, then we can use it register as student and login, must check.

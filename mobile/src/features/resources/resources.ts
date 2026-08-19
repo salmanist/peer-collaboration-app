@@ -28,6 +28,7 @@ export interface ResourceListing {
   condition: ResourceCondition;
   exchange_type: ResourceExchangeType;
   price: string | null;
+  image: string | null;
   description: string;
   status: ResourceStatus;
   created_at: string;
@@ -41,6 +42,7 @@ export interface CreateResourceListingPayload {
   condition: ResourceCondition;
   exchange_type: ResourceExchangeType;
   price?: string | null;
+  image?: { uri: string; name?: string; type?: string } | null;
   description: string;
 }
 
@@ -52,6 +54,13 @@ export interface ResourceListingFilters {
   course__icontains?: string;
   search?: string;
   ordering?: "created_at" | "-created_at" | "title" | "-title" | "price" | "-price";
+  page?: number;
+}
+
+export interface ResourceNotificationSummary {
+  has_new_resources: boolean;
+  has_new_interest: boolean;
+  pending_requests_count: number;
 }
 
 export interface PaginatedResourceListings {
@@ -86,6 +95,7 @@ export interface ResourceChatMessage {
   sender_id: number;
   sender_name: string;
   body: string;
+  image: string | null;
   created_at: string;
 }
 
@@ -154,6 +164,7 @@ export interface PublicResourceOfferChatMessage {
   sender_id: number;
   sender_name: string;
   body: string;
+  image: string | null;
   created_at: string;
 }
 
@@ -163,3 +174,4 @@ export interface PaginatedPublicResourceOfferChatMessages {
   previous: string | null;
   results: PublicResourceOfferChatMessage[];
 }
+

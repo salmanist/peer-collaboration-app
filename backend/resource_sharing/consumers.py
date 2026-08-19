@@ -73,6 +73,7 @@ class ResourceChatConsumer(AsyncJsonWebsocketConsumer):
             "sender_id": message.sender_id,
             "sender_name": message.sender.full_name,
             "body": message.body,
+            "image": None,
             "created_at": message.created_at.isoformat(),
         }
 
@@ -139,5 +140,7 @@ class PublicResourceOfferChatConsumer(AsyncJsonWebsocketConsumer):
             "sender_id": message.sender_id,
             "sender_name": message.sender.full_name,
             "body": message.body,
+            "image": None,
             "created_at": message.created_at.isoformat(),
         }
+

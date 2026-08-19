@@ -1,8 +1,10 @@
 import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -62,11 +64,29 @@ export default function CreateResourceScreen() {
   const [course, setCourse] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
   const [category, setCategory] = useState<ResourceCategory>("notes");
   const [condition, setCondition] = useState<ResourceCondition>("used");
   const [exchangeType, setExchangeType] = useState<ResourceExchangeType>("free");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setSelectedImage({ uri: result.assets[0].uri });
+      }
+    } catch {
+      setErrorMessage("Could not open image picker.");
+    }
+  };
 
   const handleSubmit = async () => {
     const cleanTitle = title.trim();
@@ -94,6 +114,7 @@ export default function CreateResourceScreen() {
         category,
         condition,
         exchange_type: exchangeType,
+        image: selectedImage || undefined,
         ...(exchangeType === "sell" || exchangeType === "rent" ? { price: cleanPrice } : {}),
       });
       router.replace("/resources");
@@ -103,6 +124,7 @@ export default function CreateResourceScreen() {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -150,6 +172,20 @@ export default function CreateResourceScreen() {
             keyboardType="decimal-pad"
           />
         </>
+      )}
+
+      <Text style={styles.label}>Photo (optional)</Text>
+      {selectedImage ? (
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
+          <Pressable style={styles.removeImageButton} onPress={() => setSelectedImage(null)}>
+            <Text style={styles.removeImageText}>✕ Remove photo</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable style={styles.imagePickerButton} onPress={() => void pickImage()}>
+          <Text style={styles.imagePickerButtonText}>📷 Add a photo (optional)</Text>
+        </Pressable>
       )}
 
       <Text style={styles.label}>Description *</Text>
@@ -206,6 +242,21 @@ const styles = StyleSheet.create({
   label: { color: "#334155", fontWeight: "700", marginTop: 8 },
   input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, padding: 12, color: "#0f172a" },
   descriptionInput: { minHeight: 120 },
+  imagePickerButton: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#93c5fd",
+    borderStyle: "dashed",
+    borderRadius: 8,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagePickerButtonText: { color: "#1d4ed8", fontWeight: "600" },
+  imagePreviewContainer: { alignItems: "center", gap: 8 },
+  imagePreview: { width: "100%", height: 200, borderRadius: 8, resizeMode: "cover" },
+  removeImageButton: { alignSelf: "flex-end", paddingVertical: 4 },
+  removeImageText: { color: "#b91c1c", fontWeight: "600", fontSize: 13 },
   optionGroup: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   option: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
   optionSelected: { backgroundColor: "#dbeafe", borderColor: "#1d4ed8" },
@@ -215,3 +266,4 @@ const styles = StyleSheet.create({
   submitButton: { backgroundColor: "#1d4ed8", borderRadius: 8, minHeight: 48, alignItems: "center", justifyContent: "center", marginTop: 14 },
   submitButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
 });
+

@@ -1,9 +1,13 @@
 from decimal import Decimal
 from rest_framework import serializers
-from .models import PublicResourceOffer, PublicResourceOfferChatMessage, PublicResourceRequest, ResourceChatMessage, ResourceInterestRequest, ResourceListing
-# In resource_sharing/serializers.py, we created the layer
-# that connects your Django models to the Expo app.
-# Serializer = how that data is sent and received as JSON through APIs.
+from .models import (
+    PublicResourceOffer,
+    PublicResourceOfferChatMessage,
+    PublicResourceRequest,
+    ResourceChatMessage,
+    ResourceInterestRequest,
+    ResourceListing,
+)
 
 
 class ResourceListingSerializer(serializers.ModelSerializer):
@@ -22,6 +26,7 @@ class ResourceListingSerializer(serializers.ModelSerializer):
             "condition",
             "exchange_type",
             "price",
+            "image",
             "description",
             "status",
             "created_at",
@@ -65,6 +70,7 @@ class ResourceInterestRequestSerializer(serializers.ModelSerializer):
     resource_title = serializers.CharField(source="resource.title", read_only=True)
     requester_id = serializers.IntegerField(source="requester.id", read_only=True)
     requester_name = serializers.CharField(source="requester.full_name", read_only=True)
+
 
     class Meta:
         model = ResourceInterestRequest
@@ -166,18 +172,21 @@ class PublicResourceOfferSerializer(serializers.ModelSerializer):
 class PublicResourceOfferChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = PublicResourceOfferChatMessage
-        fields = ["id", "public_offer", "sender_id", "sender_name", "body", "created_at"]
-        read_only_fields = fields
+        fields = ["id", "public_offer", "sender_id", "sender_name", "body", "image", "created_at"]
+        read_only_fields = ["id", "public_offer", "sender_id", "sender_name", "created_at"]
 
 
 class ResourceChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = ResourceChatMessage
-        fields = ["id", "interest_request", "sender_id", "sender_name", "body", "created_at"]
-        read_only_fields = fields
+        fields = ["id", "interest_request", "sender_id", "sender_name", "body", "image", "created_at"]
+        read_only_fields = ["id", "interest_request", "sender_id", "sender_name", "created_at"]
+

@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,8 +12,18 @@ import {
 } from "react-native";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { API_BASE_URL } from "../../../core/network/apiClient";
 import { createResourceInterestRequest, fetchResourceListing } from "../data/resourcesApi";
 import type { ResourceListing } from "../resources";
+
+function getImageUrl(imagePath: string | null) {
+  if (!imagePath) return null;
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  const host = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${host}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
+}
 
 function getExchangeLabel(resource: ResourceListing) {
   if (resource.exchange_type === "sell" && resource.price) {
@@ -25,6 +36,7 @@ function getExchangeLabel(resource: ResourceListing) {
 function toLabel(value: string) {
   return value.replace("_", " ");
 }
+
 
 export default function ResourceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -98,8 +110,17 @@ export default function ResourceDetailScreen() {
         <Text style={styles.backLink}>← Back to resources</Text>
       </Pressable>
 
+      {resource.image ? (
+        <Image
+          source={{ uri: getImageUrl(resource.image)! }}
+          style={styles.bannerImage}
+        />
+      ) : null}
+
       <Text style={styles.title}>{resource.title}</Text>
       <Text style={styles.exchangeType}>{getExchangeLabel(resource)}</Text>
+
+
 
       <View style={styles.infoBox}>
         <Text style={styles.label}>Category</Text>
@@ -162,4 +183,6 @@ const styles = StyleSheet.create({
   interestButtonText: { color: "#ffffff", fontSize: 16, fontWeight: "700" },
   ownerNotice: { color: "#64748b", fontStyle: "italic", marginTop: 28 },
   errorText: { color: "#b91c1c", textAlign: "center" },
+  bannerImage: { width: "100%", height: 220, borderRadius: 12, marginBottom: 16, resizeMode: "cover" },
 });
+

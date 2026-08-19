@@ -48,6 +48,11 @@ class ResourceListing(models.Model):
         null=True,
         blank=True,
     )
+    image = models.ImageField(
+        upload_to="resources/",
+        null=True,
+        blank=True,
+    )
     description = models.TextField(max_length=1500)
     status = models.CharField(
         max_length=15,
@@ -59,6 +64,11 @@ class ResourceListing(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["category", "status"]),
+            models.Index(fields=["exchange_type", "status"]),
+        ]
 
     def clean(self):
         if self.exchange_type in {self.ExchangeType.SELL, self.ExchangeType.RENT} and self.price is None:
@@ -100,6 +110,10 @@ class ResourceInterestRequest(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["resource", "status"]),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["resource", "requester"],
@@ -141,6 +155,10 @@ class PublicResourceRequest(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["category", "status"]),
+        ]
 
     def __str__(self):
         return f"{self.title} requested by {self.requester.email}"
@@ -170,6 +188,10 @@ class PublicResourceOffer(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["public_request", "status"]),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["public_request", "offerer"],
@@ -196,11 +218,15 @@ class PublicResourceOfferChatMessage(models.Model):
         on_delete=models.CASCADE,
         related_name="public_resource_offer_chat_messages",
     )
-    body = models.TextField(max_length=1500)
+    body = models.TextField(max_length=1500, blank=True, default="")
+    image = models.ImageField(upload_to="chat_images/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
         return f"Message on public offer {self.public_offer_id} from {self.sender.email}"
@@ -217,11 +243,16 @@ class ResourceChatMessage(models.Model):
         on_delete=models.CASCADE,
         related_name="resource_chat_messages",
     )
-    body = models.TextField(max_length=1500)
+    body = models.TextField(max_length=1500, blank=True, default="")
+    image = models.ImageField(upload_to="chat_images/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
         return f"Message on request {self.interest_request_id} from {self.sender.email}"
+

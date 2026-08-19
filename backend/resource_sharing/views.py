@@ -1,6 +1,8 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, permissions
+from rest_framework import filters, generics, parsers, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from rest_framework.response import Response
@@ -214,11 +216,12 @@ class PublicResourceOfferStatusUpdateView(APIView):
         return Response(PublicResourceOfferSerializer(offer).data)
 
 
-class PublicResourceOfferChatMessageListView(generics.ListAPIView):
+class PublicResourceOfferChatMessageListView(generics.ListCreateAPIView):
     serializer_class = PublicResourceOfferChatMessageSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
-    def get_queryset(self):
+    def get_offer(self):
         offer = get_object_or_404(
             PublicResourceOffer.objects.select_related("public_request"),
             pk=self.kwargs["offer_id"],
@@ -229,10 +232,52 @@ class PublicResourceOfferChatMessageListView(generics.ListAPIView):
         }
         if not is_participant or offer.status != PublicResourceOffer.Status.ACCEPTED:
             raise PermissionDenied("This chat is not available to you.")
+        return offer
 
+    def get_queryset(self):
+        offer = self.get_offer()
         return PublicResourceOfferChatMessage.objects.select_related("sender").filter(
             public_offer=offer
         )
+
+    def perform_create(self, serializer):
+        offer = self.get_offer()
+        body = self.request.data.get("body", "")
+        if isinstance(body, str):
+            body = body.strip()
+        image = self.request.FILES.get("image")
+        if not body and not image:
+            raise ValidationError({"detail": "Message must contain text or an image."})
+
+        message = serializer.save(
+            public_offer=offer,
+            sender=self.request.user,
+            body=body,
+            image=image,
+        )
+
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            group_name = f"public_offer_chat_{offer.id}"
+            image_url = None
+            if message.image:
+                image_url = message.image.url
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                {
+                    "type": "chat.message",
+                    "message": {
+                        "id": message.id,
+                        "public_offer": offer.id,
+                        "sender_id": message.sender_id,
+                        "sender_name": message.sender.full_name,
+                        "body": message.body,
+                        "image": image_url,
+                        "created_at": message.created_at.isoformat(),
+                    },
+                },
+            )
+
 
 
 class ResourceInterestRequestCreateView(generics.CreateAPIView):
@@ -348,11 +393,12 @@ class ResourceInterestRequestStatusUpdateView(APIView):
         return Response(ResourceInterestRequestSerializer(interest_request).data)
 
 
-class ResourceChatMessageListView(generics.ListAPIView):
+class ResourceChatMessageListView(generics.ListCreateAPIView):
     serializer_class = ResourceChatMessageSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
-    def get_queryset(self):
+    def get_interest_request(self):
         interest_request = get_object_or_404(
             ResourceInterestRequest.objects.select_related("resource"),
             pk=self.kwargs["request_id"],
@@ -366,7 +412,88 @@ class ResourceChatMessageListView(generics.ListAPIView):
             ResourceInterestRequest.Status.COMPLETED,
         }:
             raise PermissionDenied("This chat is not available to you.")
+        return interest_request
 
+    def get_queryset(self):
+        interest_request = self.get_interest_request()
         return ResourceChatMessage.objects.select_related("sender").filter(
             interest_request=interest_request
         )
+
+    def perform_create(self, serializer):
+        interest_request = self.get_interest_request()
+        body = self.request.data.get("body", "")
+        if isinstance(body, str):
+            body = body.strip()
+        image = self.request.FILES.get("image")
+        if not body and not image:
+            raise ValidationError({"detail": "Message must contain text or an image."})
+
+        message = serializer.save(
+            interest_request=interest_request,
+            sender=self.request.user,
+            body=body,
+            image=image,
+        )
+
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            group_name = f"resource_chat_{interest_request.id}"
+            image_url = None
+            if message.image:
+                image_url = message.image.url
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                {
+                    "type": "chat.message",
+                    "message": {
+                        "id": message.id,
+                        "interest_request": interest_request.id,
+                        "sender_id": message.sender_id,
+                        "sender_name": message.sender.full_name,
+                        "body": message.body,
+                        "image": image_url,
+                        "created_at": message.created_at.isoformat(),
+                    },
+                },
+            )
+
+
+
+class ResourceNotificationSummaryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        since_resources = request.query_params.get("since_resources")
+        since_interest = request.query_params.get("since_interest")
+
+        has_new_resources = False
+        if since_resources:
+            has_new_resources = ResourceListing.objects.filter(
+                status=ResourceListing.Status.ACTIVE,
+                created_at__gt=since_resources,
+            ).exclude(owner=request.user).exists()
+
+        has_new_interest = False
+        if since_interest:
+            has_new_interest = ResourceInterestRequest.objects.filter(
+                resource__owner=request.user,
+                created_at__gt=since_interest,
+            ).exists()
+        else:
+            has_new_interest = ResourceInterestRequest.objects.filter(
+                resource__owner=request.user,
+                status=ResourceInterestRequest.Status.PENDING,
+            ).exists()
+
+        pending_requests_count = ResourceInterestRequest.objects.filter(
+            resource__owner=request.user,
+            status=ResourceInterestRequest.Status.PENDING,
+        ).count()
+
+        return Response({
+            "has_new_resources": has_new_resources,
+            "has_new_interest": has_new_interest,
+            "pending_requests_count": pending_requests_count,
+        })
+
