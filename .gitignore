@@ -22,3 +22,8 @@ mobile/*.log
 .DS_Store
 Thumbs.db
 dear_fyp_partner_read_this_shit_before_anything.md
+
+# Virtual environments
+venv/
+.venv/
+env/
