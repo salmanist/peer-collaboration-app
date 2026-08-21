@@ -7,6 +7,7 @@ from .models import StudentRoster, User
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
+    full_name = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
         model = User
@@ -27,7 +28,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         return email
 
     def create(self, validated_data):
+        email = validated_data["email"]
+        full_name = (validated_data.get("full_name") or "").strip()
+        if not full_name:
+            roster_entry = StudentRoster.objects.filter(email=email).first()
+            if roster_entry and roster_entry.full_name and roster_entry.full_name.strip():
+                full_name = roster_entry.full_name.strip()
+            else:
+                full_name = email.split("@")[0].replace(".", " ").replace("_", " ").title()
+            validated_data["full_name"] = full_name
         return User.objects.create_user(**validated_data)
+
 
 
 class VerifyEmailSerializer(serializers.Serializer):

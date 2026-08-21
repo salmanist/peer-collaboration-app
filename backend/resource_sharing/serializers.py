@@ -12,7 +12,7 @@ from .models import (
 
 class ResourceListingSerializer(serializers.ModelSerializer):
     owner_id = serializers.IntegerField(source="owner.id", read_only=True)
-    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
+    owner_name = serializers.CharField(source="owner.display_name", read_only=True)
 
     class Meta:
         model = ResourceListing
@@ -69,7 +69,7 @@ class ResourceInterestRequestSerializer(serializers.ModelSerializer):
     resource_id = serializers.IntegerField(source="resource.id", read_only=True)
     resource_title = serializers.CharField(source="resource.title", read_only=True)
     requester_id = serializers.IntegerField(source="requester.id", read_only=True)
-    requester_name = serializers.CharField(source="requester.full_name", read_only=True)
+    requester_name = serializers.CharField(source="requester.display_name", read_only=True)
 
 
     class Meta:
@@ -105,7 +105,7 @@ class ResourceListingStatusSerializer(serializers.ModelSerializer):
 
 class PublicResourceRequestSerializer(serializers.ModelSerializer):
     requester_id = serializers.IntegerField(source="requester.id", read_only=True)
-    requester_name = serializers.CharField(source="requester.full_name", read_only=True)
+    requester_name = serializers.CharField(source="requester.display_name", read_only=True)
 
     class Meta:
         model = PublicResourceRequest
@@ -142,7 +142,7 @@ class PublicResourceOfferSerializer(serializers.ModelSerializer):
     public_request_id = serializers.IntegerField(source="public_request.id", read_only=True)
     public_request_title = serializers.CharField(source="public_request.title", read_only=True)
     offerer_id = serializers.IntegerField(source="offerer.id", read_only=True)
-    offerer_name = serializers.CharField(source="offerer.full_name", read_only=True)
+    offerer_name = serializers.CharField(source="offerer.display_name", read_only=True)
 
     class Meta:
         model = PublicResourceOffer
@@ -171,7 +171,7 @@ class PublicResourceOfferSerializer(serializers.ModelSerializer):
 
 class PublicResourceOfferChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
-    sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    sender_name = serializers.CharField(source="sender.display_name", read_only=True)
     image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
@@ -182,11 +182,10 @@ class PublicResourceOfferChatMessageSerializer(serializers.ModelSerializer):
 
 class ResourceChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
-    sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    sender_name = serializers.CharField(source="sender.display_name", read_only=True)
     image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = ResourceChatMessage
         fields = ["id", "interest_request", "sender_id", "sender_name", "body", "image", "created_at"]
         read_only_fields = ["id", "interest_request", "sender_id", "sender_name", "created_at"]
-

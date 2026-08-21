@@ -239,11 +239,14 @@ export default function LostAndFoundFeedScreen() {
                   <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
 
                   <View style={styles.cardFooter}>
-                    <Text style={styles.cardPoster} numberOfLines={1}>Posted by {item.poster_name}</Text>
+                    <Text style={styles.cardPoster} numberOfLines={1}>
+                      Posted by {item.poster_name?.trim() || item.poster_email?.split("@")[0] || "Student"}
+                    </Text>
                     {item.claims_count > 0 ? (
                       <Text style={styles.claimsTag}>💬 {item.claims_count} claim{item.claims_count > 1 ? "s" : ""}</Text>
                     ) : null}
                   </View>
+
                 </View>
               </Pressable>
             );

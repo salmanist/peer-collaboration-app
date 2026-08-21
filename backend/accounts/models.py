@@ -54,8 +54,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["full_name"]
 
+    @property
+    def display_name(self) -> str:
+        if self.full_name and self.full_name.strip():
+            return self.full_name.strip()
+        username = self.email.split("@")[0]
+        return username.replace(".", " ").replace("_", " ").title()
+
     def __str__(self):
-        return self.email
+        return self.display_name or self.email
 
 
 def default_otp_expiry():

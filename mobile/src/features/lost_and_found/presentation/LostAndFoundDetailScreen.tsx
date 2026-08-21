@@ -239,17 +239,20 @@ export default function LostAndFoundDetailScreen() {
           <View style={styles.posterCard}>
             <View style={styles.posterAvatar}>
               <Text style={styles.posterAvatarText}>
-                {item.poster_name.charAt(0).toUpperCase()}
+                {(item.poster_name?.trim() || item.poster_email || "S").charAt(0).toUpperCase()}
               </Text>
             </View>
             <View style={styles.posterInfo}>
-              <Text style={styles.posterName}>{item.poster_name}</Text>
+              <Text style={styles.posterName}>
+                {item.poster_name?.trim() || item.poster_email?.split("@")[0] || "Student"}
+              </Text>
               <Text style={styles.posterMeta}>
                 {item.poster_department ? `${item.poster_department} • ` : ""}
                 {item.poster_email}
               </Text>
             </View>
           </View>
+
         </View>
 
         {/* Owner Controls */}

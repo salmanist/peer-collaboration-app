@@ -5,12 +5,13 @@ from .models import ItemClaim, ItemClaimChatMessage, LostAndFoundItem
 
 class LostAndFoundItemSerializer(serializers.ModelSerializer):
     poster_id = serializers.IntegerField(source="poster.id", read_only=True)
-    poster_name = serializers.CharField(source="poster.full_name", read_only=True)
+    poster_name = serializers.CharField(source="poster.display_name", read_only=True)
     poster_email = serializers.CharField(source="poster.email", read_only=True)
     poster_department = serializers.CharField(source="poster.department", read_only=True)
     claims_count = serializers.SerializerMethodField()
     has_user_claimed = serializers.SerializerMethodField()
     image = serializers.ImageField(required=False, allow_null=True)
+
 
     class Meta:
         model = LostAndFoundItem
@@ -70,9 +71,9 @@ class ItemClaimSerializer(serializers.ModelSerializer):
     item_location = serializers.CharField(source="item.location", read_only=True)
     item_image = serializers.SerializerMethodField()
     poster_id = serializers.IntegerField(source="item.poster.id", read_only=True)
-    poster_name = serializers.CharField(source="item.poster.full_name", read_only=True)
+    poster_name = serializers.CharField(source="item.poster.display_name", read_only=True)
     claimant_id = serializers.IntegerField(source="claimant.id", read_only=True)
-    claimant_name = serializers.CharField(source="claimant.full_name", read_only=True)
+    claimant_name = serializers.CharField(source="claimant.display_name", read_only=True)
     claimant_email = serializers.CharField(source="claimant.email", read_only=True)
     claimant_department = serializers.CharField(source="claimant.department", read_only=True)
 
@@ -127,8 +128,9 @@ class ItemClaimStatusSerializer(serializers.ModelSerializer):
 
 class ItemClaimChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source="sender.id", read_only=True)
-    sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    sender_name = serializers.CharField(source="sender.display_name", read_only=True)
     image = serializers.ImageField(required=False, allow_null=True)
+
 
     class Meta:
         model = ItemClaimChatMessage
