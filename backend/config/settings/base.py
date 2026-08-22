@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "accounts",
     "common",
+    "apps.rides",
+    "apps.library",
 ]
 
 MIDDLEWARE = [
@@ -69,6 +71,8 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("DB_PORT", "5432"),
+        # Neon (and most managed Postgres) requires TLS; harmless against local Postgres too.
+        "OPTIONS": {"sslmode": os.environ.get("DB_SSLMODE", "prefer")},
     }
 }
 
@@ -87,6 +91,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+# Local disk during the build (Digital Library document uploads); swap to
+# django-storages/S3 later by only changing DEFAULT_FILE_STORAGE.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Dev default: prints the OTP to the runserver console instead of sending real

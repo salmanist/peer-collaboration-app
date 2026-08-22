@@ -1,13 +1,13 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
+import { Badge, Button, Card, ScreenContainer, TextField, colors, font, spacing, typography } from "../../../core/ui";
 import { register } from "../data/authApi";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -15,7 +15,7 @@ export default function RegisterScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await register({ email: email.trim().toLowerCase(), password, full_name: fullName.trim() });
+      await register({ email: email.trim().toLowerCase(), password });
       router.push({ pathname: "/(auth)/verify-email", params: { email: email.trim().toLowerCase() } });
     } catch (err: any) {
       const detail = err?.response?.data;
@@ -26,53 +26,50 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create your account</Text>
-      <Text style={styles.hint}>Use your @lgu.edu.pk email address.</Text>
+    <ScreenContainer scroll center back="/(auth)/login">
+      <View style={styles.header}>
+        <Badge label="Join the crew" tone="warning" />
+        <Text style={styles.title}>Create your account</Text>
+        <Text style={styles.hint}>
+          Use your <Text style={styles.hintStrong}>@lgu.edu.pk</Text> email — your name, department, and enrollment
+          year all come straight from the official student roster.
+        </Text>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Full name"
-        value={fullName}
-        onChangeText={setFullName}
-        autoCapitalize="words"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="you@lgu.edu.pk"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <Card style={styles.card}>
+        <TextField
+          label="Email"
+          placeholder="you@lgu.edu.pk"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextField label="Password" placeholder="••••••••" value={password} onChangeText={setPassword} secureTextEntry />
 
-      {error && <Text style={styles.error}>{error}</Text>}
+        {error && <Text style={styles.error}>{error}</Text>}
 
-      <Pressable style={styles.button} onPress={handleSubmit} disabled={isSubmitting}>
-        {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Register</Text>}
-      </Pressable>
+        <Button label="Register" onPress={handleSubmit} loading={isSubmitting} style={styles.submit} />
+      </Card>
 
-      <Pressable onPress={() => router.push("/(auth)/login")}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
-      </Pressable>
-    </View>
+      <Text style={styles.footer}>
+        Already have an account?{" "}
+        <Text style={styles.link} onPress={() => router.push("/(auth)/login")}>
+          Log in
+        </Text>
+      </Text>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
-  title: { fontSize: 24, fontWeight: "700" },
-  hint: { color: "#666", marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12 },
-  button: { backgroundColor: "#1d4ed8", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  error: { color: "#dc2626" },
-  link: { color: "#1d4ed8", textAlign: "center", marginTop: 16 },
+  header: { alignItems: "center", gap: spacing.sm, marginBottom: spacing.xl },
+  title: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink, marginTop: spacing.sm, textAlign: "center" },
+  hint: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textMuted, lineHeight: 20, textAlign: "center" },
+  hintStrong: { color: colors.ink, fontFamily: font.familyMedium },
+  card: { gap: spacing.md },
+  submit: { marginTop: spacing.xs },
+  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
+  footer: { textAlign: "center", color: colors.textSecondary, fontFamily: font.familyRegular, marginTop: spacing.xl, fontSize: typography.size.sm },
+  link: { color: colors.primary, fontFamily: font.familyMedium },
 });

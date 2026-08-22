@@ -1,29 +1,20 @@
 import { router } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { useSessionStore } from "../../../core/auth/session";
-import { updateMe } from "../data/authApi";
+import { Badge, Button, ScreenContainer, SoftBlock, colors, font, spacing, typography } from "../../../core/ui";
+
+function initials(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 export default function ProfileScreen() {
   const user = useSessionStore((state) => state.user);
-  const updateUser = useSessionStore((state) => state.updateUser);
   const clearSession = useSessionStore((state) => state.clearSession);
 
-  const [department, setDepartment] = useState(user?.department ?? "");
-  const [isSaving, setIsSaving] = useState(false);
-
   if (!user) return null;
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const updated = await updateMe({ department: department.trim() });
-      updateUser(updated);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleLogout = async () => {
     await clearSession();
@@ -31,37 +22,31 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{user.full_name}</Text>
-      <Text style={styles.email}>{user.email}</Text>
-      <Text style={styles.meta}>{user.role} · {user.enrollment_year ?? "—"}</Text>
+    <ScreenContainer scroll topBar>
+      <View style={styles.header}>
+        <SoftBlock backgroundColor={colors.primaryFixed} pill size={84} style={styles.avatarBlock}>
+          <Text style={styles.avatarText}>{initials(user.full_name)}</Text>
+        </SoftBlock>
+        <Text style={styles.name}>{user.full_name}</Text>
+        <Text style={styles.email}>{user.email}</Text>
+        <View style={styles.badgeRow}>
+          <Badge label={user.role} tone="primary" />
+          {user.department && <Badge label={user.department} tone="tertiary" />}
+          {!!user.enrollment_year && <Badge label={String(user.enrollment_year)} tone="success" />}
+        </View>
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Department"
-        value={department}
-        onChangeText={setDepartment}
-      />
-
-      <Pressable style={styles.button} onPress={handleSave} disabled={isSaving}>
-        {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
-      </Pressable>
-
-      <Pressable style={styles.logout} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Log out</Text>
-      </Pressable>
-    </View>
+      <Button label="Log out" variant="ink" onPress={handleLogout} style={styles.logoutButton} />
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 12, paddingTop: 64 },
-  title: { fontSize: 24, fontWeight: "700" },
-  email: { color: "#666" },
-  meta: { color: "#666", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12 },
-  button: { backgroundColor: "#1d4ed8", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  logout: { padding: 14, alignItems: "center", marginTop: 24 },
-  logoutText: { color: "#dc2626", fontWeight: "600" },
+  header: { alignItems: "center", gap: spacing.xs, paddingVertical: spacing.lg },
+  avatarBlock: { marginBottom: spacing.sm },
+  avatarText: { width: 84, height: 84, textAlign: "center", textAlignVertical: "center", color: colors.onPrimaryFixed, fontSize: typography.size.xl, fontFamily: font.family },
+  name: { fontSize: typography.size.xl, fontFamily: font.family, color: colors.ink },
+  email: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textMuted },
+  badgeRow: { flexDirection: "row", gap: spacing.xs, marginTop: spacing.sm, flexWrap: "wrap", justifyContent: "center" },
+  logoutButton: { marginTop: spacing.xl },
 });

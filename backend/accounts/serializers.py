@@ -10,7 +10,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "password", "full_name", "department", "enrollment_year"]
+        fields = ["email", "password"]
 
     def validate_email(self, email):
         email = email.lower()
@@ -40,6 +40,9 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "id", "email", "full_name", "department", "enrollment_year",
+            "gender", "role", "is_email_verified", "created_at",
+        ]
+        read_only_fields = [
+            "id", "email", "full_name", "department", "enrollment_year", "gender",
             "role", "is_email_verified", "created_at",
         ]
-        read_only_fields = ["id", "email", "role", "is_email_verified", "created_at"]

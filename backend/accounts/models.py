@@ -1,5 +1,6 @@
 import random
 from datetime import timedelta
+from functools import cached_property
 
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -27,15 +28,17 @@ class UserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
+class Gender(models.TextChoices):
+    MALE = "male", "Male"
+    FEMALE = "female", "Female"
+
+
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
         STUDENT = "student", "Student"
         ADMIN = "admin", "Admin"
 
     email = models.EmailField(unique=True)
-    full_name = models.CharField(max_length=150)
-    department = models.CharField(max_length=100, blank=True)
-    enrollment_year = models.PositiveIntegerField(null=True, blank=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
 
     is_email_verified = models.BooleanField(default=False)
@@ -49,7 +52,27 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["full_name"]
+    REQUIRED_FIELDS = []
+
+    @cached_property
+    def _roster_entry(self):
+        return StudentRoster.objects.filter(email=self.email).first()
+
+    @property
+    def full_name(self):
+        return self._roster_entry.full_name if self._roster_entry else ""
+
+    @property
+    def department(self):
+        return self._roster_entry.department if self._roster_entry else ""
+
+    @property
+    def enrollment_year(self):
+        return self._roster_entry.enrollment_year if self._roster_entry else None
+
+    @property
+    def gender(self):
+        return self._roster_entry.gender if self._roster_entry else ""
 
     def __str__(self):
         return self.email
@@ -74,11 +97,18 @@ class EmailVerification(models.Model):
 
 
 class StudentRoster(models.Model):
-    """Whitelist of officially enrolled LGU emails, imported from the
-    university's own records via `manage.py import_roster`. Registration
-    checks against this instead of trusting the email domain alone."""
+    """Stand-in for the university's own student records API. Imported via
+    `manage.py import_roster`; registration checks the whitelist here, and
+    User.full_name/department/enrollment_year/gender are all resolved live
+    from this table by email match (never copied/stored on User) so the
+    roster stays the single source of truth — registration only ever
+    collects email + password."""
 
     email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=150, blank=True)
+    department = models.CharField(max_length=100, blank=True)
+    enrollment_year = models.PositiveIntegerField(null=True, blank=True)
+    gender = models.CharField(max_length=6, choices=Gender.choices, blank=True)
     imported_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -132,3 +132,827 @@ even though the file existed on disk. Fix was checking `netstat -ano` for
 port 8000 and force-killing the orphaned PID before restarting. Worth
 remembering if a future change to this backend "isn't taking effect" after
 a restart — check for a leftover process on the port first.
+
+2026-08-12 — StudentRoster became the full simulated university-API
+record (prep work ahead of the Ride Sharing module).
+
+Rationale: the roster CSV already stands in for a real university student
+records API in this project (system_design.md's deferred-infra pattern —
+same idea as the console email backend). Until now it only proved an email
+was a valid student; everything else (name, department, enrollment year)
+was typed by the registrant themselves, which meant nothing stopped someone
+registering with a fake name. Since Ride Sharing needs a trustworthy gender
+field to support a "same gender only" ride preference (raised mid-planning:
+some riders, particularly female students, may not be comfortable sharing a
+ride with the opposite gender), and self-reported gender at signup would be
+just as spoofable as a self-reported name, the fix was to make the roster
+the single source of truth for all of it.
+
+What changed (backend/accounts/):
+- StudentRoster gained full_name, department, enrollment_year (blank/null
+  tolerated per-field) and gender (CharField, choices male/female, blank
+  tolerated) alongside the existing unique email.
+- User gained the same gender field, populated only at registration from
+  the matched roster row — never accepted from the client, not in
+  RegisterSerializer's fields, and marked read_only in UserSerializer so
+  PATCH /auth/me/ can't change it either.
+- RegisterSerializer.Meta.fields shrank to just ["email", "password"].
+  validate_email() now fetches the matching StudentRoster row (not just an
+  .exists() check) and stashes it on the serializer instance; create()
+  pulls full_name/department/enrollment_year/gender off that row when
+  building the User. Net effect: you can't register with a name that isn't
+  on record.
+- import_roster (manage.py import_roster <csv>) now optionally reads
+  full_name/department/enrollment_year/gender columns (case-insensitive
+  header match, same pattern as the existing email column), each
+  independently optional so old email-only CSVs still import unchanged.
+  Gender values are normalized (M/Male/male → male, same for female).
+  Switched from get_or_create to update_or_create so re-running the import
+  against a corrected/updated CSV actually refreshes existing rows instead
+  of silently leaving stale data — matches "this is a live feed" semantics
+  better than the old whitelist-only behavior.
+- The /test/ dev console, DebugAddRosterView, and Django admin list/filter
+  views were all updated to match (roster entries can now carry a name and
+  gender when added ad hoc for testing).
+- docs/api-contracts/auth.md updated: register request example is now
+  email+password only, with a note that the rest comes from the roster;
+  gender added to the documented User fields and to the read-only list on
+  PATCH /me/.
+
+Dummy dataset: backend/accounts/fixtures/dummy_students.csv, 30 rows
+(email, full_name, department, enrollment_year, gender), @lgu.edu.pk
+addresses, mixed CS/SE/EE/BBA departments, 2021–2024 enrollment years, an
+exact 15/15 male/female split so both directions of the upcoming
+same-gender-only ride filter have real data to exercise. Loaded with
+`python manage.py import_roster backend/accounts/fixtures/dummy_students.csv`
+— imported clean, 30 added, 0 invalid.
+
+Verified via Django shell (RegisterSerializer exercised directly, not just
+inspected): registering with only email+password against a roster row
+(ali.raza@lgu.edu.pk) correctly produced a User with full_name="Ali Raza",
+department="CS", enrollment_year=2022, gender="male" — none of which were
+in the request payload. Migration (accounts.0003) applied cleanly against
+the live Postgres db; existing/legacy roster rows without the new columns
+remain valid (blank fields), confirmed by inspecting one such row after
+running the import.
+
+Known limitation carried forward: gender is binary (male/female) only, a
+deliberate scope cut confirmed with the project owner rather than an
+oversight — no third case exists to define same-gender-matching rules for.
+
+2026-08-12 — Built the Ride Sharing module (backend + mobile), covering
+SRS §4.1 REQ RS 01–05.
+
+Backend (backend/apps/rides/, the first app under the new apps/ nested
+package layout — accounts/common stay flat, everything from here on lives
+under apps/):
+
+- Ride: offerer FK, departure/destination text, departure_date/time,
+  seats_total (1–8, validated) / seats_available, same_gender_only bool,
+  is_cancelled bool, created_at.
+- RideJoinRequest: ride + requester FK pair (DB-unique — one request per
+  person per ride), status (pending/accepted/declined), created_at.
+- Endpoints under /api/rides/: list+create (GET/POST), retrieve, join,
+  cancel, list-requests (offerer-only), accept, decline. Full shapes in
+  docs/api-contracts/rides.md.
+- Search (REQ RS 02) is deliberately simple: departure/destination
+  substring match + exact date, ordered chronologically — a named scope
+  cut (no GPS/polyline), flagged in plans/ridesharing_plan.md as a gap to
+  revisit with something smarter before final submission if time allows.
+- Notifications (REQ RS 03) run through a new shared common.Notification
+  model + notify(recipient, verb, target) helper — GenericForeignKey-based
+  so it isn't tied to rides specifically; Zahra's Resource Sharing module
+  can reuse it instead of building its own. Endpoints: GET
+  /api/notifications/ (own feed), POST /api/notifications/<id>/read/.
+- Accept (REQ RS 05) is race-safe: wraps the ride + join-request rows in
+  select_for_update() inside a transaction, re-checks pending status and
+  seat availability under the lock before decrementing — two offerers
+  can't double-accept the last seat. Accept response nests both the full
+  ride and the join request (with requester contact fields), and the
+  requester's own GET on the ride shows my_request_status + the offerer's
+  contact — both parties get each other's info once confirmed, per REQ
+  RS 05.
+- Cancel (addition beyond the original scope cut, confirmed with the
+  project owner): offerer-only, blocked once any request on the ride has
+  already been accepted (protects the REQ RS 05 confirmed-contact
+  guarantee), notifies any still-pending requesters.
+- Gender preference (addition raised mid-build — some riders, especially
+  female students, may not want to share a ride with the opposite gender):
+  same_gender_only is an offerer-side toggle. It's enforced twice — search
+  results simply exclude a restricted ride for a mismatched or
+  blank-gender caller (Q(same_gender_only=False) | Q(offerer__gender=...)
+  in the queryset), and RideJoinView independently rejects a mismatched
+  join attempt even via direct ID. An offerer with no gender on record
+  can't turn the toggle on in the first place. This is the reason the
+  accounts roster-record work (same day, earlier entry) exists — gender
+  had to come from a trustworthy source, not a text field.
+
+Verified with a 34-check script (rest_framework.test.APIClient exercising
+every view in-process — same request/response/serializer path a live
+server would hit, without the Windows orphan-process port issue noted on
+2026-08-08) covering: offer/seats_available, matching/non-matching search,
+join + duplicate-join + self-join rejection, notification delivery and
+mark-read, requests-list 403 for non-offerers, accept with contact fields
+on both sides, decline leaving seats untouched, a seats-exhausted race
+(third join and a second accept both correctly rejected, ride drops out of
+search), cancel blocked once accepted / 403 for non-offerers, and the full
+gender-preference matrix (restricted ride hidden from/joinable-by the
+right genders, blank-gender account blocked from both toggling and
+joining). All 34 passed; test accounts and rides cleaned from fyp_dev
+after.
+
+Mobile (mobile/src/features/rides/):
+
+- data/ridesApi.ts, data/notificationsApi.ts — plain functions on the
+  shared apiClient, same shape as authApi.ts.
+- presentation/: RideListScreen (search + results + links to
+  Offer/Notifications), OfferRideScreen (create form, native Switch for
+  same_gender_only disabled when the user has no gender on record),
+  RideDetailScreen (offerer view: requests list + accept/decline/cancel;
+  seeker view: join button gated on my_request_status), NotificationsScreen
+  (list, tap-to-mark-read, refetches on focus via expo-router's
+  useFocusEffect).
+- Routes under app/(app)/rides/ (index, offer, [id], notifications) —
+  one-line re-exports, same pattern as the auth screens. One added line in
+  ProfileScreen.tsx links to /rides — no tab bar/nav shell exists yet.
+- Date/time entry is plain TextInput with a regex sanity check, no
+  date-picker library — flagged corner, add
+  @react-native-community/datetimepicker later if manual typing proves
+  error-prone in the demo.
+
+Verified: `npx tsc --noEmit` clean (zero errors), Metro bundle
+(`expo export -p android`) succeeded at 1216 modules (up from 1206 before
+this module), no runtime import errors.
+
+Known limitations carried forward: text-substring route matching (flagged
+above — since resolved with proximity matching, see 2026-08-21 entry), no
+ride editing (cancel-only), gender is binary male/female (inherited from
+the accounts change), no push notifications (in-app DB feed only, same
+deferred-infra pattern as console email).
+
+2026-08-17 — Moved the backend database off local Postgres onto a shared
+Neon (serverless Postgres) project.
+
+Rationale: salman and zahra were each running their own local Postgres
+instance, which meant no shared data and a growing risk of schema drift
+between machines as more modules land. Neon's free tier (100 compute-hours/
+month, 0.5GB storage, auto-suspend on idle) is a drop-in Postgres swap with
+no code rewrite needed, so both developers now point at one centralized
+database instead of syncing dumps by hand.
+
+What changed:
+- config/settings/base.py: DATABASES.OPTIONS now sets sslmode from a new
+  DB_SSLMODE env var (default "prefer", so local Postgres keeps working
+  unconfigured for anyone still on it). Neon requires TLS, hence the
+  explicit "require" value used against it.
+- backend/.env (gitignored, never committed): DB_HOST/DB_USER/DB_PASSWORD/
+  DB_NAME swapped from local fyp_dev/fyp_dev_user to the Neon project's
+  pooled connection (the "-pooler" host, not the direct one — the pooled
+  endpoint has a much higher concurrent-connection ceiling, needed since
+  two developers plus Django's autoreload can open several connections at
+  once against the free tier's low direct-connection cap).
+- All existing migrations re-applied cleanly against the new Neon database
+  (accounts, admin, auth, common, contenttypes, rides, sessions) — same
+  schema, empty data (Neon started blank; nothing carried over from either
+  developer's local fyp_dev, which stays as an untouched local fallback).
+
+Free-tier discipline agreed for both developers: don't leave anything
+polling the DB (health checks, open shells) since active connections block
+auto-suspend and burn compute-hours; use the pooled connection string only;
+don't create extra Neon branches (each one gets its own compute
+allocation); keep seed/dummy data modest; coordinate migrations by pulling
+before running `manage.py migrate` so schema state doesn't diverge, same as
+before — Neon doesn't add or remove any of that coordination.
+
+Verified: `manage.py migrate` ran clean against Neon end to end, and a
+direct query (`SELECT current_database(), version()`) through Django's
+connection confirmed the running server is actually answering from Neon's
+`neondb` (Postgres 18.4), not a leftover local connection.
+
+Known limitation: the Neon free tier auto-suspends the database after a
+few minutes idle, so the first request after a gap pays a ~1s cold-start
+cost — acceptable for dev/demo use, not something to design around.
+
+2026-08-17 (later) — Removed the dev-only /test/ auth console; registration
+now takes a user-typed full name.
+
+The browser-based /test/ console (added 2026-08-08) was found confusing to
+use in practice, so it's gone: template file deleted, its route removed
+from config/urls.py. The underlying dev conveniences it was built on top of
+— debug_otp in register responses, POST /api/auth/debug/add-roster/ — stay,
+since they're still useful for curl/Swagger-based manual testing; there's
+just no page wired to them anymore. Swagger UI at /api/docs/ remains the
+primary way to explore/exercise the API by hand.
+
+Separately, RegisterSerializer.Meta.fields gained full_name back as a
+required, user-submitted field (register request is now
+{email, password, full_name}). This is a deliberate, confirmed partial
+reversal of the 2026-08-12 change that made full_name roster-sourced only —
+department/enrollment_year/gender are unaffected and still come exclusively
+from StudentRoster, only full_name is registrant-typed again. Mobile
+RegisterScreen and authApi.RegisterPayload updated to match; docs/api-
+contracts/auth.md updated.
+
+Also root-caused a "registration keeps failing" report on the web build:
+not a network timeout, but Windows Firewall. mobile/.env's
+EXPO_PUBLIC_API_URL points at the machine's LAN IP (needed for real-device
+testing over Expo Go), but the active Wi-Fi network is categorized Public
+in Windows, and a "python.exe Block Public" firewall rule shadows the
+existing Django-inbound-8000 allow rules, which only apply to the Private
+profile. localhost traffic is unaffected (Windows Firewall doesn't filter
+loopback), which is why direct API testing via curl always looked healthy.
+Fix requires switching the network profile to Private via Settings or an
+elevated PowerShell session — outside what an unprivileged process can do,
+so this is a manual step for whoever hits it, not a code change.
+
+2026-08-18 — Removed the now-redundant StudentRoster.full_name field.
+
+Since the 2026-08-17 change made full_name a required, user-typed field on
+RegisterSerializer/User again, StudentRoster.full_name was dead: nothing
+read it anymore (RegisterSerializer.create() only pulls
+department/enrollment_year/gender off the matched roster row). Dropped the
+field from the model, admin list_display/search_fields, and the
+import_roster CSV column handling (extra full_name columns in a CSV are now
+just ignored, same as any other unrecognized column). Initially hand-edited migration 0003_studentroster_department_and_more.py
+in place to drop the full_name AddField, wrongly assuming it hadn't been
+applied to Neon yet since it was still uncommitted locally — it had been
+applied, so the edit was inert (Django trusts django_migrations history,
+never diffs the file against live schema). Caught when the column was still
+visible in the Neon portal. Fixed properly: restored 0003 to match what was
+actually applied, then generated and ran a real
+0004_remove_studentroster_full_name migration, verified via
+information_schema that accounts_studentroster on Neon no longer has the
+column. Lesson: never assume a migration is unapplied just because the file
+is uncommitted — check `showmigrations` (or the DB) before hand-editing one.
+
+2026-08-18 (later still) — Moved department/enrollment_year/gender off
+User entirely; StudentRoster is now their only home.
+
+These three fields used to be copied onto accounts.User at registration
+time, and department/enrollment_year were even PATCH-editable via
+/api/auth/me/ — a student could type/edit wrong info that then drifted from
+the roster. Removed the stored columns from User and replaced them with
+read-only Python properties (department/enrollment_year/gender) backed by a
+cached_property StudentRoster lookup by email, so the API keeps returning
+the exact same JSON shape but the values are now always resolved live from
+StudentRoster instead of stored/editable on the account. DRF's ModelSerializer
+auto-detects model @property attributes matching Meta.fields and exposes
+them as ReadOnlyField, so UserSerializer needed no field-list change, just
+read_only_fields tightened. RegisterSerializer.create() simplified since
+there's nothing left to copy from the roster onto the new user.
+
+Rides app's same-gender filtering broke on this change since
+Q(offerer__gender=user.gender) can't traverse a non-field property anymore
+— replaced with Q(offerer__email__in=StudentRoster.objects.filter(gender=...
+).values("email")), a single IN-subquery, no N+1 (verified: still exactly 2
+queries for a ride list request, same as expected). RideJoinView and
+RideSerializer's gender checks needed no change (single-instance property
+access, not a queryset). accounts/admin.py: department/gender dropped from
+AccountAdmin.list_filter (Django admin list_filter requires real model
+fields) and added to readonly_fields so they still show in the Profile
+fieldset without Django trying to build form inputs for them.
+
+Migration 0005_remove_user_department_remove_user_enrollment_year_and_more
+generated via makemigrations (not hand-written, learning from the 0004
+mistake earlier today) and applied to Neon; confirmed via information_schema
+that accounts_user lost the three columns while accounts_studentroster kept
+them. Verified end-to-end via Django shell: property values resolve
+correctly from a matching roster row, a PATCH attempting to set department
+is silently ignored (DRF read-only semantics) rather than erroring, and the
+rides same-gender list/join checks produce identical behavior to before.
+manage.py check and manage.py test both clean (no existing tests to break).
+
+Mobile: authApi.updateMe's patch type narrowed to full_name only (department
+was the only thing it ever actually changed). ProfileScreen.tsx's editable
+department TextInput + Save button removed entirely (nothing left to save),
+replaced with a plain read-only department/enrollment_year line matching the
+existing role/enrollment_year display pattern. RegisterScreen and
+OfferRideScreen needed no changes (never edited these fields; OfferRideScreen
+still reads user.gender same as before, API shape unchanged). tsc --noEmit
+clean. Updated docs/api-contracts/auth.md (PATCH me/ contract, roster-derived
+field notes); rides.md already described the behavior accurately, left as-is.
+
+2026-08-18 (even later) — Mobile UI redesign: added src/core/ui/ as a shared
+design system and rebuilt all 8 screens on top of it.
+
+Every screen previously hand-rolled its own StyleSheet: plain white
+background, 1px `#ccc` borders, flat `#1d4ed8` blue buttons, no shadows, no
+icons, and a hardcoded `paddingTop: 64` standing in for real safe-area
+handling. Followed the mobile-app-ui-design skill's principles (60/30/10
+color rule, 8-point spacing grid, one type scale, soft tinted shadows,
+thumb-zone CTAs, real empty states) to design a small shared system instead
+of restyling each screen independently:
+
+- src/core/ui/theme.ts — color/spacing/radius/typography/shadow tokens
+  (indigo primary, off-white background, tinted shadows instead of flat
+  gray).
+- src/core/ui/{Button,TextField,Card,Badge,EmptyState,ScreenContainer}.tsx —
+  primitives that replace the input/button/card styling every screen used
+  to duplicate. ScreenContainer wraps react-native-safe-area-context's
+  SafeAreaView (SafeAreaProvider was missing from app/_layout.tsx — added
+  it), replacing the paddingTop:64 hack with real per-device safe-area
+  insets.
+- Rebuilt LoginScreen, RegisterScreen, VerifyEmailScreen, ProfileScreen,
+  RideListScreen, OfferRideScreen, RideDetailScreen, NotificationsScreen on
+  these primitives. Profile gained an avatar (initials on a colored circle),
+  role/department/year badges, and a "Modules" card ready for future
+  lego-block modules. Ride/join-request cards gained color-coded status
+  badges (pending/accepted/declined) and emoji visual cues. RideListScreen
+  and NotificationsScreen moved their search/header content into FlatList's
+  ListHeaderComponent (was previously two independently-scrolling regions —
+  a real bug, not just a style choice).
+- No new dependencies: used emoji for icons and React Native's native
+  shadow/elevation instead of adding @expo/vector-icons or
+  expo-linear-gradient, per the "already-installed dependency or native
+  feature first" bias — the visual upgrade didn't need new packages.
+
+Verified visually, not just via tsc: drove the actual Expo web build (behind
+a live Neon-backed Django API) through Playwright — register → verify →
+login → profile → rides list (with real seeded data) → offer form → ride
+detail (offerer view, with a pending join request, accept/decline visible)
+→ notifications. Zero console/page errors across the whole flow.
+`tsc --noEmit` clean. Test data cleaned from Neon afterward.
+
+2026-08-19 — Second mobile UI redesign: replaced the indigo/violet
+minimalist system with Neo-Brutalism, via the ui-ux-pro-max skill.
+
+The 2026-08-18 design system was judged "too boring." Re-ran the redesign
+through ui-ux-pro-max's design-system search (student campus app,
+energetic/youthful keywords) instead of mobile-app-ui-design. Its match —
+"Neo Brutalism (Mobile)" — was the only style result explicitly tagged
+React Native/Expo 10/10 compatible, so it became the direction: cream
+canvas, pop-art color blocking (hot red / vivid yellow / soft violet / mint
+green), 3px black borders, 0 border-radius everywhere except pill badges,
+and hard offset shadows.
+
+Hard shadows are the one part plain React Native can't do natively (its
+`shadow*`/`elevation` props always blur or use platform drop-shadow) — built
+src/core/ui/BrutalBlock.tsx as the shared primitive: a plain second View
+sitting behind the real content, offset by a few px, no blur. Every other
+primitive (Button, Card, Badge, EmptyState) now composes BrutalBlock instead
+of styling its own border/shadow. Buttons get a "mechanical press" — on
+press the foreground content slides onto the shadow block, giving a tactile
+pushed-in look with pure transforms, no animation library.
+
+One real new dependency this round (previous pass deliberately added zero):
+@expo-google-fonts/space-grotesk (400/500/700), since bold, distinctive
+display type is core to this style rather than an optional flourish. Loaded
+via useFonts in app/_layout.tsx, gating the same screen that already waited
+on session hydration.
+
+Two real layout bugs surfaced while building BrutalBlock and Card, not just
+cosmetic misses:
+- BrutalBlock's foreground View shrink-wraps to its content by default. A
+  fixed-size chip (profile avatar circle, module icon) needs a `size` prop
+  that sets explicit width/height on both wrapper and foreground — giving
+  the foreground `flex:1` inside an auto-sized wrapper instead collapses
+  both to 0 (a known Yoga gotcha, not something CSS intuition predicts).
+- Card's `style` prop only reaches its outer BrutalBlock wrapper, not the
+  inner padding View that actually lays out its children — so a
+  row-flexDirection status card silently stayed column-stacked. Added a
+  separate `contentStyle` prop (same fix already needed for TextField's
+  `style` vs `containerStyle` split yesterday).
+
+All 8 screens rebuilt again on the new primitives, same JSX structure and
+logic as before — this was a visual pass, not a behavior change. Verified
+visually via Playwright against the live Expo web build + Neon-backed
+Django API: login, register, verify, profile (avatar circle renders
+correctly after the size-prop fix), rides list (empty state and populated
+with a real ride), offer form, ride detail (offerer view with a pending
+join request, accept/decline), notifications (unread → read visual state
+transition after tapping). Zero console errors across the whole flow.
+`tsc --noEmit` clean. Test data cleaned from Neon afterward.
+
+2026-08-19 (later) — Moved full_name off accounts.User onto StudentRoster,
+completing the roster-as-single-source-of-truth pattern.
+
+Same move as the department/enrollment_year/gender migration the day
+before: full_name is no longer a stored column on User, only on
+StudentRoster, resolved via the same @property + cached_property
+`_roster_entry` lookup by email. Registration now only ever collects
+email + password — nothing else is asked of or trusted from the
+registrant. `User.REQUIRED_FIELDS` emptied (was `["full_name"]`, which
+would have broken `createsuperuser` prompting for a field that no longer
+exists). RegisterSerializer/UserSerializer/admin/import_roster/
+DebugAddRosterView all updated in lockstep with the earlier three-field
+move: full_name re-added to the CSV column parsing in import_roster and to
+AccountAdmin's readonly_fields, dropped from search_fields (can't search a
+non-column property) and add_fieldsets (can't set it at creation anymore).
+
+Real consequence worth noting: full_name was the last field left writable
+via PATCH /api/auth/me/ (department/enrollment_year/gender went read-only
+the day before). With it gone, every field on User is either roster-derived
+or otherwise non-editable, making PATCH /me/ a complete no-op. Rather than
+leave a dead endpoint, converted MeView from RetrieveUpdateAPIView to
+RetrieveAPIView (GET only — PATCH/PUT now correctly 405, verified with a
+real authenticated request via curl). Mobile's `updateMe` function/export
+was already fully unused after yesterday's ProfileScreen rewrite (dead code
+that should have been deleted then) — deleted now along with its barrel
+export. RegisterScreen lost its Full Name input, back to just email +
+password fields.
+
+Migration 0006_remove_user_full_name_studentroster_full_name generated via
+makemigrations and applied to Neon; confirmed via information_schema that
+accounts_user lost the column and accounts_studentroster gained it.
+Verified end-to-end with a real JWT via curl: register(email+password
+only) → verify → login response shows full_name correctly resolved from
+the matched roster row; authenticated GET /me/ → 200, PATCH /me/ → 405.
+`manage.py check`/`test` and `tsc --noEmit` both clean. Test data cleaned
+from Neon afterward.
+
+2026-08-21 — Added free geocoding for ride locations, resolving the
+text-substring-matching limitation flagged in the 2026-08-12 Ride Sharing
+entry.
+
+Context: asked whether Google Maps should be integrated for ride
+pickup/destination. Full Google Maps Platform (Places Autocomplete, Maps
+SDK, Directions API) requires a Google Cloud billing account on file even
+to stay within its free tier, plus react-native-maps and native config —
+real cost and build time neither justified for an FYP. Instead used Expo's
+built-in expo-location module, which geocodes a typed address into
+lat/lng client-side via the device's own OS geocoder (Apple's on iOS,
+Google's via Play Services on Android) — no API key, no billing account,
+no ongoing cost. No map view, no autocomplete dropdown, no route
+polylines — coordinates exist purely to power distance-based search.
+
+Backend (backend/apps/rides/, backend/common/):
+- Ride gained four nullable fields: departure_lat/lng, destination_lat/lng
+  (FloatField, not DecimalField — these feed distance math, not money).
+  Migration 0002, purely additive, no data migration.
+- New backend/common/geo.py: haversine_km(lat1, lng1, lat2, lng2), pure
+  stdlib math — no GeoDjango/PostGIS, deliberately not reopening that
+  constraint. Self-checked with two TestCase methods in common/tests.py
+  (a known ~111.2km reference distance, and a same-point-is-zero check).
+- RideSerializer validates that a leg's lat and lng are always supplied
+  together — one without the other is a 400.
+- RideListCreateView.get_queryset(): when a leg's ?<leg>_lat=&<leg>_lng=
+  query params are present, that leg switches from icontains substring
+  matching to haversine proximity within a radius (?radius_km=, default
+  5km) — but with an OR-fallback: a ride whose matching leg was never
+  geocoded (null coordinates) still falls back to substring-matching its
+  text, so a ride that failed to geocode is never silently dropped from
+  search just because the searcher's client resolved coordinates and it
+  didn't. Filtering happens in Python once coordinates are involved
+  (haversine isn't expressible in plain Postgres without PostGIS) — a
+  deliberate call at this row count (low hundreds of rides), where a full
+  Python pass is microseconds and a bounding-box SQL pre-filter would be
+  unrequested complexity for no measurable gain. When no coordinates are
+  supplied at all, the query path is byte-for-byte the original
+  substring-only logic — zero behavior change for any caller that doesn't
+  opt in.
+
+Mobile (mobile/src/features/rides/):
+- New dependency: expo-location (matched to the project's Expo SDK ~57).
+  app.json plugins gained an expo-location entry with a
+  locationWhenInUsePermission string — foreground-only, since this is
+  one-shot geocoding, never background tracking.
+- New data/geocode.ts: geocodeAddress(text) wraps
+  requestForegroundPermissionsAsync() + geocodeAsync(), guarded by a 5s
+  timeout race so a hung OS geocoder mid-demo can't block ride submission.
+  Never throws — every failure path (permission denied, empty result,
+  network error, timeout) resolves to null. Permission is requested lazily
+  on first use, not on screen mount.
+- OfferRideScreen and RideListScreen both geocode departure/destination in
+  parallel (Promise.all) on submit, attaching lat/lng to the request only
+  for whichever leg resolved — independently, so one failed leg doesn't
+  block the other. Permission-denied UX is silent fallback to text-only,
+  no dialog, no blocking state — geocoding is best-effort enrichment,
+  never a hard requirement, matching how the rest of this module already
+  degrades gracefully.
+- ridesApi.ts types extended (Ride, CreateRidePayload, RideSearchParams)
+  with the four optional/nullable coordinate fields plus an unused-by-UI
+  radius_km search param (type-only, no slider control — nobody asked for
+  one).
+
+Verified: `manage.py test common` — both haversine self-checks pass.
+Django-shell sanity check against realistic Lahore coordinates confirmed
+proximity matching correctly includes a ~1.3km-away point and excludes a
+~15km-away point at the 5km default radius, and confirmed the
+ungeocoded-ride text fallback works in both the match and no-match
+direction. `npx tsc --noEmit` clean. Expo web bundle still compiles with
+the new dependency. `manage.py check` clean.
+
+Known limitation carried forward: still no visual map, no address
+autocomplete while typing, no real route/polyline overlap — this is
+proximity-based precision on top of text search, not a full Maps
+experience. Revisit with real Google Maps integration later only if the
+project's budget/timeline allows a Google Cloud billing account.
+
+2026-08-21 (later) — Added a "My Rides" screen so an offerer can see their
+own posted rides.
+
+Problem: GET /api/rides/ (the main list) only ever shows open rides
+(seats_available > 0, not cancelled) — by design, since that's the public
+search everyone uses to find a seat. That meant an offerer had no way to
+look back at a ride they'd filled or cancelled; it just vanished from
+their view along with everyone else's.
+
+Backend: new GET /api/rides/mine/ (MyRidesView, ListAPIView) — every ride
+`offerer=request.user`, any status, ordered newest-first. No gender
+filter applied (irrelevant to viewing your own data), reuses
+RideSerializer as-is. Placed before the `<int:pk>/` route in urls.py for
+readability, though no actual routing conflict exists (`<int:pk>`'s int
+converter can't match "mine").
+
+Mobile: new MyRidesScreen.tsx — plain FlatList, no search bar (unlike the
+main list), each card shows a status badge (Open/Full/Cancelled, computed
+client-side from is_cancelled/seats_available) and taps through to the
+existing RideDetailScreen, which already had the full offerer view
+(cancel button, requests list, accept/decline) built from the original
+Ride Sharing work — no changes needed there. New route
+app/(app)/rides/mine.tsx. Nav entry: a second header icon (🧳) added next
+to RideListScreen's existing 🔔 notifications bell, same BrutalBlock pill
+pattern, no new nav shell needed.
+
+Verified: Django shell + rest_framework.test.APIClient — created one
+open/one full/one cancelled ride for a single test user, confirmed GET
+/api/rides/ returned only the 1 open ride while GET /api/rides/mine/
+returned all 3 with matching ids; test data (rides, user, roster row)
+cleaned up immediately after. `tsc --noEmit` clean, Expo web bundle still
+compiles.
+
+2026-08-21 (even later) — Main Ride Sharing screen now auto-loads the full
+allowed ride list instead of requiring a manual search first.
+
+Problem: `RideListScreen` previously only fetched rides when the "Search
+rides" button was pressed, so a first-time visitor saw an empty "Search to
+see available rides" placeholder rather than the actual list — even though
+pressing Search with both fields blank already returned everything (the
+backend never required departure/destination to be non-empty).
+
+Fix: refactored the fetch logic into a `search(params)` function taking
+explicit `{ departure?, destination? }` rather than reading component
+state directly, then wired it to `useFocusEffect` called with no
+arguments — same refetch-on-return pattern already used by
+`RideDetailScreen`/`NotificationsScreen`. Every time the screen gains
+focus (first mount, or navigating back from Offer/Detail/My Rides), it
+fetches the unfiltered list — which, since `RideListCreateView`'s
+same-gender filter (`Q(same_gender_only=False) |
+Q(offerer__email__in=matching_gender_emails)`) is applied unconditionally
+regardless of any departure/destination/coordinate params, is exactly
+"every ride this student is allowed to see." The search button still
+calls the same `search()` function, just with the typed field values —
+narrowing is opt-in, not the default state.
+
+Passing `search` (not the raw text state) into `useFocusEffect`'s
+`useCallback` deps was deliberate: `search` has no dependency on
+`departure`/`destination`, so its identity never changes across renders —
+meaning the focus-effect only re-fires on actual navigation focus events,
+never on every keystroke while typing a search term. Removed the
+`hasSearched` two-message empty-state split (no longer meaningful once
+the screen always has fetched something) — `ListEmptyComponent` now just
+suppresses itself while a fetch is in flight (`isSearching`) to avoid a
+one-frame "No rides found" flash.
+
+Verified: Django shell + APIClient with a male/female offerer pair — a
+same_gender_only ride from the female offerer correctly excluded from the
+male viewer's blank-query response (1 of 2 total) while visible in the
+female viewer's blank-query response (2 of 2) — confirms the gender
+constraint is untouched by this change. Test data cleaned up after. `tsc
+--noEmit` clean, Expo web bundle still compiles.
+
+2026-08-21 (even later still) — Imported an externally-designed UI mockup
+("Fello.dc.html", from a design project named "University Student
+Connector App") and implemented it: a new app-wide visual system plus the
+Digital Library module.
+
+Design system: replaced the 2026-08-19 Neo-Brutalism system with a soft,
+rounded, iOS-like look — off-white/slate canvas, white cards with 14-20px
+radii and hairline borders, gentle drop shadows instead of hard offset
+blocks, Inter for UI text and Source Serif 4 for headings/names. The
+source design used CSS `oklch()` colors, which React Native's style
+engine doesn't parse — approximated each one to a close hex value from a
+standard slate/sky/emerald/amber palette rather than writing a color-space
+converter for a handful of one-off values. Confirmed the direction with
+salman first (three options offered: adopt app-wide, port layout only
+onto the existing brutalist tokens, or restyle only the new screens) since
+it touches every existing screen, not just new ones.
+
+Because every screen already went through `src/core/ui/`'s shared
+primitives (a deliberate investment from the two prior redesign passes),
+the swap was mostly a token change: rewrote `theme.ts`, and renamed the
+load-bearing primitive `BrutalBlock.tsx` → `SoftBlock.tsx` (identical prop
+shape — `backgroundColor`/`pill`/`size`/`flat`/`pressed` — now rendering a
+two-layer soft-shadow card instead of an offset hard-shadow block; dropped
+the `rotate` prop and the forced `label.toUpperCase()` calls in
+`Button`/`Badge`/`TextField`/`EmptyState`, neither of which fit a calm
+soft-iOS look). Every existing screen (Login, Register, VerifyEmail,
+Profile, RideList, RideDetail, OfferRide, MyRides, Notifications) picked
+up the new look automatically; only screen-title/heading styles needed a
+manual switch to a new `font.serif` token. Swapped the
+`@expo-google-fonts/space-grotesk` dependency for
+`@expo-google-fonts/inter` + `@expo-google-fonts/source-serif-4`.
+
+Navigation shell: added a bottom TabBar (Home / Rides / Library / Profile)
+— deliberately *not* built on expo-router's `Tabs`, since SDK 57's
+expo-router ships no `@react-navigation/bottom-tabs` dependency at all
+(checked `node_modules` and expo-router's own `package.json` — it's been
+replaced internally with different primitives this project doesn't use
+elsewhere). A dependency-free plain in-flow `TabBar` component
+(`router.replace()` per tab) matches what four fixed, mostly-flat
+destinations need without pulling in a navigator. `ScreenContainer`
+gained `edges`/`footer` props so tab-root screens can host it while
+sub-screens (offer/detail/mine/notifications/etc.) keep their existing
+back-button chrome untouched.
+
+New Home dashboard screen: greeting + verified checkmark + avatar +
+an "Explore" module grid. Per salman's instruction, the grid only lists
+modules that are actually built (Ride Sharing, Digital Library) — no
+placeholder tiles for Resource Sharing, Lost & Found, Tutoring, Printing,
+or Community, since those don't exist yet and showing them would misrepresent
+the app's real state.
+
+New Digital Library module (Salman's third owned module, previously
+unbuilt): `backend/apps/library/` — `LibraryProject` model (title,
+department, abstract, a `document` `FileField` for the PDF, `status`
+pending/approved/rejected, `upvoted_by`/`bookmarked_by` M2M) — moderation
+is Django-admin bulk actions only, per the standing SRS-corrections
+decision (no custom moderation panel). Endpoints under `/api/library/`:
+list (approved-only, `?department=`/`?search=`), create (multipart,
+status always forced to pending), `mine/` (any status, author only),
+detail, upvote/bookmark (toggle). Added `MEDIA_ROOT`/`MEDIA_URL` plus
+dev-only static-serving for the upload, since nothing in this project had
+needed file uploads before. Migration generated and applied to the
+shared Neon DB. Wrote `docs/api-contracts/library.md`.
+
+Mobile: `src/features/library/` (`libraryApi.ts`, `LibraryListScreen`,
+`LibraryDetailScreen`, `UploadProjectScreen`), routes under
+`app/(app)/library/`. `UploadProjectScreen` uses a new
+`expo-document-picker` dependency for the PDF picker — React Native has
+no native file-input equivalent, so this was a required addition rather
+than something stdlib/native covered. Caught and fixed a stale
+`LoginScreen` redirect still pointed at `/(app)/profile` instead of the
+new `/(app)/home` landing tab during manual verification.
+
+Verified: `manage.py check` clean, `tsc --noEmit` clean across the whole
+mobile app, then drove the live Expo web build end-to-end with Playwright
+(no repo browser-automation tool existed for this, so a scratch
+Playwright install was used) — register screen, login, Home with real
+user data, Rides list/search, Digital Library empty-state list, Upload
+form, Profile with both modules listed — zero console/page errors
+throughout, screenshots confirmed the visual result matches the imported
+design. Test account (and its roster row) deleted from Neon afterward.
+
+2026-08-21 (later again) — Made Home the true landing screen.
+
+`app/index.tsx` had always redirected unconditionally to `/(auth)/login`.
+That meant a returning, already-logged-in user briefly rendered the
+login route on every cold start before the root layout's session guard
+(`app/_layout.tsx`, which already redirected an authenticated visitor
+out of the `(auth)` group) caught up and sent them on to `/(app)/home` —
+a visible flash, not just an internal redirect chain.
+
+Fix: `index.tsx` now redirects straight to `/(app)/home`. The guard in
+`app/_layout.tsx` is unchanged and still does the actual gating — an
+unauthenticated visitor hitting `/(app)/home` gets redirected to
+`/(auth)/login` exactly as before, since that guard runs on every route,
+not just `/`. Only the authenticated default landing point moved.
+
+Verified with Playwright, two contexts: a fresh anonymous session
+navigating to `/` landed on `/login` as expected; a logged-in session
+reloading `/` directly landed on `/home` with no login-screen flash in
+between. Test account deleted from Neon afterward. `tsc --noEmit` clean.
+
+2026-08-21 (later again still) — Replaced the Fello soft-iOS look with
+"LGU Connect" (Corporate / Modern).
+
+Salman pasted a `stitch_fello_app_design/` folder at the repo root
+(4 Google Stitch UI mockups plus 2 `DESIGN.md` token docs) and asked to
+apply its look to the app. Reading through it surfaced a real ambiguity
+first: the folder actually contains two different design systems, not
+one — `student_dashboard_fello` and `resource_marketplace_fello` are
+built against the base "LGU Connect" tokens, while
+`premium_ride_sharing_fello` and `premium_resource_marketplace_fello`
+are built against a separate "LGU Connect Premium" token set (different
+palette, radii, and even a second display typeface). Since Rides is one
+of Salman's owned modules and only appeared in the Premium mockup while
+Home/Dashboard only appeared in the base one, picking wrong would have
+meant a second full-app reskin — asked Salman which system should
+actually become the app's look before writing any code. He chose base
+LGU Connect.
+
+New tokens (from `stitch_fello_app_design/lgu_connect/DESIGN.md`):
+university blue (`#000511` near-black as the "ink" primary for buttons/
+FABs, `#003366` as an actual blue reserved for hero banners and the
+active bottom-nav pill) plus academic orange (`#FD8B00`) for accents and
+active filter chips; Inter exclusively, no second display face; tight
+6-20px corners; bordered white cards on an off-white `#F9F9FD` canvas
+with a subtle navy-tinted ambient shadow.
+
+Because the design-system swap two passes ago had already routed every
+screen through `src/core/ui/`'s shared primitives, this was mostly a
+token rewrite in `theme.ts` — `SoftBlock.tsx` (the shared card primitive)
+needed no changes at all, just new token values flowing through it. Kept
+`font.serif` as a token name aliased to Inter Bold rather than editing
+every screen's heading style, since this system has no second face to
+switch to; dropped the now-unused `@expo-google-fonts/source-serif-4`
+dependency. A handful of color tokens didn't survive the rewrite
+(`primaryTint`, `primaryDark`, `successText`) — renamed their call sites
+to the new equivalents (`primaryFixed`, `onPrimaryFixed`, `success`) via
+a mechanical find-and-replace across `src/`, using `tsc --noEmit` to
+confirm every reference was actually caught rather than guessing at
+coverage.
+
+Two closer-fidelity changes beyond the token swap: the bottom TabBar's
+active state changed from an underline dot to a solid navy pill
+(`bg-primary-container`), matching the mockups' bottom-nav treatment
+exactly. `RideListScreen` and `LibraryListScreen` gained a full-bleed
+navy hero banner (rounded bottom corners only, light-blue subtitle text,
+white search pill) replacing their old plain padded headers — ported
+directly from the resource-marketplace mockup's header pattern.
+`LibraryListScreen`'s search box is now wired to the real `?search=`
+query param `GET /api/library/` already supported but the UI never used,
+and its list became a 2-column card grid instead of a single column,
+again matching the marketplace mockup's grid. Added a `secondary` Badge
+tone (vivid orange fill) for active filter chips, since the prior tone
+set had nothing matching that accent role.
+
+Verified: `tsc --noEmit` clean. Drove the live Expo web build end-to-end
+with Playwright — login, register, Home, Rides (hero banner + search),
+Digital Library (hero banner + 2-column grid), Profile — zero console
+errors throughout, screenshots confirmed a close visual match to the
+source mockups. Test account deleted from Neon afterward.
+
+2026-08-22 — Rebuilt Home/Discover's actual structure to match the
+`student_dashboard_fello` mockup.
+
+The previous pass only reskinned Home's colors onto its existing layout
+— a leftover from the earlier Fello redesign — it never adopted the
+mockup's real section structure. Salman flagged the gap directly: two
+of the mockup's sections (a "Happening Now" campus-event card, a "Your
+Activity" feed) have no backing feature yet — no events/community
+module exists, and there's no unified activity-feed endpoint, just
+separate rides/library APIs. Asked how to handle those two specifically
+rather than guess; the answer was to skip both for now, same reasoning
+as not showing tiles for unbuilt modules.
+
+Rebuilt everything else to match the mockup: two status chips
+(department + a conditional "Verified" chip, replacing a single
+checkmark), the headline changed from a "Good [time of day]" eyebrow +
+name to the mockup's "Welcome back, {first name}" pattern with the
+avatar moved inline beside it, "Explore" renamed to "Quick Actions" with
+its cards simplified to a centered icon-chip + single-line label
+(dropped the description subtitle to match the mockup's card content
+exactly) sized as proper square grid cells. Still only 2 real module
+tiles (Ride Sharing, Digital Library) — no fake tiles for unbuilt
+modules.
+
+Verified: `tsc --noEmit` clean, Playwright screenshot against the live
+Expo web build confirms the new layout, zero console errors. Test
+account deleted from Neon afterward.
+
+2026-08-22 (later) — Replaced every emoji icon with a real icon pack,
+replaced the bottom tab bar with a hamburger menu, and added a
+consistent floating top navbar.
+
+This landed as one combined pass across a fast sequence of small,
+specific requests rather than a single upfront spec — each change below
+is a direct response to one of them, applied in order.
+
+Icon pack: installed `@expo/vector-icons` (MaterialCommunityIcons).
+Every emoji in the app (🚗 📚 🧳 🔔 🗓 🪑 📭 📩) was replaced with a
+tinted vector icon matching its surrounding text color — the whole point
+of the change, since emoji render as fixed multi-color glyphs that can't
+follow a theme. `Badge` and `EmptyState` were extended to accept an icon
+name instead of/alongside an emoji string. `SoftBlock` (the shared card
+primitive) gained centering on its inner view — emoji-in-`Text` had been
+self-centering via explicit width/height/`textAlign`, which a
+`MaterialCommunityIcons` element doesn't do on its own.
+
+Navigation: removed the bottom TabBar entirely (not just its icons,
+confirmed explicitly rather than assumed) and replaced it with a
+`HamburgerMenu` — a `Modal`-based slide-in panel listing Home, Ride
+Sharing, and Digital Library, plus Log out. No navigation library
+needed. Profile was initially in that list too; once a dedicated profile
+icon was added to the top navbar, Profile was removed from the
+hamburger menu so there's one canonical path to it, not two.
+
+Top navbar: added `TopBar` — hamburger on the left, the "Fello" wordmark
+centered, a profile icon on the right — rendered as a white rounded
+rectangle with a soft shadow, consistent across every top-level screen
+(Home, Rides, Library, Profile). Wired into `ScreenContainer` as a new
+`topBar` prop so each screen opts in with one prop rather than
+duplicating the header markup; it renders absolutely positioned
+(floating over the content, which scrolls underneath it, not with it) —
+an explicit follow-up request once the in-flow version was in place. A
+`TOP_BAR_HEIGHT` constant reserves matching top padding on the
+underlying scroll/list content so nothing loads hidden behind the bar.
+
+Layout polish, each a distinct one-line request: `RideListScreen`'s and
+`LibraryListScreen`'s hero banners now put their title+subtitle in the
+same row as their action buttons (mine/notifications bell, add) instead
+of stacked above them; the avatar-initials circle next to Home's
+"Welcome back" line was removed (redundant with the navbar's profile
+icon); the "Modules" list on `ProfileScreen` was removed for the same
+reason; the "Offer a ride" element changed from a small `Badge` chip to
+a full `Button` for more height; the hamburger's circular background
+was dropped, leaving a bare icon.
+
+Verified: `tsc --noEmit` clean after every incremental step. Playwright
+screenshots confirmed each change visually — had to switch from
+guessing fixed pixel coordinates (which broke every time a layout
+padding value changed) to querying the DOM for clickable elements'
+actual bounding boxes, then clicking those, once the icon-only buttons
+made text-based selectors unusable. Hamburger menu, profile-icon
+navigation, and both module hero headers all confirmed working with
+zero console errors. Test account deleted from Neon afterward.

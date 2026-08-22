@@ -80,7 +80,7 @@ class LoginView(TokenObtainPairView):
     serializer_class = EmailVerifiedTokenObtainPairSerializer
 
 
-class MeView(generics.RetrieveUpdateAPIView):
+class MeView(generics.RetrieveAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -101,5 +101,11 @@ class DebugAddRosterView(APIView):
         email = (request.data.get("email") or "").strip().lower()
         if not email:
             return Response({"detail": "email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        _, created = StudentRoster.objects.get_or_create(email=email)
+        fields = {
+            "full_name": (request.data.get("full_name") or "Test Student").strip(),
+            "department": (request.data.get("department") or "CS").strip(),
+            "enrollment_year": request.data.get("enrollment_year") or 2024,
+            "gender": (request.data.get("gender") or "male").strip().lower(),
+        }
+        _, created = StudentRoster.objects.update_or_create(email=email, defaults=fields)
         return Response({"detail": f"{email} {'added to' if created else 'already on'} the roster."})
