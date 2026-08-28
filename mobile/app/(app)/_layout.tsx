@@ -1,24 +1,48 @@
 import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
-import { AppState, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useEffect } from "react";
+import {
+  AppState,
+  Modal,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 import { useSessionStore } from "../../src/core/auth/session";
 import AppSidebar from "../../src/core/navigation/AppSidebar";
+import { useDrawerStore } from "../../src/core/navigation/drawerStore";
+import { fetchMe } from "../../src/features/auth/data/authApi";
 import { useResourceNotificationStore } from "../../src/features/resources/resourceNotifications";
 import { useLostAndFoundNotificationStore } from "../../src/features/lost_and_found/lostAndFoundNotifications";
+import { useTutoringNotificationStore } from "../../src/features/tutoring/tutoringNotifications";
+import { RateTutorModal } from "../../src/features/tutoring/presentation/RateTutorModal";
 
 export default function AuthenticatedAppLayout() {
   const { width } = useWindowDimensions();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const hasPermanentSidebar = width >= 768;
   const user = useSessionStore((state) => state.user);
+  const updateUser = useSessionStore((state) => state.updateUser);
+  const isMenuOpen = useDrawerStore((state) => state.isMenuOpen);
+  const closeDrawer = useDrawerStore((state) => state.closeDrawer);
+
   const checkForUpdates = useResourceNotificationStore((state) => state.checkForUpdates);
   const pollLostAndFoundSummary = useLostAndFoundNotificationStore((state) => state.pollSummary);
+  const pollTutoringSummary = useTutoringNotificationStore((state) => state.pollSummary);
+  const unreviewedSession = useTutoringNotificationStore((state) => state.unreviewedSession);
+  const dismissUnreviewedSession = useTutoringNotificationStore((state) => state.dismissUnreviewedSession);
+
+  useEffect(() => {
+    fetchMe()
+      .then((me) => updateUser(me))
+      .catch(() => {});
+  }, [updateUser]);
 
   useEffect(() => {
     if (!user) return;
     void checkForUpdates(user.id);
     void pollLostAndFoundSummary();
+    void pollTutoringSummary();
 
     let intervalId: any = null;
 
@@ -27,6 +51,7 @@ export default function AuthenticatedAppLayout() {
         intervalId = setInterval(() => {
           void checkForUpdates(user.id);
           void pollLostAndFoundSummary();
+          void pollTutoringSummary();
         }, 30000);
       }
     };
@@ -44,6 +69,7 @@ export default function AuthenticatedAppLayout() {
       if (nextAppState === "active") {
         void checkForUpdates(user.id);
         void pollLostAndFoundSummary();
+        void pollTutoringSummary();
         startPolling();
       } else {
         stopPolling();
@@ -54,50 +80,78 @@ export default function AuthenticatedAppLayout() {
       stopPolling();
       subscription.remove();
     };
-  }, [checkForUpdates, pollLostAndFoundSummary, user]);
+  }, [checkForUpdates, pollLostAndFoundSummary, pollTutoringSummary, user]);
 
   return (
     <View style={styles.root}>
       {hasPermanentSidebar ? <View style={styles.desktopSidebar}><AppSidebar /></View> : null}
       <View style={styles.content}>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, animation: "none" }}>
+          <Stack.Screen name="index" />
           <Stack.Screen name="profile" />
+          <Stack.Screen name="admin" />
           <Stack.Screen name="resources" />
-          <Stack.Screen name="lost-and-found" />
+          <Stack.Screen name="lost-and-found/index" />
+          <Stack.Screen name="tutoring/index" />
         </Stack>
       </View>
 
-
-      {!hasPermanentSidebar ? <>
-        <Pressable style={styles.menuButton} onPress={() => setIsMenuOpen(true)}>
-          <Text style={styles.menuText}>Menu</Text>
-        </Pressable>
-        <Modal visible={isMenuOpen} transparent animationType="slide" onRequestClose={() => setIsMenuOpen(false)}>
+      {!hasPermanentSidebar ? (
+        <Modal
+          visible={isMenuOpen}
+          transparent
+          animationType="fade"
+          statusBarTranslucent={true}
+          onRequestClose={closeDrawer}
+        >
           <View style={styles.modalRoot}>
-            <Pressable style={styles.backdrop} onPress={() => setIsMenuOpen(false)} />
+            <Pressable style={styles.backdrop} onPress={closeDrawer} />
             <View style={styles.mobileSidebar}>
-              <Pressable style={styles.closeButton} onPress={() => setIsMenuOpen(false)}>
-                <Text style={styles.closeText}>Close</Text>
-              </Pressable>
-              <AppSidebar onNavigate={() => setIsMenuOpen(false)} />
+              <AppSidebar
+                onNavigate={closeDrawer}
+                onClose={closeDrawer}
+              />
             </View>
           </View>
         </Modal>
-      </> : null}
+      ) : null}
+
+      <RateTutorModal
+        visible={Boolean(unreviewedSession)}
+        session={unreviewedSession}
+        onClose={dismissUnreviewedSession}
+        onSuccess={() => {
+          dismissUnreviewedSession();
+          void pollTutoringSummary();
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { backgroundColor: "#f8fafc", flex: 1, flexDirection: "row" },
-  desktopSidebar: { borderRightColor: "#e2e8f0", borderRightWidth: 1, width: 244, height: "100%" },
+  root: { backgroundColor: "#F9FAFC", flex: 1, flexDirection: "row" },
+  desktopSidebar: { borderRightColor: "#E2E8F0", borderRightWidth: 1, width: 244, height: "100%" },
   content: { flex: 1 },
-  menuButton: { backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, position: "absolute", right: 18, top: 18, zIndex: 5 },
-  menuText: { color: "#1d4ed8", fontWeight: "800" },
-  modalRoot: { flex: 1, flexDirection: "row" },
-  backdrop: { backgroundColor: "rgba(15, 23, 42, 0.45)", flex: 1 },
-  mobileSidebar: { backgroundColor: "#ffffff", bottom: 0, left: 0, position: "absolute", top: 0, width: "78%", display: "flex", flexDirection: "column" },
-
-  closeButton: { alignSelf: "flex-end", marginRight: 18, marginTop: 20, padding: 8 },
-  closeText: { color: "#1d4ed8", fontWeight: "800" },
+  modalRoot: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "rgba(7, 13, 31, 0.6)",
+    width: "100%",
+    height: "100%",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mobileSidebar: {
+    backgroundColor: "#ffffff",
+    width: "82%",
+    height: "100%",
+    zIndex: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 4, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 16,
+  },
 });

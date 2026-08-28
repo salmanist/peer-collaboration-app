@@ -23,3 +23,9 @@ and zahra has these modules to build:
 8- Ensure best naming conventions for the variables used in this app.
 
 9- Add a bit of of naiveness in the coding to ensure code passes AI checks.
+10- Anti-AI Slop Frontend Design Standard:
+    - Canvas & Layout: Clean, airy canvas (`#F8FAFC`) with unboxed headers; avoid rigid, heavy dark slabs or cramped container-in-container nesting.
+    - Floating Micro-Surfaces: Cards must use `borderRadius: 20`, `backgroundColor: "#ffffff"`, subtle border `borderColor: "#F1F5F9"`, and low-opacity ambient drop shadows (`shadowOpacity: 0.04`, `shadowRadius: 8`, `elevation: 2`).
+    - Semantic Iconography: Always use vector icons (`MaterialCommunityIcons`) in tinted icon badges; strictly avoid floating raw system emojis in headings, empty states, or buttons.
+    - Brand DNA: Adhere to LGU signature deep emerald (`#0D3E02`) for headings and primary brand surfaces, and FellOo Gold (`#FDBF1E`) for primary interactive CTAs.
+    - Typography & Whitespace: Use bold `900`/`800` headings with `-0.3` letter-spacing, `500`/`600` secondary text, and generous padding/line-height.

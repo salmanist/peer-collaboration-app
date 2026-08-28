@@ -1,1 +1,1 @@
-export { default } from "../../../../src/features/resources/presentation/MyPublicResourceRequestsScreen";
+export { default } from "../../../../src/features/resources/presentation/MyListingsScreen";

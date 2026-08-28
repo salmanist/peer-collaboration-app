@@ -1,19 +1,27 @@
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { useSessionStore } from "../../../core/auth/session";
+import { SkeletonList, LostAndFoundCardSkeleton } from "../../../core/components/Skeleton";
+import { useDrawerStore } from "../../../core/navigation/drawerStore";
 import { API_BASE_URL } from "../../../core/network/apiClient";
+import { useDataStore } from "../../../core/store/DataStoreContext";
 import { fetchLostAndFoundItems } from "../data/lostAndFoundApi";
 import {
   LOST_AND_FOUND_CATEGORIES,
@@ -39,22 +47,32 @@ function getImageUrl(imagePath: string | null) {
 }
 
 export default function LostAndFoundFeedScreen() {
+  const insets = useSafeAreaInsets();
+  const user = useSessionStore((state) => state.user);
+  const openDrawer = useDrawerStore((state) => state.openDrawer);
   const markItemsSeen = useLostAndFoundNotificationStore((state) => state.markItemsSeen);
-  const [items, setItems] = useState<LostAndFoundItem[]>([]);
+
+  // In-Memory DataStore
+  const { lostAndFoundItems: cachedItems, setLostAndFoundItems } = useDataStore();
+
+  const [items, setItems] = useState<LostAndFoundItem[]>(() => cachedItems || []);
   const [postTypeFilter, setPostTypeFilter] = useState<LostAndFoundPostType | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<LostAndFoundCategory | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !(cachedItems && cachedItems.length > 0));
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const initial = (user?.full_name || user?.email || "S").charAt(0).toUpperCase();
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+
   const loadItems = useCallback(
     async (targetPage: number = 1, shouldRefresh: boolean = false) => {
       try {
-        if (targetPage === 1 && !shouldRefresh) setIsLoading(true);
+        if (targetPage === 1 && !shouldRefresh && !items.length && !cachedItems?.length) setIsLoading(true);
         if (targetPage > 1) setIsLoadingMore(true);
 
         const response = await fetchLostAndFoundItems({
@@ -66,6 +84,9 @@ export default function LostAndFoundFeedScreen() {
 
         if (targetPage === 1) {
           setItems(response.results);
+          if (postTypeFilter === "all" && categoryFilter === "all" && !searchQuery.trim()) {
+            setLostAndFoundItems(response.results);
+          }
         } else {
           setItems((prev) => {
             const existingIds = new Set(prev.map((i) => i.id));
@@ -84,17 +105,28 @@ export default function LostAndFoundFeedScreen() {
         setIsLoadingMore(false);
       }
     },
-    [postTypeFilter, categoryFilter, searchQuery],
+    [postTypeFilter, categoryFilter, searchQuery, setLostAndFoundItems],
   );
 
   useEffect(() => {
-    markItemsSeen();
+    if (
+      cachedItems &&
+      cachedItems.length > 0 &&
+      postTypeFilter === "all" &&
+      categoryFilter === "all" &&
+      !searchQuery.trim()
+    ) {
+      setItems(cachedItems);
+      setIsLoading(false);
+      markItemsSeen();
+      return;
+    }
     void loadItems(1);
-  }, [loadItems, markItemsSeen]);
+    markItemsSeen();
+  }, [postTypeFilter, categoryFilter]);
 
   const onRefresh = () => {
     setIsRefreshing(true);
-    markItemsSeen();
     void loadItems(1, true);
   };
 
@@ -106,147 +138,232 @@ export default function LostAndFoundFeedScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Lost & Found</Text>
-          <Text style={styles.subtitle}>Report or search lost and found items on campus</Text>
-        </View>
-        <Pressable style={styles.postButton} onPress={() => router.push("/(app)/lost-and-found/create")}>
-          <Text style={styles.postButtonText}>+ Post Notice</Text>
+      {/* Compact Top App Bar */}
+      <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+        <Pressable style={styles.hamburgerBtn} onPress={openDrawer}>
+          <View style={styles.hamburgerLine} />
+          <View style={styles.hamburgerLine} />
+          <View style={styles.hamburgerLine} />
+        </Pressable>
+        <Text style={styles.compactNavTitle}>Lost & Found</Text>
+        <Pressable
+          style={styles.avatarBtn}
+          onPress={() => router.push("/(app)/profile" as any)}
+        >
+          <View style={styles.headerAvatar}>
+            <MaterialCommunityIcons name="account" size={19} color="#FDBF1E" />
+          </View>
         </Pressable>
       </View>
 
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search items, locations, descriptions..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={() => void loadItems(1)}
-          returnKeyType="search"
-        />
+      {/* Floating Action & Search Row */}
+      <View style={styles.actionSearchRow}>
+        <View style={styles.searchBar}>
+          <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search items, student IDs, locations..."
+            placeholderTextColor="#94a3b8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={() => void loadItems(1)}
+            returnKeyType="search"
+          />
+          {searchQuery ? (
+            <Pressable onPress={() => { setSearchQuery(""); void loadItems(1); }}>
+              <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+            </Pressable>
+          ) : null}
+        </View>
+        <Pressable
+          style={styles.postBtn}
+          onPress={() => router.push("/(app)/lost-and-found/create")}
+        >
+          <MaterialCommunityIcons name="plus" size={16} color="#0D3E02" />
+          <Text style={styles.postBtnText}>Post</Text>
+        </Pressable>
       </View>
 
-      {/* Post Type Segment Tabs */}
-      <View style={styles.tabBar}>
+      {/* Segment Tabs (All, Lost, Found) */}
+      <View style={styles.segmentContainer}>
         <Pressable
-          style={[styles.tabItem, postTypeFilter === "all" && styles.tabItemActive]}
+          style={[styles.segmentBtn, postTypeFilter === "all" && styles.segmentBtnActive]}
           onPress={() => setPostTypeFilter("all")}
         >
-          <Text style={[styles.tabText, postTypeFilter === "all" && styles.tabTextActive]}>All Notices</Text>
+          <Text style={[styles.segmentBtnText, postTypeFilter === "all" && styles.segmentBtnTextActive]}>
+            All Notices
+          </Text>
         </Pressable>
         <Pressable
-          style={[styles.tabItem, postTypeFilter === "lost" && styles.tabItemActive]}
+          style={[styles.segmentBtn, postTypeFilter === "lost" && styles.segmentBtnActive]}
           onPress={() => setPostTypeFilter("lost")}
         >
-          <Text style={[styles.tabText, postTypeFilter === "lost" && styles.tabTextActive]}>🔍 Lost Items</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons
+              name="magnify"
+              size={14}
+              color={postTypeFilter === "lost" ? "#0D3E02" : "#475569"}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.segmentBtnText, postTypeFilter === "lost" && styles.segmentBtnTextActive]}>
+              Lost Items
+            </Text>
+          </View>
         </Pressable>
         <Pressable
-          style={[styles.tabItem, postTypeFilter === "found" && styles.tabItemActive]}
+          style={[styles.segmentBtn, postTypeFilter === "found" && styles.segmentBtnActive]}
           onPress={() => setPostTypeFilter("found")}
         >
-          <Text style={[styles.tabText, postTypeFilter === "found" && styles.tabTextActive]}>📦 Found Items</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons
+              name="package-variant"
+              size={14}
+              color={postTypeFilter === "found" ? "#0D3E02" : "#475569"}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.segmentBtnText, postTypeFilter === "found" && styles.segmentBtnTextActive]}>
+              Found Items
+            </Text>
+          </View>
         </Pressable>
       </View>
 
-      {/* Category Pills */}
-      <View style={styles.categoriesWrapper}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesList}>
+      {/* Category Pills Strip */}
+      <View style={styles.categoriesSection}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesScroll}>
           <Pressable
-            style={[styles.categoryPill, categoryFilter === "all" && styles.categoryPillActive]}
+            style={[styles.categoryBtn, categoryFilter === "all" && styles.categoryBtnActive]}
             onPress={() => setCategoryFilter("all")}
           >
-            <Text style={[styles.categoryPillText, categoryFilter === "all" && styles.categoryPillTextActive]}>All</Text>
+            <Text style={[styles.categoryBtnLabel, categoryFilter === "all" && styles.categoryBtnLabelActive]}>All</Text>
           </Pressable>
-          {LOST_AND_FOUND_CATEGORIES.map((cat) => (
-            <Pressable
-              key={cat.value}
-              style={[styles.categoryPill, categoryFilter === cat.value && styles.categoryPillActive]}
-              onPress={() => setCategoryFilter(cat.value)}
-            >
-              <Text style={[styles.categoryPillText, categoryFilter === cat.value && styles.categoryPillTextActive]}>
-                {cat.label}
-              </Text>
-            </Pressable>
-          ))}
+          {LOST_AND_FOUND_CATEGORIES.map((cat) => {
+            const isSelected = categoryFilter === cat.value;
+            return (
+              <Pressable
+                key={cat.value}
+                style={[styles.categoryBtn, isSelected && styles.categoryBtnActive]}
+                onPress={() => setCategoryFilter(cat.value)}
+              >
+                <Text style={[styles.categoryBtnLabel, isSelected && styles.categoryBtnLabelActive]}>
+                  {cat.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </View>
 
       {/* Error Message */}
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <View style={styles.messageBox}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+          <Pressable style={styles.retryBtn} onPress={() => void loadItems(1)}>
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* Feed List */}
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
-        </View>
+        <SkeletonList
+          count={5}
+          renderItem={() => <LostAndFoundCardSkeleton />}
+          contentContainerStyle={[
+            styles.feedList,
+            { paddingBottom: Math.max(insets.bottom + 50, 70) },
+          ]}
+        />
       ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={items.length === 0 ? styles.emptyList : styles.feedList}
+          contentContainerStyle={[
+            items.length === 0 ? styles.emptyList : styles.feedList,
+            { paddingBottom: Math.max(insets.bottom + 50, 70) },
+          ]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.3}
           initialNumToRender={8}
           maxToRenderPerBatch={10}
           windowSize={5}
-          removeClippedSubviews
+          removeClippedSubviews={Platform.OS === "android"}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>🔎</Text>
+              <MaterialCommunityIcons name="magnify-close" size={48} color="#64748b" style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No notices found</Text>
-              <Text style={styles.emptySubtitle}>
-                No lost or found items matched your search. Tap "+ Post Notice" to add one!
+              <Text style={styles.emptySub}>
+                No lost or found items match your filters. Tap "Post Notice" to add one!
               </Text>
             </View>
           }
-          ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color="#1d4ed8" style={styles.footerLoader} /> : null}
+          ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color="#0D3E02" style={{ marginVertical: 14 }} /> : null}
           renderItem={({ item }) => {
             const isLost = item.post_type === "lost";
             const imageUrl = getImageUrl(item.image);
+
             return (
               <Pressable
                 style={styles.card}
                 onPress={() => router.push(`/(app)/lost-and-found/${item.id}`)}
               >
-                {imageUrl ? (
-                  <Image source={{ uri: imageUrl }} style={styles.cardThumbnail} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.cardPlaceholder, isLost ? styles.cardPlaceholderLost : styles.cardPlaceholderFound]}>
-                    <Text style={styles.placeholderEmoji}>{isLost ? "❓" : "📦"}</Text>
+                <View style={styles.cardThumbContainer}>
+                  {imageUrl ? (
+                    <Image source={{ uri: imageUrl }} style={styles.cardThumbnail} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.cardPlaceholder, isLost ? styles.placeholderLost : styles.placeholderFound]}>
+                      <MaterialCommunityIcons
+                        name={isLost ? "help-circle-outline" : "package-variant-closed"}
+                        size={28}
+                        color="#64748b"
+                      />
+                    </View>
+                  )}
+                  <View style={[styles.postTypeTag, isLost ? styles.tagLost : styles.tagFound]}>
+                    <Text style={styles.postTypeTagText}>
+                      {isLost ? "LOST" : "FOUND"}
+                    </Text>
                   </View>
-                )}
+                </View>
 
                 <View style={styles.cardContent}>
                   <View style={styles.cardTopRow}>
-                    <View style={[styles.typeBadge, isLost ? styles.typeBadgeLost : styles.typeBadgeFound]}>
-                      <Text style={[styles.typeBadgeText, isLost ? styles.typeBadgeTextLost : styles.typeBadgeTextFound]}>
-                        {isLost ? "LOST" : "FOUND"}
-                      </Text>
-                    </View>
-                    <View style={[styles.statusBadge, item.status === "open" ? styles.statusOpen : styles.statusClosed]}>
-                      <Text style={[styles.statusBadgeText, item.status === "open" ? styles.statusOpenText : styles.statusClosedText]}>
-                        {item.status.toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.cardLocation} numberOfLines={1}>📍 {item.location}</Text>
-                  <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
-
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.cardPoster} numberOfLines={1}>
-                      Posted by {item.poster_name?.trim() || item.poster_email?.split("@")[0] || "Student"}
+                    <Text style={styles.cardCategory}>
+                      {item.category.toUpperCase()}
                     </Text>
-                    {item.claims_count > 0 ? (
-                      <Text style={styles.claimsTag}>💬 {item.claims_count} claim{item.claims_count > 1 ? "s" : ""}</Text>
+                    {item.status === "resolved" ? (
+                      <View style={styles.resolvedTag}>
+                        <Text style={styles.resolvedTagText}>RESOLVED</Text>
+                      </View>
                     ) : null}
                   </View>
 
+                  <Text style={styles.cardTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                    <MaterialCommunityIcons name="map-marker" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                    <Text style={styles.locationText} numberOfLines={1}>
+                      {item.location || "LGU Campus"}
+                    </Text>
+                  </View>
+
+                  {item.date_lost_or_found ? (
+                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                      <MaterialCommunityIcons name="calendar-outline" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                      <Text style={styles.dateText}>
+                        {item.date_lost_or_found}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.posterText} numberOfLines={1}>
+                      Posted by: {item.poster_name || "LGU Student"}
+                    </Text>
+                  </View>
                 </View>
               </Pressable>
             );
@@ -258,93 +375,359 @@ export default function LostAndFoundFeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", paddingTop: 56 },
-  header: {
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  compactTopNav: {
+    backgroundColor: "#ffffff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  hamburgerBtn: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 10,
+    width: 38,
+    height: 38,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  hamburgerLine: {
+    width: 17,
+    height: 2,
+    backgroundColor: "#0D3E02",
+    borderRadius: 2,
+  },
+  compactNavTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#0D3E02",
+    letterSpacing: -0.3,
+  },
+  avatarBtn: {
+    borderRadius: 20,
+    padding: 2,
+    borderWidth: 1.5,
+    borderColor: "#FDBF1E",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#0D3E02",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 11 : 7,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  searchIcon: {
+    fontSize: 15,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: "#0F172A",
+    fontWeight: "500",
+  },
+  clearSearch: {
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: "700",
+    padding: 4,
+  },
+  postBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FDBF1E",
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 11 : 9,
+    borderRadius: 14,
+    gap: 4,
+    shadowColor: "#FDBF1E",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  postBtnText: {
+    color: "#0D3E02",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  segmentContainer: {
+    flexDirection: "row",
+    backgroundColor: "#E2E8F0",
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 4,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+  },
+  segmentBtnActive: {
+    backgroundColor: "#ffffff",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  segmentBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  segmentBtnTextActive: {
+    color: "#0D3E02",
+    fontWeight: "800",
+  },
+  categoriesSection: {
+    paddingVertical: 12,
+  },
+  categoriesScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  categoryBtn: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  categoryBtnActive: {
+    backgroundColor: "#0D3E02",
+    borderColor: "#0D3E02",
+  },
+  categoryBtnLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  categoryBtnLabelActive: {
+    color: "#FDBF1E",
+    fontWeight: "800",
+  },
+  feedList: {
+    padding: 16,
+    paddingTop: 2,
+    gap: 14,
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 36,
+  },
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  card: {
+    flexDirection: "row",
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardThumbContainer: {
+    width: 110,
+    backgroundColor: "#F1F5F9",
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cardThumbnail: {
+    width: "100%",
+    height: "100%",
+  },
+  cardPlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderLost: {
+    backgroundColor: "#FEE2E2",
+  },
+  placeholderFound: {
+    backgroundColor: "#E8F5E9",
+  },
+  placeholderEmoji: {
+    fontSize: 32,
+  },
+  postTypeTag: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  tagLost: {
+    backgroundColor: "#DC2626",
+  },
+  tagFound: {
+    backgroundColor: "#0D3E02",
+  },
+  postTypeTagText: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+  cardContent: {
+    flex: 1,
+    padding: 14,
+    justifyContent: "space-between",
+  },
+  cardTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    marginBottom: 4,
   },
-  title: { fontSize: 24, fontWeight: "800", color: "#0f172a" },
-  subtitle: { fontSize: 13, color: "#64748b", marginTop: 2 },
-  postButton: { backgroundColor: "#1d4ed8", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
-  postButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  searchContainer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  searchInput: {
-    backgroundColor: "#ffffff",
-    borderColor: "#cbd5e1",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  cardCategory: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748b",
+  },
+  resolvedTag: {
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  resolvedTagText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#0D3E02",
+  },
+  cardTitle: {
     fontSize: 14,
+    fontWeight: "700",
+    color: "#070D1F",
+    lineHeight: 18,
+    marginBottom: 4,
   },
-  tabBar: { flexDirection: "row", paddingHorizontal: 20, gap: 8, marginVertical: 8 },
-  tabItem: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: "#e2e8f0", alignItems: "center" },
-  tabItemActive: { backgroundColor: "#1d4ed8" },
-  tabText: { fontSize: 13, fontWeight: "700", color: "#475569" },
-  tabTextActive: { color: "#ffffff" },
-  categoriesWrapper: { paddingVertical: 6 },
-  categoriesList: { paddingHorizontal: 20, gap: 8 },
-  categoryPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: "#ffffff",
-    borderColor: "#e2e8f0",
-    borderWidth: 1,
+  locationText: {
+    fontSize: 11,
+    color: "#475569",
+    marginBottom: 2,
   },
-  categoryPillActive: { backgroundColor: "#1e293b", borderColor: "#1e293b" },
-  categoryPillText: { fontSize: 12, fontWeight: "600", color: "#64748b" },
-  categoryPillTextActive: { color: "#ffffff" },
-  errorText: { color: "#b91c1c", paddingHorizontal: 20, paddingTop: 6, fontSize: 13 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  feedList: { padding: 20, gap: 14 },
-  emptyList: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  emptyContainer: { alignItems: "center", maxWidth: 300 },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
-  emptySubtitle: { fontSize: 13, color: "#64748b", textAlign: "center", marginTop: 4 },
-  footerLoader: { marginVertical: 12 },
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    borderColor: "#e2e8f0",
-    borderWidth: 1,
-    overflow: "hidden",
-    flexDirection: "row",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+  dateText: {
+    fontSize: 11,
+    color: "#64748b",
+    marginBottom: 6,
   },
-  cardThumbnail: { width: 110, height: 130 },
-  cardPlaceholder: { width: 110, height: 130, justifyContent: "center", alignItems: "center" },
-  cardPlaceholderLost: { backgroundColor: "#fee2e2" },
-  cardPlaceholderFound: { backgroundColor: "#ecfdf5" },
-  placeholderEmoji: { fontSize: 32 },
-  cardContent: { flex: 1, padding: 12, justifyContent: "space-between" },
-  cardTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  typeBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  typeBadgeLost: { backgroundColor: "#fee2e2" },
-  typeBadgeFound: { backgroundColor: "#d1fae5" },
-  typeBadgeText: { fontSize: 11, fontWeight: "800" },
-  typeBadgeTextLost: { color: "#b91c1c" },
-  typeBadgeTextFound: { color: "#047857" },
-  statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  statusOpen: { backgroundColor: "#f1f5f9" },
-  statusClosed: { backgroundColor: "#e2e8f0" },
-  statusBadgeText: { fontSize: 10, fontWeight: "700" },
-  statusOpenText: { color: "#0284c7" },
-  statusClosedText: { color: "#64748b" },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a", marginTop: 4 },
-  cardLocation: { fontSize: 12, color: "#2563eb", fontWeight: "600", marginTop: 2 },
-  cardDescription: { fontSize: 12, color: "#475569", marginTop: 2 },
-  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 6 },
-  cardPoster: { fontSize: 11, color: "#94a3b8", flex: 1 },
-  claimsTag: { fontSize: 11, color: "#6366f1", fontWeight: "700" },
+  cardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#F8FAF8",
+    paddingTop: 6,
+    marginTop: "auto",
+  },
+  posterText: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  messageBox: {
+    margin: 16,
+    padding: 12,
+    backgroundColor: "#fee2e2",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#b91c1c",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  retryBtn: {
+    marginTop: 6,
+    backgroundColor: "#b91c1c",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  retryBtnText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
+  },
+  emptyEmoji: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#070D1F",
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: "#64748b",
+    textAlign: "center",
+    lineHeight: 18,
+  },
 });

@@ -3,15 +3,21 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { useDataStore } from "../../../core/store/DataStoreContext";
+import { Skeleton, ResourceDetailSkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import { createResourceInterestRequest, fetchResourceListing } from "../data/resourcesApi";
 import type { ResourceListing } from "../resources";
@@ -26,60 +32,101 @@ function getImageUrl(imagePath: string | null) {
 }
 
 function getExchangeLabel(resource: ResourceListing) {
+  if (resource.exchange_type === "free") return "100% Free";
   if (resource.exchange_type === "sell" && resource.price) {
     return `Rs. ${resource.price}`;
   }
-
-  return resource.exchange_type.replace("_", " ");
+  if (resource.exchange_type === "rent" && resource.price) {
+    return `Rent: Rs. ${resource.price}`;
+  }
+  return resource.exchange_type.replace("_", " ").toUpperCase();
 }
 
-function toLabel(value: string) {
-  return value.replace("_", " ");
+function getCategoryIconName(category: string): keyof typeof MaterialCommunityIcons.glyphMap {
+  switch (category) {
+    case "books":
+      return "book-open-page-variant";
+    case "notes":
+      return "file-document-edit-outline";
+    case "lab_equipment":
+      return "flask-outline";
+    case "stationery":
+      return "ruler-square";
+    default:
+      return "package-variant-closed";
+  }
 }
 
+function getCategoryBg(category: string) {
+  switch (category) {
+    case "books":
+      return "#EFF6FF";
+    case "notes":
+      return "#FFFBEB";
+    case "lab_equipment":
+      return "#ECFDF5";
+    case "stationery":
+      return "#FDF4FF";
+    default:
+      return "#F8FAFC";
+  }
+}
 
 export default function ResourceDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const resourceId = Number(id);
   const currentUser = useSessionStore((state) => state.user);
-  const [resource, setResource] = useState<ResourceListing | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { resourceListings } = useDataStore();
+
+  const cachedResource = (resourceListings || []).find((r: ResourceListing) => r.id === resourceId) || null;
+
+  const [resource, setResource] = useState<ResourceListing | null>(() => cachedResource);
+  const [isLoading, setIsLoading] = useState(() => !cachedResource);
   const [errorMessage, setErrorMessage] = useState("");
   const [interestMessage, setInterestMessage] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [isSendingRequest, setIsSendingRequest] = useState(false);
+  const [hasRequested, setHasRequested] = useState<boolean>(() => Boolean(cachedResource?.has_requested));
+
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
 
   useEffect(() => {
     async function loadResource() {
-      if (!Number.isInteger(resourceId)) {
-        setErrorMessage("This resource link is invalid.");
+      if (cachedResource) {
+        setResource(cachedResource);
+        if (cachedResource.has_requested) setHasRequested(true);
         setIsLoading(false);
-        return;
       }
-
       try {
-        const response = await fetchResourceListing(resourceId);
-        setResource(response);
+        const data = await fetchResourceListing(resourceId);
+        setResource(data);
+        if (data.has_requested) setHasRequested(true);
       } catch {
-        setErrorMessage("Could not load this resource.");
+        if (!cachedResource) {
+          setErrorMessage("Failed to load resource details. It may have been removed.");
+        }
       } finally {
         setIsLoading(false);
       }
     }
 
     void loadResource();
-  }, [resourceId]);
+  }, [resourceId, cachedResource]);
 
   const handleInterestRequest = async () => {
-    setRequestMessage("");
+    if (!resource || hasRequested) return;
     setIsSendingRequest(true);
+    setRequestMessage("");
 
     try {
-      await createResourceInterestRequest(resourceId, interestMessage.trim());
-      setRequestMessage("Your interest request has been sent.");
+      await createResourceInterestRequest(resource.id, interestMessage.trim());
+      setHasRequested(true);
+      setRequestMessage("Interest request sent to owner! You will get a notification when they accept.");
       setInterestMessage("");
     } catch {
-      setRequestMessage("Could not send the request. You may have already requested this resource.");
+      setHasRequested(true);
+      setRequestMessage("You have already requested this item.");
     } finally {
       setIsSendingRequest(false);
     }
@@ -87,8 +134,17 @@ export default function ResourceDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1d4ed8" />
+      <View style={styles.rootContainer}>
+        <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          </Pressable>
+          <Text style={styles.topNavTitle}>Resource Details</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+          <ResourceDetailSkeleton />
+        </ScrollView>
       </View>
     );
   }
@@ -96,93 +152,467 @@ export default function ResourceDetailScreen() {
   if (errorMessage || !resource) {
     return (
       <View style={styles.centered}>
+        <MaterialCommunityIcons name="alert-circle-outline" size={32} color="#B91C1C" style={{ marginBottom: 8 }} />
         <Text style={styles.errorText}>{errorMessage || "Resource not found."}</Text>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backLink}>Go back</Text>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
       </View>
     );
   }
 
+  const imageUrl = getImageUrl(resource.image);
+  const isFree = resource.exchange_type === "free";
+  const isOwnResource = currentUser?.id === resource.owner_id;
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Pressable onPress={() => router.back()}>
-        <Text style={styles.backLink}>← Back to resources</Text>
-      </Pressable>
-
-      {resource.image ? (
-        <Image
-          source={{ uri: getImageUrl(resource.image)! }}
-          style={styles.bannerImage}
-        />
-      ) : null}
-
-      <Text style={styles.title}>{resource.title}</Text>
-      <Text style={styles.exchangeType}>{getExchangeLabel(resource)}</Text>
-
-
-
-      <View style={styles.infoBox}>
-        <Text style={styles.label}>Category</Text>
-        <Text style={styles.value}>{toLabel(resource.category)}</Text>
-
-        <Text style={styles.label}>Condition</Text>
-        <Text style={styles.value}>{resource.condition}</Text>
-
-        {resource.course ? (
-          <>
-            <Text style={styles.label}>Course</Text>
-            <Text style={styles.value}>{resource.course}</Text>
-          </>
-        ) : null}
-
-        <Text style={styles.label}>Posted by</Text>
-        <Text style={styles.value}>{resource.owner_name}</Text>
+    <View style={styles.rootContainer}>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        </Pressable>
+        <Text style={styles.topNavTitle}>Resource Details</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      <Text style={styles.sectionTitle}>Description</Text>
-      <Text style={styles.description}>{resource.description}</Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+      >
+        {/* Banner / Illustration */}
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.bannerImage} />
+        ) : (
+          <View style={[styles.bannerPlaceholder, { backgroundColor: getCategoryBg(resource.category) }]}>
+            <MaterialCommunityIcons name={getCategoryIconName(resource.category)} size={64} color="#64748b" />
+          </View>
+        )}
 
-      {currentUser?.id === resource.owner_id ? (
-        <Text style={styles.ownerNotice}>This is your resource listing.</Text>
-      ) : (
-        <View style={styles.requestSection}>
-          <Text style={styles.sectionTitle}>Interested?</Text>
-          <TextInput
-            style={styles.messageInput}
-            placeholder="Optional message for the owner"
-            value={interestMessage}
-            onChangeText={setInterestMessage}
-            multiline
-          />
-          {requestMessage ? <Text style={styles.requestMessage}>{requestMessage}</Text> : null}
-          <Pressable style={styles.interestButton} onPress={() => void handleInterestRequest()} disabled={isSendingRequest}>
-            {isSendingRequest ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.interestButtonText}>Send interest request</Text>}
-          </Pressable>
+        {/* Badges Row */}
+        <View style={styles.badgeRow}>
+          <View style={[styles.priceTag, isFree ? styles.priceTagFree : styles.priceTagPaid]}>
+            <Text style={[styles.priceTagText, isFree ? styles.priceTagTextFree : styles.priceTagTextPaid]}>
+              {getExchangeLabel(resource)}
+            </Text>
+          </View>
+          {resource.condition ? (
+            <View style={styles.conditionTag}>
+              <Text style={styles.conditionTagText}>
+                {resource.condition.toUpperCase()}
+              </Text>
+            </View>
+          ) : null}
         </View>
-      )}
-    </ScrollView>
+
+        {/* Title */}
+        <Text style={styles.title}>{resource.title}</Text>
+
+        {/* Key Info Grid */}
+        <View style={styles.infoCard}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Category:</Text>
+            <View style={styles.infoValueWrap}>
+              <MaterialCommunityIcons name={getCategoryIconName(resource.category)} size={14} color="#64748b" style={{ marginRight: 4 }} />
+              <Text style={styles.infoValue}>
+                {resource.category.replace("_", " ")}
+              </Text>
+            </View>
+          </View>
+
+          {resource.course ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Course:</Text>
+              <View style={styles.infoValueWrap}>
+                <MaterialCommunityIcons name="target" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                <Text style={[styles.infoValue, { color: "#0D3E02", fontWeight: "800" }]}>
+                  {resource.course}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Offered by:</Text>
+            <View style={styles.infoValueWrap}>
+              <MaterialCommunityIcons name="account-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+              <Text style={styles.infoValue} numberOfLines={2}>
+                {resource.owner_name}
+                {resource.owner_department ? ` (${resource.owner_department})` : ""}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Description Section */}
+        <Text style={styles.sectionHeader}>Description & Details</Text>
+        <Text style={styles.descriptionText}>{resource.description}</Text>
+
+        {/* Interactive Interest Box or Own Resource Tag */}
+        {isOwnResource ? (
+          <View style={styles.ownNoticeBox}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons name="pin-outline" size={14} color="#92400E" style={{ marginRight: 4 }} />
+              <Text style={styles.ownNoticeText}>This is your listed item.</Text>
+            </View>
+            <Pressable
+              style={styles.editListingBtn}
+              onPress={() => router.push(`/resources/edit/${resource.id}` as any)}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                <Text style={styles.editListingBtnText}>Edit Listing</Text>
+              </View>
+            </Pressable>
+          </View>
+        ) : hasRequested ? (
+          <View style={styles.alreadyRequestedCard}>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+              <Text style={styles.alreadyRequestedTitle}>Request Sent</Text>
+            </View>
+            <Text style={styles.alreadyRequestedSub}>
+              You have already sent an interest request to {resource.owner_name} for this item. Check your Interest Requests tab for updates.
+            </Text>
+            <Pressable
+              style={styles.viewRequestsBtn}
+              onPress={() => router.push("/(app)/resources/requests" as any)}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                <MaterialCommunityIcons name="clipboard-list-outline" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                <Text style={styles.viewRequestsBtnText}>View Interest Requests</Text>
+              </View>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.interestCard}>
+            <Text style={styles.interestTitle}>Want to acquire this item?</Text>
+            <Text style={styles.interestSub}>
+              Send a note to {resource.owner_name} to schedule a pickup or campus meetup.
+            </Text>
+            <TextInput
+              style={styles.interestInput}
+              placeholder="Hi! I'm interested in this book for CS-301. Are you on campus today?"
+              placeholderTextColor="#94a3b8"
+              value={interestMessage}
+              onChangeText={setInterestMessage}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            {requestMessage ? (
+              <Text style={styles.feedbackMessage}>{requestMessage}</Text>
+            ) : null}
+            <Pressable
+              style={[styles.interestBtn, isSendingRequest && styles.interestBtnDisabled]}
+              onPress={() => void handleInterestRequest()}
+              disabled={isSendingRequest}
+            >
+              {isSendingRequest ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                  <MaterialCommunityIcons name="send-outline" size={15} color="#000000" style={{ marginRight: 5 }} />
+                  <Text style={styles.interestBtnText}>Send Interest Request</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: "#f8fafc", padding: 20, paddingTop: 56 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24, gap: 16 },
-  backLink: { color: "#1d4ed8", fontWeight: "700", marginBottom: 20 },
-  title: { color: "#0f172a", fontSize: 28, fontWeight: "700" },
-  exchangeType: { color: "#1d4ed8", fontSize: 17, fontWeight: "700", textTransform: "capitalize", marginTop: 8 },
-  infoBox: { backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: 12, borderWidth: 1, gap: 4, marginTop: 24, padding: 16 },
-  label: { color: "#64748b", fontSize: 13, marginTop: 8 },
-  value: { color: "#0f172a", fontSize: 16, textTransform: "capitalize" },
-  sectionTitle: { color: "#0f172a", fontSize: 18, fontWeight: "700", marginTop: 24 },
-  description: { color: "#475569", fontSize: 16, lineHeight: 24, marginTop: 8 },
-  requestSection: { marginTop: 24 },
-  messageInput: { backgroundColor: "#ffffff", borderColor: "#cbd5e1", borderRadius: 8, borderWidth: 1, minHeight: 90, marginTop: 8, padding: 12, textAlignVertical: "top" },
-  requestMessage: { color: "#047857", marginTop: 10 },
-  interestButton: { alignItems: "center", backgroundColor: "#1d4ed8", borderRadius: 8, marginTop: 32, padding: 14 },
-  interestButtonText: { color: "#ffffff", fontSize: 16, fontWeight: "700" },
-  ownerNotice: { color: "#64748b", fontStyle: "italic", marginTop: 28 },
-  errorText: { color: "#b91c1c", textAlign: "center" },
-  bannerImage: { width: "100%", height: 220, borderRadius: 12, marginBottom: 16, resizeMode: "cover" },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#F9FAFC",
+  },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  container: {
+    padding: 16,
+    gap: 12,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    gap: 16,
+    backgroundColor: "#F9FAFC",
+  },
+  bannerImage: {
+    width: "100%",
+    height: 220,
+    borderRadius: 16,
+    resizeMode: "cover",
+    backgroundColor: "#F1F5F9",
+  },
+  bannerPlaceholder: {
+    width: "100%",
+    height: 180,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bannerEmoji: {
+    fontSize: 64,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+  },
+  priceTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  priceTagFree: {
+    backgroundColor: "#DCFCE7",
+    borderWidth: 1,
+    borderColor: "#86EFAC",
+  },
+  priceTagPaid: {
+    backgroundColor: "#FEF3C7",
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  priceTagText: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  priceTagTextFree: {
+    color: "#15803D",
+  },
+  priceTagTextPaid: {
+    color: "#92400E",
+  },
+  conditionTag: {
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  conditionTagText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  title: {
+    color: "#070D1F",
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    lineHeight: 28,
+  },
+  infoCard: {
+    backgroundColor: "#ffffff",
+    borderColor: "#E2E8F0",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  infoLabel: {
+    color: "#64748b",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 1,
+  },
+  infoValueWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    flexShrink: 1,
+    marginLeft: 8,
+  },
+  infoValue: {
+    color: "#070D1F",
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "capitalize",
+    flexShrink: 1,
+    textAlign: "right",
+  },
+  sectionHeader: {
+    color: "#070D1F",
+    fontSize: 16,
+    fontWeight: "800",
+    marginTop: 8,
+  },
+  descriptionText: {
+    color: "#475569",
+    fontSize: 14,
+    lineHeight: 22,
+    backgroundColor: "#ffffff",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  ownNoticeBox: {
+    backgroundColor: "#F1F5F9",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  ownNoticeText: {
+    color: "#475569",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  editListingBtn: {
+    backgroundColor: "#0D3E02",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  editListingBtnText: {
+    color: "#FDBF1E",
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  alreadyRequestedCard: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 8,
+    marginTop: 8,
+  },
+  alreadyRequestedTitle: {
+    color: "#0D3E02",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  alreadyRequestedSub: {
+    color: "#166534",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  viewRequestsBtn: {
+    backgroundColor: "#ffffff",
+    borderColor: "#86EFAC",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  viewRequestsBtnText: {
+    color: "#0D3E02",
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  interestCard: {
+    backgroundColor: "#ffffff",
+    borderColor: "#E2E8F0",
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 8,
+    marginTop: 8,
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  interestTitle: {
+    color: "#070D1F",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  interestSub: {
+    color: "#64748b",
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  interestInput: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 10,
+    padding: 12,
+    color: "#070D1F",
+    fontSize: 13,
+    minHeight: 80,
+  },
+  feedbackMessage: {
+    color: "#15803D",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  interestBtn: {
+    backgroundColor: "#FDBF1E",
+    borderRadius: 10,
+    minHeight: 46,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  interestBtnDisabled: {
+    opacity: 0.6,
+  },
+  interestBtnText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+  errorText: {
+    color: "#dc2626",
+    fontSize: 14,
+    textAlign: "center",
+  },
 });
-

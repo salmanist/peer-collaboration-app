@@ -41,6 +41,7 @@ class LostAndFoundItem(models.Model):
     location = models.CharField(max_length=255)
     date_lost_or_found = models.DateField(null=True, blank=True)
     description = models.TextField(max_length=2000)
+
     image = models.ImageField(
         upload_to="lost_and_found/",
         null=True,
@@ -130,3 +131,33 @@ class ItemClaimChatMessage(models.Model):
 
     def __str__(self):
         return f"Message on claim {self.claim_id} from {self.sender.email}"
+
+
+from django.db.models.signals import post_delete, pre_save
+from django.dispatch import receiver
+
+
+@receiver(post_delete, sender=LostAndFoundItem)
+def auto_delete_file_on_lost_found_delete(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)
+
+
+@receiver(pre_save, sender=LostAndFoundItem)
+def auto_delete_file_on_lost_found_change(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        old_file = sender.objects.get(pk=instance.pk).image
+    except sender.DoesNotExist:
+        return
+    new_file = instance.image
+    if old_file and old_file != new_file:
+        old_file.delete(save=False)
+
+
+@receiver(post_delete, sender=ItemClaimChatMessage)
+def auto_delete_file_on_claim_chat_delete(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)
+

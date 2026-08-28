@@ -8,11 +8,14 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import { fetchLostAndFoundItem, updateLostAndFoundItem } from "../data/lostAndFoundApi";
@@ -39,6 +42,7 @@ function getImageUrl(imagePath: string | null) {
 }
 
 export default function EditLostAndFoundScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const itemId = Number(id);
 
@@ -54,6 +58,8 @@ export default function EditLostAndFoundScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
 
   useEffect(() => {
     if (!Number.isInteger(itemId)) {
@@ -100,16 +106,26 @@ export default function EditLostAndFoundScreen() {
   };
 
   const onSubmit = async () => {
-    if (!title.trim()) {
+    const cleanTitle = title.trim();
+    const cleanLocation = location.trim();
+    const cleanDesc = description.trim();
+    const cleanDate = dateLostOrFound.trim();
+
+    if (!cleanTitle) {
       setErrorMessage("Please enter an item title.");
       return;
     }
-    if (!location.trim()) {
+    if (!cleanLocation) {
       setErrorMessage("Please enter the campus location.");
       return;
     }
-    if (!description.trim()) {
+    if (!cleanDesc) {
       setErrorMessage("Please provide a description.");
+      return;
+    }
+
+    if (cleanDate && !/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
+      setErrorMessage("Please enter date in format YYYY-MM-DD (e.g. 2026-08-23).");
       return;
     }
 
@@ -119,20 +135,27 @@ export default function EditLostAndFoundScreen() {
     try {
       await updateLostAndFoundItem(itemId, {
         post_type: postType,
-        title: title.trim(),
+        title: cleanTitle,
         category,
-        location: location.trim(),
-        date_lost_or_found: dateLostOrFound || null,
-        description: description.trim(),
+        location: cleanLocation,
+        date_lost_or_found: cleanDate || null,
+        description: cleanDesc,
         image: selectedImage,
       });
-      router.back();
+      router.replace(`/(app)/lost-and-found/${itemId}` as any);
     } catch (err: any) {
-      const detail =
-        err?.response?.data?.detail ||
-        err?.message ||
-        "Could not update notice. Please try again.";
-      setErrorMessage(typeof detail === "string" ? detail : JSON.stringify(detail));
+      const data = err?.response?.data;
+      let detail = "";
+      if (typeof data === "string") {
+        detail = data;
+      } else if (data && typeof data === "object") {
+        const firstKey = Object.keys(data)[0];
+        const val = data[firstKey];
+        detail = Array.isArray(val) ? val[0] : (typeof val === "string" ? val : JSON.stringify(val));
+      } else {
+        detail = err?.message || "Could not update notice. Please try again.";
+      }
+      setErrorMessage(detail);
     } finally {
       setIsSubmitting(false);
     }
@@ -141,30 +164,50 @@ export default function EditLostAndFoundScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1d4ed8" />
+        <ActivityIndicator size="large" color="#0D3E02" />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles.rootContainer}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>← Back</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>Edit Notice</Text>
-        </View>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        </Pressable>
+        <Text style={styles.topNavTitle}>Edit Notice</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-        {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+      >
+        {errorMessage ? (
+          <View style={styles.errorBanner}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         {/* Title */}
         <Text style={styles.fieldLabel}>Item Title *</Text>
-        <TextInput style={styles.input} value={title} onChangeText={setTitle} />
+        <TextInput
+          style={styles.input}
+          placeholder="e.g., Black Dell Laptop Charger"
+          placeholderTextColor="#94a3b8"
+          value={title}
+          onChangeText={setTitle}
+        />
 
         {/* Category */}
         <Text style={styles.fieldLabel}>Category *</Text>
@@ -184,16 +227,30 @@ export default function EditLostAndFoundScreen() {
 
         {/* Campus Location */}
         <Text style={styles.fieldLabel}>Campus Location *</Text>
-        <TextInput style={styles.input} value={location} onChangeText={setLocation} />
+        <TextInput
+          style={styles.input}
+          placeholder="e.g., Central Library 2nd Floor, CS Lab 3"
+          placeholderTextColor="#94a3b8"
+          value={location}
+          onChangeText={setLocation}
+        />
 
-        {/* Date */}
-        <Text style={styles.fieldLabel}>Date Lost or Found (YYYY-MM-DD)</Text>
-        <TextInput style={styles.input} value={dateLostOrFound} onChangeText={setDateLostOrFound} />
+        {/* Date Lost or Found (Strict Date format YYYY-MM-DD) */}
+        <Text style={styles.fieldLabel}>Date Lost / Found (YYYY-MM-DD)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g., 2026-08-23"
+          placeholderTextColor="#94a3b8"
+          value={dateLostOrFound}
+          onChangeText={setDateLostOrFound}
+        />
 
         {/* Description */}
         <Text style={styles.fieldLabel}>Detailed Description *</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
+          placeholder="Describe item details..."
+          placeholderTextColor="#94a3b8"
           value={description}
           onChangeText={setDescription}
           multiline
@@ -206,19 +263,25 @@ export default function EditLostAndFoundScreen() {
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: selectedImage.uri }} style={styles.previewImage} resizeMode="cover" />
             <Pressable style={styles.removeImageBtn} onPress={() => setSelectedImage(null)}>
-              <Text style={styles.removeImageText}>✕ Remove New Photo</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+                <Text style={styles.removeImageText}>Remove New Photo</Text>
+              </View>
             </Pressable>
           </View>
         ) : existingImage ? (
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: getImageUrl(existingImage)! }} style={styles.previewImage} resizeMode="cover" />
             <Pressable style={styles.photoUploadBtn} onPress={() => void pickImage()}>
-              <Text style={styles.photoUploadText}>📷 Replace Photo</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="camera-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
+                <Text style={styles.photoUploadText}>Replace Photo</Text>
+              </View>
             </Pressable>
           </View>
         ) : (
           <Pressable style={styles.photoUploadBtn} onPress={() => void pickImage()}>
-            <Text style={styles.photoUploadIcon}>📷</Text>
+            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#64748b" style={{ marginBottom: 4 }} />
             <Text style={styles.photoUploadText}>Tap to add a photo</Text>
           </Pressable>
         )}
@@ -230,7 +293,7 @@ export default function EditLostAndFoundScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#ffffff" />
+            <ActivityIndicator size="small" color="#000000" />
           ) : (
             <Text style={styles.submitButtonText}>Save Changes</Text>
           )}
@@ -241,47 +304,172 @@ export default function EditLostAndFoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", paddingTop: 56 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  header: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 20 },
-  backLink: { color: "#1d4ed8", fontWeight: "700", fontSize: 14 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: "#0f172a" },
-  errorBanner: { backgroundColor: "#fee2e2", color: "#b91c1c", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 },
-  fieldLabel: { fontSize: 13, fontWeight: "700", color: "#334155", marginTop: 14, marginBottom: 6 },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#F9FAFC",
+  },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9FAFC",
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  errorBanner: {
+    backgroundColor: "#FEE2E2",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#070D1F",
+    marginTop: 14,
+    marginBottom: 6,
+  },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#cbd5e1",
+    borderColor: "#CBD5E1",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
+    color: "#070D1F",
   },
-  textArea: { minHeight: 90, textAlignVertical: "top" },
-  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  catBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderWidth: 1 },
-  catBtnActive: { backgroundColor: "#1e293b", borderColor: "#1e293b" },
-  catBtnText: { fontSize: 12, fontWeight: "600", color: "#64748b" },
-  catBtnTextActive: { color: "#ffffff" },
-  photoUploadBtn: {
-    padding: 16,
+  textArea: {
+    minHeight: 90,
+    textAlignVertical: "top",
+  },
+  categoryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  catBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
+    backgroundColor: "#ffffff",
+    borderColor: "#E2E8F0",
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+  },
+  catBtnActive: {
+    backgroundColor: "#0D3E02",
+    borderColor: "#0D3E02",
+  },
+  catBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  catBtnTextActive: {
+    color: "#FDBF1E",
+    fontWeight: "700",
+  },
+  photoUploadBtn: {
+    padding: 18,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#0D3E02",
     borderStyle: "dashed",
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 6,
   },
-  photoUploadIcon: { fontSize: 24, marginBottom: 4 },
-  photoUploadText: { color: "#64748b", fontSize: 13, fontWeight: "600" },
-  imagePreviewContainer: { backgroundColor: "#ffffff", borderRadius: 8, padding: 10, borderColor: "#e2e8f0", borderWidth: 1, alignItems: "center" },
-  previewImage: { width: "100%", height: 180, borderRadius: 6 },
-  removeImageBtn: { marginTop: 10, paddingVertical: 6, paddingHorizontal: 12 },
-  removeImageText: { color: "#b91c1c", fontWeight: "700", fontSize: 13 },
-  submitButton: { backgroundColor: "#1d4ed8", paddingVertical: 14, borderRadius: 10, alignItems: "center", marginTop: 24 },
-  submitButtonDisabled: { backgroundColor: "#94a3b8" },
-  submitButtonText: { color: "#ffffff", fontWeight: "800", fontSize: 15 },
+  photoUploadIcon: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  photoUploadText: {
+    color: "#0D3E02",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  imagePreviewContainer: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 10,
+    borderColor: "#E2E8F0",
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  previewImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 8,
+  },
+  removeImageBtn: {
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  removeImageText: {
+    color: "#B91C1C",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  submitButton: {
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 15,
+  },
 });

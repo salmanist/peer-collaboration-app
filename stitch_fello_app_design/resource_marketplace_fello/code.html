@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LGU Connect - Resource Sharing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#c3c6d1",
+                      "on-error": "#ffffff",
+                      "on-secondary-fixed": "#2f1500",
+                      "inverse-surface": "#2f3034",
+                      "surface-bright": "#f9f9fe",
+                      "tertiary": "#101f31",
+                      "primary-fixed": "#d5e3ff",
+                      "surface-container-lowest": "#ffffff",
+                      "background": "#f9f9fe",
+                      "outline": "#737780",
+                      "secondary": "#904d00",
+                      "inverse-primary": "#a7c8ff",
+                      "on-background": "#1a1c1f",
+                      "inverse-on-surface": "#f1f0f5",
+                      "primary-container": "#003366",
+                      "tertiary-fixed": "#d5e3fc",
+                      "surface-container-highest": "#e2e2e7",
+                      "primary-fixed-dim": "#a7c8ff",
+                      "surface-variant": "#e2e2e7",
+                      "on-surface-variant": "#43474f",
+                      "error": "#ba1a1a",
+                      "error-container": "#ffdad6",
+                      "tertiary-container": "#263447",
+                      "secondary-container": "#fd8b00",
+                      "on-secondary-container": "#603100",
+                      "on-error-container": "#93000a",
+                      "on-surface": "#1a1c1f",
+                      "surface-container-low": "#f4f3f8",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#001b3c",
+                      "on-tertiary-fixed-variant": "#3a485b",
+                      "on-primary-container": "#799dd6",
+                      "surface-container-high": "#e8e8ed",
+                      "surface-tint": "#3a5f94",
+                      "primary": "#001e40",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#b9c7df",
+                      "on-primary-fixed-variant": "#1f477b",
+                      "on-secondary-fixed-variant": "#6e3900",
+                      "on-primary": "#ffffff",
+                      "surface": "#f9f9fe",
+                      "on-tertiary-container": "#8e9cb3",
+                      "secondary-fixed-dim": "#ffb77d",
+                      "surface-dim": "#dad9de",
+                      "on-tertiary-fixed": "#0d1c2e",
+                      "surface-container": "#eeedf2",
+                      "secondary-fixed": "#ffdcc3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "md": "16px",
+                      "gutter": "16px",
+                      "sm": "8px",
+                      "margin-mobile": "16px",
+                      "xl": "32px",
+                      "margin-desktop": "48px",
+                      "xs": "4px",
+                      "lg": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-caps": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+      </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- Web Side Nav (Desktop) -->
+<nav class="hidden md:flex flex-col bg-surface dark:bg-surface-dim h-full w-80 rounded-r-xl bg-surface dark:bg-surface-container-low shadow-xl shadow-xl fixed inset-y-0 left-0 z-[60] flex flex-col border-r border-outline-variant/20">
+<!-- Profile Header -->
+<div class="p-lg flex items-center gap-md border-b border-outline-variant/20 mb-sm">
+<img alt="Student Avatar" class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="A professional headshot of a university student looking confident. Bright, neutral lighting with a clear background. Corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvAUz-DTHzFZtWUfSLF9oOXiBY1Pq9ebRD4Qn2N7skcgklZYJVfSBh-ZsKDGVHgXdlOmv2XoC6aL8I8xnpNeoa6AuJMHtn5zhwbM7sH42Yw87dbIYR4yFuSTWudN6HP5Wr2UlsOzQOH0E-E3koolYbJoxwB4XgiNPAHtYXPajRTg38oO3qcpvaFkguBw4xpQvsn_j86hzAfLtPIS_cvgRNSLZrdzX4nqQIrX4iEYjAui_tINhZuPEX"/>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary-fixed-dim">LGU Student</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">ID: 2024-001</span>
+<span class="font-label-caps text-label-caps text-secondary-container mt-xs flex items-center gap-xs"><span class="material-symbols-outlined text-[14px]">verified</span>Verified</span>
+</div>
+</div>
+<!-- Nav Items -->
+<div class="flex-1 overflow-y-auto py-sm">
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors mx-2 rounded-full mb-xs" href="#">
+<span class="material-symbols-outlined">directions_car</span>
+<span class="font-body-md text-body-md">Ride Sharing</span>
+</a>
+<!-- ACTIVE ITEM -->
+<a class="flex items-center gap-md bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary rounded-full mx-2 p-4 mb-xs shadow-sm hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">share</span>
+<span class="font-body-md text-body-md font-bold">Resource Sharing</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors mx-2 rounded-full mb-xs" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-body-md text-body-md">Peer Tutoring</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors mx-2 rounded-full mb-xs" href="#">
+<span class="material-symbols-outlined">search_check</span>
+<span class="font-body-md text-body-md">Lost &amp; Found</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors mx-2 rounded-full mb-xs" href="#">
+<span class="material-symbols-outlined">local_library</span>
+<span class="font-body-md text-body-md">Digital Library</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors mx-2 rounded-full mb-xs" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-body-md text-body-md">Community</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors mx-2 rounded-full mb-xs" href="#">
+<span class="material-symbols-outlined">print</span>
+<span class="font-body-md text-body-md">Printing Services</span>
+</a>
+<div class="mt-xl pt-md border-t border-outline-variant/20 px-sm">
+<a class="flex items-center gap-md text-on-surface-variant dark:text-on-surface p-4 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full w-full md:ml-80 bg-background relative overflow-hidden">
+<!-- Mobile Top App Bar -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile h-16 w-full fixed top-0 z-50 bg-surface dark:bg-surface-dim bg-surface-container-low dark:bg-surface-container-lowest shadow-sm">
+<div class="flex items-center gap-sm">
+<img alt="Student Profile Photo" class="w-8 h-8 rounded-full object-cover" data-alt="A tiny profile photo of a university student for a mobile app header. Bright, clean." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr0BecY3HWXO0UeEg13JwADwnwu8Ld5RTJ_3qrqnDvdpiN4p6enzEf_GfGo0mkW2EQcVuhj-fwcOLCZhPu_wYqntrx2_eovUhhmAzfRv2Xz-D_nHPcb8uv4p5rlivKjkbrygbg-41hfZp1wqNxaAeij5v5zyHJsqE7umxafldJBtsZV4xWQHyKrMmYLjBo2p5opDocAEA86qwARqQIjF7V6SgIO9DWHtnaKgIvrJoNk0IUVmVyac0T"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Fello</h1>
+<button class="text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<!-- Page Canvas -->
+<div class="flex-1 overflow-y-auto mt-16 md:mt-0 pb-24 md:pb-lg">
+<!-- Header Section -->
+<div class="bg-primary-container text-on-primary-container p-margin-mobile md:p-margin-desktop rounded-b-[2rem] md:rounded-bl-[3rem] shadow-sm relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at 100% 0%, #ffffff 0%, transparent 50%);"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-lg">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold mb-xs">Resource Marketplace</h2>
+<p class="font-body-md text-body-md text-primary-fixed opacity-90 max-w-md">Find textbooks, notes, and lab gear from fellow students. Save money and share knowledge.</p>
+</div>
+<!-- Search Bar -->
+<div class="w-full md:w-96 relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-surface-container-lowest text-on-surface placeholder:text-outline rounded-full py-3 pl-12 pr-4 border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm font-body-sm text-body-sm" placeholder="Search for courses, books, etc." type="text"/>
+</div>
+</div>
+</div>
+<!-- Categories -->
+<div class="mt-lg px-margin-mobile md:px-margin-desktop">
+<div class="flex gap-sm overflow-x-auto scrollbar-hide pb-sm">
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-caps text-label-caps shadow-sm flex items-center gap-xs transition-transform hover:-translate-y-0.5">
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
+                        Textbooks
+                    </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps border border-outline-variant/30 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">science</span>
+                        Lab Gear
+                    </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps border border-outline-variant/30 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">edit_document</span>
+                        Notes
+                    </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps border border-outline-variant/30 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">architecture</span>
+                        Stationery
+                    </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-colors font-label-caps text-label-caps border border-outline-variant/30 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">more_horiz</span>
+                        Other
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Content -->
+<div class="mt-lg px-margin-mobile md:px-margin-desktop grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md md:gap-lg">
+<!-- Item Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group cursor-pointer border border-outline-variant/10 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="relative aspect-square overflow-hidden bg-surface-container-low">
+<img alt="Item Image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A well-lit, top-down shot of neat handwritten university chemistry notes with colorful diagrams on lined paper. Clean, modern aesthetic, bright lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM2QKz_7Ly1eDoRhL0EEcvqEPPyW2i7kmOKEniG78c2jLy04IGirlFUN9JlbqhfwZodTfKCDqUsY_ff7X1E-kzRG4Pj0v_Ljm6xFKnr0alJZNVctYM7a_GOLmIOoEHxgAjvL_TgIPNq4xjKvMNmQpwnOV8nwPb6Qvm6M6ZJ5IFbuOA-snqDOFPQ1AMqWbnJEP2Kkv8GUeFvxyoVhCbMIS9gUz3gNyCC7Uyos5lBW2VFRtPBKdHUglU"/>
+<div class="absolute top-2 left-2 bg-primary/90 backdrop-blur-sm text-on-primary px-2 py-1 rounded-md font-label-caps text-[10px] leading-tight shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">edit_document</span> Notes
+                        </div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-1">
+<h3 class="font-body-md text-body-md font-semibold text-on-surface line-clamp-2 leading-snug">Organic Chemistry Notes (CHEM 201)</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-1">3rd Year • Chemistry Dept</p>
+<div class="mt-auto pt-sm flex items-end justify-between">
+<span class="font-headline-md text-headline-md font-bold text-secondary-container">Free</span>
+</div>
+</div>
+</div>
+<!-- Item Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group cursor-pointer border border-outline-variant/10 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="relative aspect-square overflow-hidden bg-surface-container-low">
+<img alt="Item Image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A slightly worn but clean engineering textbook with a blue and white cover resting on a wooden desk. Professional, modern lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSffc9TbsL47N91NVqSoEYYOkbn-IZrzVLSDZ8inZKssxb1Pp9-m7DINfjkc9-KDv7Q0BHyLAUu5iGzgPx04QZqr4vS-7-7W6IGbZd74AM0LrA2LXghEpol7m35AF9Tq5L_TjPEJaUA7FuBRldhc5HTWToEyn051959fos1G5kO8h8aWISnrgS0DreRG5-K_RoVWjof4w4WR45oLaTlOzfWwWapn5fRJHhivVYysrbij9ttWqmDhyG"/>
+<div class="absolute top-2 left-2 bg-primary/90 backdrop-blur-sm text-on-primary px-2 py-1 rounded-md font-label-caps text-[10px] leading-tight shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">menu_book</span> Book
+                        </div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-1">
+<h3 class="font-body-md text-body-md font-semibold text-on-surface line-clamp-2 leading-snug">Engineering Mechanics Dynamics 14th Ed</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-1">2nd Year • Mech Eng</p>
+<div class="mt-auto pt-sm flex items-end justify-between">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">500 <span class="text-sm font-normal text-on-surface-variant">PKR</span></span>
+</div>
+</div>
+</div>
+<!-- Item Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group cursor-pointer border border-outline-variant/10 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="relative aspect-square overflow-hidden bg-surface-container-low">
+<img alt="Item Image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A clean, modern scientific calculator (Casio type) on a pristine white desk surface. High contrast, sharp focus, corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABBKpwirQribvOVExhnBVyBcJmLesDl5d7JX1IlY5PguWh25jhsP2JjbFtt2Pr_UXULQ13eTMa94_kDIuS5102HT3b5kF6oJlbVRSr5gZw6iStTMZjny7m9e9Ymf4kcMRy5zRL1ewXJs_v2uanuItkpW71Pir3P5POc7snAPK02I_StcqlQf1b4lt6brOPpLLP_K4AEdt_NRbjgJY8HR4fwhpvihLcV7B3C8uvC2z1laOwoEQl5YtT"/>
+<div class="absolute top-2 left-2 bg-primary/90 backdrop-blur-sm text-on-primary px-2 py-1 rounded-md font-label-caps text-[10px] leading-tight shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">calculate</span> Gear
+                        </div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-1">
+<h3 class="font-body-md text-body-md font-semibold text-on-surface line-clamp-2 leading-snug">Casio fx-991EX Scientific Calculator</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-1">4th Year • Electrical</p>
+<div class="mt-auto pt-sm flex items-end justify-between">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">1200 <span class="text-sm font-normal text-on-surface-variant">PKR</span></span>
+</div>
+</div>
+</div>
+<!-- Item Card 4 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col group cursor-pointer border border-outline-variant/10 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="relative aspect-square overflow-hidden bg-surface-container-low">
+<img alt="Item Image" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A neatly folded clean white lab coat with safety goggles resting on top of it. Bright, clinical modern lighting, academic setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwUAqqDKdzkr9zr0h1FYK-oFavnLIvQTpfZGXnxAt8J65GZwhd-i4jei8WWP_H2ie5qygQKZIyMSii9OAaEnynlg_1UWZWWbV3JorY7VewGHwIu5WL_FEqmzOun46kS5yqoduslQXVsRMmkNzD1Ki01oW7DPHiObFfKxdr35vGNy8ShSyYkqHYSzox4-5CKbmN13DDaT_qydFsESBactezHiuwJyCQajLKMMjCofLR8QHCEnTokXZ1"/>
+<div class="absolute top-2 left-2 bg-primary/90 backdrop-blur-sm text-on-primary px-2 py-1 rounded-md font-label-caps text-[10px] leading-tight shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">science</span> Lab Gear
+                        </div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-1">
+<h3 class="font-body-md text-body-md font-semibold text-on-surface line-clamp-2 leading-snug">Lab Coat (Medium) + Safety Goggles</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-1">1st Year • Biology</p>
+<div class="mt-auto pt-sm flex items-end justify-between">
+<span class="font-headline-md text-headline-md font-bold text-secondary-container">Free</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom spacing for mobile nav -->
+<div class="h-24 md:h-12"></div>
+</div>
+<!-- FAB for Adding Item (Desktop & Mobile) -->
+<button class="fixed bottom-24 md:bottom-8 right-6 bg-primary text-on-primary w-14 h-14 rounded-2xl shadow-[0_8px_16px_rgba(0,30,64,0.3)] flex items-center justify-center hover:scale-105 transition-transform z-40 group">
+<span class="material-symbols-outlined text-[28px] group-hover:rotate-90 transition-transform duration-300">add</span>
+</button>
+</main>
+<!-- Mobile Bottom Nav -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-surface dark:bg-inverse-surface shadow-lg rounded-t-[1.5rem] bg-surface dark:bg-inverse-surface shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-full px-4 py-1 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-label-caps text-label-caps mt-1">Discover</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-label-caps text-label-caps mt-1">Messages</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-label-caps text-label-caps mt-1">AI Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-caps text-label-caps mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

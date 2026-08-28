@@ -7,6 +7,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from notifications.models import create_user_notification
 from .models import PublicResourceOffer, PublicResourceOfferChatMessage, PublicResourceRequest, ResourceChatMessage, ResourceInterestRequest, ResourceListing
 from .permissions import IsPublicResourceRequestOwner, IsResourceListingOwner
 from .serializers import (
@@ -78,7 +79,13 @@ class ResourceListingStatusUpdateView(generics.UpdateAPIView):
     ]
 
     def get_queryset(self):
-        return ResourceListing.objects.select_related("owner").all()
+        queryset = ResourceListing.objects.select_related("owner").all()
+        exchange_type_in = self.request.query_params.get("exchange_type__in")
+        if exchange_type_in:
+            types = [t.strip() for t in exchange_type_in.split(",") if t.strip()]
+            if types:
+                queryset = queryset.filter(exchange_type__in=types)
+        return queryset
 
 
 class PublicResourceRequestListCreateView(generics.ListCreateAPIView):
@@ -143,12 +150,18 @@ class PublicResourceOfferCreateView(generics.CreateAPIView):
             raise ValidationError({"detail": "You cannot send an offer for your own request."})
         if public_request.status != PublicResourceRequest.Status.OPEN:
             raise ValidationError({"detail": "Only open resource requests can receive offers."})
-        if PublicResourceOffer.objects.filter(
-            public_request=public_request,
-            offerer=self.request.user,
-        ).exists():
-            raise ValidationError({"detail": "You have already sent an offer for this request."})
-        serializer.save(public_request=public_request, offerer=self.request.user)
+        offer = serializer.save(public_request=public_request, offerer=self.request.user)
+        try:
+            offerer_name = getattr(self.request.user, "full_name", None) or self.request.user.email
+            create_user_notification(
+                recipient=public_request.requester,
+                title="New Resource Offer Received 📦",
+                message=f"{offerer_name} offered a resource for your request '{public_request.title}'.",
+                priority="normal",
+                sender=self.request.user,
+            )
+        except Exception:
+            pass
 
 
 class IncomingPublicResourceOfferListView(generics.ListAPIView):
@@ -308,10 +321,21 @@ class ResourceInterestRequestCreateView(generics.CreateAPIView):
                 {"detail": "You have already requested this resource listing."}
             )
 
-        serializer.save(
+        interest_request = serializer.save(
             resource=resource,
             requester=self.request.user,
         )
+        try:
+            requester_name = getattr(self.request.user, "full_name", None) or self.request.user.email
+            create_user_notification(
+                recipient=resource.owner,
+                title="Item Interest Request 🛍️",
+                message=f"{requester_name} is interested in your listing '{resource.title}'.",
+                priority="normal",
+                sender=self.request.user,
+            )
+        except Exception:
+            pass
 
 
 class IncomingResourceInterestRequestListView(generics.ListAPIView):

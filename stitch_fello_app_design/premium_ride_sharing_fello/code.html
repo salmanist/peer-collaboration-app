@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>LGU Connect - Ride Sharing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "error": "#ba1a1a",
+                "background": "#f9f9fc",
+                "tertiary": "#0e0200",
+                "inverse-on-surface": "#f0f0f3",
+                "on-secondary-fixed-variant": "#45474b",
+                "on-surface-subtle": "#6B7280",
+                "on-primary-fixed": "#001b3b",
+                "tertiary-fixed": "#ffdbcb",
+                "surface-container-highest": "#e2e2e5",
+                "secondary": "#5d5e63",
+                "tertiary-container": "#381300",
+                "surface-container-high": "#e8e8eb",
+                "on-tertiary-container": "#b47858",
+                "on-primary": "#ffffff",
+                "primary-container": "#001e40",
+                "on-secondary-container": "#616267",
+                "on-primary-container": "#6f87ae",
+                "surface-dim": "#d9dadd",
+                "on-tertiary-fixed": "#341100",
+                "on-secondary": "#ffffff",
+                "primary-fixed": "#d5e3ff",
+                "on-secondary-fixed": "#1a1c1f",
+                "on-error": "#ffffff",
+                "on-tertiary": "#ffffff",
+                "on-background": "#1a1c1e",
+                "inverse-surface": "#2f3133",
+                "secondary-fixed-dim": "#c6c6cb",
+                "surface-tint": "#485f84",
+                "on-surface": "#1a1c1e",
+                "surface-container": "#edeef1",
+                "surface": "#f9f9fc",
+                "outline": "#74777f",
+                "on-tertiary-fixed-variant": "#6a3a20",
+                "primary": "#000511",
+                "on-error-container": "#93000a",
+                "surface-variant": "#e2e2e5",
+                "secondary-container": "#dfdfe4",
+                "secondary-fixed": "#e2e2e7",
+                "primary-fixed-dim": "#afc8f2",
+                "tertiary-fixed-dim": "#fdb793",
+                "surface-bright": "#f9f9fc",
+                "error-container": "#ffdad6",
+                "surface-container-low": "#f3f3f6",
+                "inverse-primary": "#afc8f2",
+                "on-primary-fixed-variant": "#2f476b",
+                "surface-container-lowest": "#ffffff",
+                "outline-variant": "#c4c6cf",
+                "on-surface-variant": "#44474e"
+        },
+        "borderRadius": {
+                "DEFAULT": "1rem",
+                "lg": "2rem",
+                "xl": "3rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "container-max": "1440px",
+                "margin-mobile": "20px",
+                "margin-desktop": "64px",
+                "gutter": "24px",
+                "unit": "8px"
+        },
+        "fontFamily": {
+                "body-md": [
+                        "Inter"
+                ],
+                "display-lg": [
+                        "Montserrat"
+                ],
+                "headline-lg": [
+                        "Montserrat"
+                ],
+                "headline-md": [
+                        "Montserrat"
+                ],
+                "headline-lg-mobile": [
+                        "Montserrat"
+                ],
+                "body-sm": [
+                        "Inter"
+                ],
+                "label-caps": [
+                        "Inter"
+                ],
+                "body-lg": [
+                        "Inter"
+                ]
+        },
+        "fontSize": {
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.03em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-md": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "26px",
+                        {
+                                "lineHeight": "34px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-sm": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-caps": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.08em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-24 md:pb-0 font-body-md text-body-md antialiased">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-20 w-full fixed top-0 z-50 bg-surface/90 backdrop-blur-md dark:bg-surface-dim/90 shadow-[0_1px_4px_rgba(0,0,0,0.02)]">
+<div class="flex items-center gap-4">
+<img class="w-10 h-10 rounded-full object-cover shadow-sm" data-alt="A professional headshot of a university student on a bright sunny day on campus. The background is slightly blurred showing brick buildings. The lighting is natural and flattering. The color palette is vibrant and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpgaHU2wxutFeVHetIh1UZzUQ7QgJqAGRxHOCXswmBf19gJKG4pUHRP1ioZ-gdvvzGcADINjnRqIZ1rT-yjaqH8S5Fdr2xIh75f7OFwQwcMGGKfYd36FC76-28WKVTqlYB2eqp71KtUvT4ImbYTuk6ybRRopChFoXDnJtB_x9DRk4uUnYK-VLhbMxcqCO2wioobaAYFbmgDVVhQcuI5l2K1d1wwiyuqP5gh8Te8_n75eOTdlqQulj2"/>
+</div>
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim tracking-tight">Fello</div>
+<button class="text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full p-3">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="pt-32 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto space-y-12">
+<!-- Search Section -->
+<section>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-4 text-primary tracking-tight">Ride Sharing</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-8 max-w-2xl">Find a safe and reliable ride across campus or the city.</p>
+<div class="bg-surface-container-lowest p-6 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-surface-container flex flex-col md:flex-row gap-4">
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary">location_on</span>
+<input class="w-full pl-12 pr-6 py-4 bg-surface rounded-[24px] border-none focus:ring-2 focus:ring-primary outline-none transition-all font-body-md text-body-md placeholder:text-outline-variant text-on-surface" placeholder="Destination (e.g., Johar Town)" type="text"/>
+</div>
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary">schedule</span>
+<input class="w-full pl-12 pr-6 py-4 bg-surface rounded-[24px] border-none focus:ring-2 focus:ring-primary outline-none transition-all font-body-md text-body-md text-on-surface" type="time"/>
+</div>
+<button class="bg-primary text-on-primary px-8 py-4 rounded-[24px] font-body-md text-body-md font-semibold hover:bg-primary/90 transition-all shadow-[0_4px_16px_rgba(0,5,17,0.15)] hover:shadow-[0_8px_24px_rgba(0,5,17,0.2)]">
+                    Search Rides
+                </button>
+</div>
+</section>
+<!-- Rides Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Ride Card 1 -->
+<div class="bg-surface-container-lowest rounded-[32px] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-surface-container flex flex-col justify-between hover:shadow-[0_12px_48px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
+<div>
+<div class="flex justify-between items-start mb-8">
+<div class="flex items-center gap-4">
+<img class="w-14 h-14 rounded-full object-cover shadow-sm" data-alt="A portrait of a male student standing next to a car, looking friendly. Bright natural light. Modern academic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATAJn-tJjtGPixRfAE8kcbteFoXlSYzJPN4n6XYTa6Blxt0Nd3R9SvdRUZH0knxjMNybeyhm1PF2qkfVNj_JYERgzymBb3yKuyoKsmN5uV-ZraFdugjDxmX-T6ZAVpamuvRbsM2msOee1OGjXpRvlE4twCceUnOPiqU_oZtPwL11yAnEmO73Mai5ElF0-Tb_zUG72cYZy1fOBlfOAQVgghm7eXU60u9IwC44FQjagN12wemTcc3v6A"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1">Ali Khan</h3>
+<div class="flex items-center gap-1.5 text-secondary-container font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px] text-[#22c55e]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[#22c55e]">Verified Driver</span>
+</div>
+</div>
+</div>
+<div class="bg-surface rounded-full px-4 py-2 flex items-center gap-2 font-label-caps text-label-caps text-primary border border-surface-container-high shadow-sm">
+<span class="material-symbols-outlined text-[16px]">event_seat</span>
+<span>2 Left</span>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex items-center gap-4 mb-2">
+<span class="material-symbols-outlined text-outline text-[24px]">trip_origin</span>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Main Campus</span>
+</div>
+<div class="flex flex-col ml-[11px] border-l-2 border-dashed border-outline-variant/50 h-8 my-2"></div>
+<div class="flex items-center gap-4 mt-2">
+<span class="material-symbols-outlined text-primary text-[24px]">location_on</span>
+<span class="font-body-lg text-body-lg font-semibold text-primary">DHA Phase 6</span>
+</div>
+</div>
+<div class="flex items-center gap-3 text-primary font-body-sm text-body-sm mb-8 bg-surface p-4 rounded-[20px] border border-surface-container-high">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="font-medium">Departs at 2:30 PM Today</span>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-[24px] font-body-md text-body-md font-semibold hover:bg-primary/90 transition-colors shadow-[0_4px_16px_rgba(0,5,17,0.15)]">
+                    Request to Join
+                </button>
+</div>
+<!-- Ride Card 2 -->
+<div class="bg-surface-container-lowest rounded-[32px] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-surface-container flex flex-col justify-between hover:shadow-[0_12px_48px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
+<div>
+<div class="flex justify-between items-start mb-8">
+<div class="flex items-center gap-4">
+<img class="w-14 h-14 rounded-full object-cover shadow-sm" data-alt="A portrait of a female student with a slight smile. Soft afternoon light. Modern academic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDM5JCKd28XMavc_CCilflG1VIByYTtxLn5sPG27D4zYWAv05_NoXVxyCl734iP9lQwVki5R_uPyWqJmt50UT0-yBkSMCJd9monbZagiRfkzgQECUo_H1jY4WxhjCkDE1LlfJLAs8D4OYUNzIFXOC8lNTc457N8jjA2X0o0Vv_SYB_ptAHB4jbOAnHerDp7dHK7HCYGdJ6qHZqb1QVsjhs9f7tyXUjBDn7a_mUGGEmEbIsy7JsHNWtk"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1">Fatima Tariq</h3>
+<div class="flex items-center gap-1.5 text-secondary-container font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px] text-[#22c55e]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[#22c55e]">Verified Driver</span>
+</div>
+</div>
+</div>
+<div class="bg-surface rounded-full px-4 py-2 flex items-center gap-2 font-label-caps text-label-caps text-primary border border-surface-container-high shadow-sm">
+<span class="material-symbols-outlined text-[16px]">event_seat</span>
+<span>1 Left</span>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex items-center gap-4 mb-2">
+<span class="material-symbols-outlined text-outline text-[24px]">trip_origin</span>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Johar Town</span>
+</div>
+<div class="flex flex-col ml-[11px] border-l-2 border-dashed border-outline-variant/50 h-8 my-2"></div>
+<div class="flex items-center gap-4 mt-2">
+<span class="material-symbols-outlined text-primary text-[24px]">location_on</span>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Main Campus</span>
+</div>
+</div>
+<div class="flex items-center gap-3 text-primary font-body-sm text-body-sm mb-8 bg-surface p-4 rounded-[20px] border border-surface-container-high">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="font-medium">Departs at 8:00 AM Tomorrow</span>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-[24px] font-body-md text-body-md font-semibold hover:bg-primary/90 transition-colors shadow-[0_4px_16px_rgba(0,5,17,0.15)]">
+                    Request to Join
+                </button>
+</div>
+<!-- Ride Card 3 -->
+<div class="bg-surface-container-lowest rounded-[32px] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.04)] border border-surface-container flex flex-col justify-between hover:shadow-[0_12px_48px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300">
+<div>
+<div class="flex justify-between items-start mb-8">
+<div class="flex items-center gap-4">
+<img class="w-14 h-14 rounded-full object-cover shadow-sm" data-alt="A portrait of a male student looking away thoughtfully. Bright outdoor setting. Modern academic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXSQa3FLInHNJRTVnX5pLMNYOMfz2WEvRAt_SseXxkyH7-xnS4u2S5MH3FmThSaWOrLgXouXb0kRZN-I_RPyqBCf6idSt4DZ2QtZpHSHzXrpLSmin5HDUfALUhLIsb2CW4bJYniSwZIU66CdeYycfzsD7uCAYRjt4UnZaQmMzONymQ4DfmkjdVcYqW68CGROXeMpCy-0Mot6e_ubkFvis3t0EjoCJs0rvR7eTfOTSlUqgElTQqNUy8"/>
+<div>
+<h3 class="font-headline-md text-headline-md text-primary mb-1">Usman Raza</h3>
+<div class="flex items-center gap-1.5 text-secondary-container font-label-caps text-label-caps">
+<span class="material-symbols-outlined text-[16px] text-outline">pending</span>
+<span class="text-outline">Unverified</span>
+</div>
+</div>
+</div>
+<div class="bg-surface rounded-full px-4 py-2 flex items-center gap-2 font-label-caps text-label-caps text-primary border border-surface-container-high shadow-sm">
+<span class="material-symbols-outlined text-[16px]">event_seat</span>
+<span>3 Left</span>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex items-center gap-4 mb-2">
+<span class="material-symbols-outlined text-outline text-[24px]">trip_origin</span>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Main Campus</span>
+</div>
+<div class="flex flex-col ml-[11px] border-l-2 border-dashed border-outline-variant/50 h-8 my-2"></div>
+<div class="flex items-center gap-4 mt-2">
+<span class="material-symbols-outlined text-primary text-[24px]">location_on</span>
+<span class="font-body-lg text-body-lg font-semibold text-primary">Gulberg</span>
+</div>
+</div>
+<div class="flex items-center gap-3 text-primary font-body-sm text-body-sm mb-8 bg-surface p-4 rounded-[20px] border border-surface-container-high">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="font-medium">Departs at 5:15 PM Today</span>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary py-4 rounded-[24px] font-body-md text-body-md font-semibold hover:bg-primary/90 transition-colors shadow-[0_4px_16px_rgba(0,5,17,0.15)]">
+                    Request to Join
+                </button>
+</div>
+</section>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-28 right-6 md:right-12 md:bottom-12 bg-primary text-on-primary p-5 rounded-[24px] shadow-[0_8px_24px_rgba(0,5,17,0.2)] hover:shadow-[0_12px_32px_rgba(0,5,17,0.3)] hover:-translate-y-1 transition-all z-40 flex items-center gap-3">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">add</span>
+<span class="font-label-caps text-label-caps hidden md:inline text-[14px]">Post a Ride</span>
+</button>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-4 bg-surface-container-lowest/90 backdrop-blur-xl dark:bg-inverse-surface border-t border-surface-container shadow-[0_-8px_32px_rgba(0,0,0,0.04)]">
+<button class="flex flex-col items-center justify-center bg-primary text-on-primary dark:text-on-primary-container rounded-[20px] px-6 py-2 shadow-sm transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]" data-icon="explore" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-label-caps text-label-caps mt-1">Discover</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:text-primary transition-colors px-6 py-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-label-caps text-label-caps mt-1">Messages</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:text-primary transition-colors px-6 py-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="smart_toy">smart_toy</span>
+<span class="font-label-caps text-label-caps mt-1">AI Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center text-outline hover:text-primary transition-colors px-6 py-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="account_circle">account_circle</span>
+<span class="font-label-caps text-label-caps mt-1">Profile</span>
+</button>
+</nav>
+</body></html>

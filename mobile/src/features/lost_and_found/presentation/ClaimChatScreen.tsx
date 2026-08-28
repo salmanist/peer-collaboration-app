@@ -1,6 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import {
   ActivityIndicator,
   FlatList,
@@ -14,8 +15,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { ChatHistorySkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import { fetchItemClaimChatMessages, sendItemClaimChatMessage } from "../data/lostAndFoundApi";
 import type { ItemClaimChatMessage } from "../lostAndFound";
@@ -78,6 +81,21 @@ export default function ClaimChatScreen() {
     }
   };
 
+  const syncMessages = useCallback(async () => {
+    if (!Number.isInteger(parsedClaimId)) return;
+    try {
+      const response = await fetchItemClaimChatMessages(parsedClaimId);
+      if (response?.results) {
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newItems = response.results.filter((m) => !existingIds.has(m.id));
+          if (newItems.length === 0) return prev;
+          return [...prev, ...newItems];
+        });
+      }
+    } catch {}
+  }, [parsedClaimId]);
+
   useEffect(() => {
     if (!Number.isInteger(parsedClaimId) || !accessToken) {
       setErrorMessage("This chat link is invalid.");
@@ -86,25 +104,56 @@ export default function ClaimChatScreen() {
     }
 
     let isActive = true;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connectSocket = () => {
+      if (!isActive) return;
+      try {
+        const socket = new WebSocket(
+          `${websocketBaseUrl()}/ws/lost-and-found/claims/${parsedClaimId}/chat/?token=${encodeURIComponent(accessToken)}`,
+        );
+        socketRef.current = socket;
+
+        socket.onopen = () => {
+          if (isActive) setIsConnected(true);
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === "message" && payload.message) {
+              addMessage(payload.message as ItemClaimChatMessage);
+            }
+            if (payload.type === "error" && isActive) {
+              setErrorMessage(payload.detail);
+            }
+          } catch {}
+        };
+
+        socket.onclose = () => {
+          if (isActive) {
+            setIsConnected(false);
+            reconnectTimeout = setTimeout(connectSocket, 3000);
+          }
+        };
+
+        socket.onerror = () => {
+          if (isActive) setIsConnected(false);
+        };
+      } catch {
+        if (isActive) {
+          setIsConnected(false);
+          reconnectTimeout = setTimeout(connectSocket, 3000);
+        }
+      }
+    };
 
     const startChat = async () => {
       try {
         const response = await fetchItemClaimChatMessages(parsedClaimId);
         if (!isActive) return;
         setMessages(response.results);
-
-        const socket = new WebSocket(
-          `${websocketBaseUrl()}/ws/lost-and-found/claims/${parsedClaimId}/chat/?token=${encodeURIComponent(accessToken)}`,
-        );
-        socketRef.current = socket;
-        socket.onopen = () => { if (isActive) setIsConnected(true); };
-        socket.onmessage = (event) => {
-          const payload = JSON.parse(event.data);
-          if (payload.type === "message") addMessage(payload.message as ItemClaimChatMessage);
-          if (payload.type === "error" && isActive) setErrorMessage(payload.detail);
-        };
-        socket.onclose = () => { if (isActive) setIsConnected(false); };
-        socket.onerror = () => { if (isActive) setErrorMessage("Could not connect to live chat."); };
+        connectSocket();
       } catch {
         if (isActive) setErrorMessage("Could not load this chat. It is available only for accepted claims.");
       } finally {
@@ -114,54 +163,82 @@ export default function ClaimChatScreen() {
 
     void startChat();
 
+    // Fast polling fallback to guarantee immediate delivery across clients
+    const pollInterval = setInterval(() => {
+      if (isActive) void syncMessages();
+    }, 2500);
+
     return () => {
       isActive = false;
+      clearInterval(pollInterval);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [accessToken, parsedClaimId]);
+  }, [accessToken, parsedClaimId, addMessage, syncMessages]);
 
   const sendMessage = async () => {
     const body = draft.trim();
     if (!body && !selectedImage) return;
 
-    if (selectedImage) {
-      setIsSending(true);
-      try {
+    setIsSending(true);
+    const photoToSend = selectedImage;
+    const textToSend = body;
+    setDraft("");
+    setSelectedImage(null);
+
+    try {
+      if (photoToSend) {
         const newMsg = await sendItemClaimChatMessage(parsedClaimId, {
-          body,
-          image: selectedImage,
+          body: textToSend,
+          image: photoToSend,
         });
         if (newMsg) {
           addMessage(newMsg);
         }
-        setSelectedImage(null);
-        setDraft("");
-        setErrorMessage("");
-      } catch (err: any) {
-        const errorDetail =
-          err?.response?.data?.detail ||
-          err?.response?.data?.non_field_errors?.[0] ||
-          err?.response?.data?.image?.[0] ||
-          err?.message ||
-          "Could not send photo. Please try again.";
-        setErrorMessage(typeof errorDetail === "string" ? errorDetail : JSON.stringify(errorDetail));
-      } finally {
-        setIsSending(false);
+      } else if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({ body: textToSend }));
+      } else {
+        const newMsg = await sendItemClaimChatMessage(parsedClaimId, { body: textToSend });
+        if (newMsg) {
+          addMessage(newMsg);
+        }
       }
-    } else {
-      if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
-      socketRef.current.send(JSON.stringify({ body }));
-      setDraft("");
+      setErrorMessage("");
+    } catch (err: any) {
+      const errorDetail =
+        err?.response?.data?.detail ||
+        err?.response?.data?.non_field_errors?.[0] ||
+        err?.response?.data?.image?.[0] ||
+        err?.message ||
+        "Could not send message. Please try again.";
+      setErrorMessage(typeof errorDetail === "string" ? errorDetail : JSON.stringify(errorDetail));
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const canSend = (draft.trim().length > 0 || selectedImage !== null) && (isConnected || selectedImage !== null);
+  const canSend = (draft.trim().length > 0 || selectedImage !== null) && !isSending;
+
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1d4ed8" />
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Pressable
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8F5E9", borderWidth: 1, borderColor: "#A5D6A7", alignItems: "center", justifyContent: "center" }}
+            onPress={() => router.back()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Handover Live Chat</Text>
+            <Text style={styles.summary} numberOfLines={1}>
+              Coordinating handover for “{itemTitle || "this item"}”
+            </Text>
+          </View>
+        </View>
+        <ChatHistorySkeleton />
       </View>
     );
   }
@@ -170,8 +247,11 @@ export default function ClaimChatScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backLink}>← Back</Text>
+        <Pressable
+          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8F5E9", borderWidth: 1, borderColor: "#A5D6A7", alignItems: "center", justifyContent: "center" }}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Handover Live Chat</Text>
@@ -221,14 +301,17 @@ export default function ClaimChatScreen() {
         <View style={styles.attachPreview}>
           <Image source={{ uri: selectedImage.uri }} style={styles.attachThumb} />
           <Pressable style={styles.removeAttachButton} onPress={() => setSelectedImage(null)}>
-            <Text style={styles.removeAttachText}>✕ Remove</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+              <Text style={styles.removeAttachText}>Remove</Text>
+            </View>
           </Pressable>
         </View>
       ) : null}
 
       <View style={styles.composer}>
         <Pressable style={styles.attachButton} onPress={() => void pickImage()}>
-          <Text style={styles.attachButtonText}>📷</Text>
+          <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
         </Pressable>
         <TextInput
           style={styles.composerInput}
@@ -254,7 +337,10 @@ export default function ClaimChatScreen() {
       <Modal visible={Boolean(viewerImageUrl)} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <Pressable style={styles.modalCloseButton} onPress={() => setViewerImageUrl(null)}>
-            <Text style={styles.modalCloseText}>✕ Close</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons name="close" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+              <Text style={styles.modalCloseText}>Close</Text>
+            </View>
           </Pressable>
           {viewerImageUrl ? (
             <Image source={{ uri: viewerImageUrl }} style={styles.modalImage} resizeMode="contain" />

@@ -7,9 +7,14 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("accounts.urls")),
+    path("api/admin/", include("accounts.admin_urls")),
+    path("api/common/", include("common.urls")),
     path("api/resources/", include("resource_sharing.urls")),
     path("api/lost-and-found/", include("lost_and_found.urls")),
+    path("api/tutoring/", include("peer_tutoring.urls")),
+    path("api/notifications/", include("notifications.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+
 
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]

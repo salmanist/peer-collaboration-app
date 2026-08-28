@@ -22,6 +22,11 @@ export interface ResourceListing {
   id: number;
   owner_id: number;
   owner_name: string;
+  owner_email?: string;
+  owner_department?: string;
+  owner_enrollment_year?: string;
+  has_requested?: boolean;
+  interest_request_id?: number | null;
   title: string;
   category: ResourceCategory;
   course: string;
@@ -44,12 +49,14 @@ export interface CreateResourceListingPayload {
   price?: string | null;
   image?: { uri: string; name?: string; type?: string } | null;
   description: string;
+  status?: ResourceStatus;
 }
 
 export interface ResourceListingFilters {
   category?: ResourceCategory;
   condition?: ResourceCondition;
   exchange_type?: ResourceExchangeType;
+  exchange_type__in?: string;
   status?: ResourceStatus;
   course__icontains?: string;
   search?: string;
@@ -112,6 +119,9 @@ export interface PublicResourceRequest {
   id: number;
   requester_id: number;
   requester_name: string;
+  requester_email?: string;
+  requester_department?: string;
+  requester_enrollment_year?: string;
   title: string;
   category: ResourceCategory;
   course: string;

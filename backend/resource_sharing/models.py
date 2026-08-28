@@ -256,3 +256,20 @@ class ResourceChatMessage(models.Model):
     def __str__(self):
         return f"Message on request {self.interest_request_id} from {self.sender.email}"
 
+
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+
+
+@receiver(post_delete, sender=ResourceChatMessage)
+def auto_delete_file_on_resource_chat_delete(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)
+
+
+@receiver(post_delete, sender=PublicResourceOfferChatMessage)
+def auto_delete_file_on_public_offer_chat_delete(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)
+
+

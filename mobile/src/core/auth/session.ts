@@ -8,9 +8,14 @@ export interface AuthedUser {
   id: number;
   email: string;
   full_name: string;
+  display_name?: string;
+  roll_number?: string;
+  roll_no?: string;
   department: string;
-  enrollment_year: number | null;
+  enrollment_year: string | null;
+  phone_number?: string;
   role: AccountRole;
+
   is_email_verified: boolean;
   created_at: string;
 }
@@ -77,10 +82,20 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       getStoredValue(REFRESH_KEY),
       getStoredValue(USER_KEY),
     ]);
+
+    let user: AuthedUser | null = null;
+    if (rawUser) {
+      try {
+        user = JSON.parse(rawUser) as AuthedUser;
+      } catch {
+        user = null;
+      }
+    }
+
     set({
       accessToken: access,
       refreshToken: refresh,
-      user: rawUser ? JSON.parse(rawUser) : null,
+      user,
       isHydrated: true,
     });
   },
@@ -91,7 +106,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       setStoredValue(REFRESH_KEY, tokens.refresh),
       setStoredValue(USER_KEY, JSON.stringify(user)),
     ]);
-    set({ accessToken: tokens.access, refreshToken: tokens.refresh, user });
+
+    set({
+      accessToken: tokens.access,
+      refreshToken: tokens.refresh,
+      user,
+      isHydrated: true,
+    });
   },
 
   setAccessToken: async (access) => {
@@ -110,9 +131,17 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       deleteStoredValue(REFRESH_KEY),
       deleteStoredValue(USER_KEY),
     ]);
-    set({ user: null, accessToken: null, refreshToken: null });
+
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isHydrated: true,
+    });
   },
 }));
 
-// Non-hook accessor for the apiClient interceptor, which lives outside React.
-export const getSessionSnapshot = () => useSessionStore.getState();
+export function getSessionSnapshot() {
+  return useSessionStore.getState();
+}
+

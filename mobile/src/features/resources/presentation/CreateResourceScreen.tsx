@@ -5,14 +5,19 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { useDataStore } from "../../../core/store/DataStoreContext";
 import { createResourceListing } from "../data/resourcesApi";
 import type {
   ResourceCategory,
@@ -60,6 +65,8 @@ function getCreateErrorMessage(error: unknown) {
 }
 
 export default function CreateResourceScreen() {
+  const insets = useSafeAreaInsets();
+  const { invalidateResourceListings } = useDataStore();
   const [title, setTitle] = useState("");
   const [course, setCourse] = useState("");
   const [description, setDescription] = useState("");
@@ -70,6 +77,8 @@ export default function CreateResourceScreen() {
   const [exchangeType, setExchangeType] = useState<ResourceExchangeType>("free");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
 
   const pickImage = async () => {
     try {
@@ -117,7 +126,8 @@ export default function CreateResourceScreen() {
         image: selectedImage || undefined,
         ...(exchangeType === "sell" || exchangeType === "rent" ? { price: cleanPrice } : {}),
       });
-      router.replace("/resources");
+      invalidateResourceListings();
+      router.replace("/(app)/resources");
     } catch (error) {
       setErrorMessage(getCreateErrorMessage(error));
     } finally {
@@ -125,85 +135,128 @@ export default function CreateResourceScreen() {
     }
   };
 
-
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backLink}>← Back</Text>
+    <View style={styles.rootContainer}>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
-        <Text style={styles.title}>Add a resource</Text>
-        <Text style={styles.subtitle}>Share an item with other LGU students.</Text>
+        <Text style={styles.topNavTitle}>Share a Resource</Text>
+        <View style={{ width: 36 }} />
       </View>
 
-      <Text style={styles.label}>Title *</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g. Database Systems notes"
-        value={title}
-        onChangeText={setTitle}
-      />
-
-      <Text style={styles.label}>Course (optional)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g. CS-301"
-        value={course}
-        onChangeText={setCourse}
-      />
-
-      <Text style={styles.label}>Category</Text>
-      <OptionGroup options={categoryOptions} selectedValue={category} onSelect={setCategory} />
-
-      <Text style={styles.label}>Condition</Text>
-      <OptionGroup options={conditionOptions} selectedValue={condition} onSelect={setCondition} />
-
-      <Text style={styles.label}>Sharing type</Text>
-      <OptionGroup options={exchangeOptions} selectedValue={exchangeType} onSelect={setExchangeType} />
-
-      {(exchangeType === "sell" || exchangeType === "rent") && (
-        <>
-          <Text style={styles.label}>{exchangeType === "rent" ? "Rental price in PKR *" : "Price in PKR *"}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. 500"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-          />
-        </>
-      )}
-
-      <Text style={styles.label}>Photo (optional)</Text>
-      {selectedImage ? (
-        <View style={styles.imagePreviewContainer}>
-          <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
-          <Pressable style={styles.removeImageButton} onPress={() => setSelectedImage(null)}>
-            <Text style={styles.removeImageText}>✕ Remove photo</Text>
-          </Pressable>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Post Marketplace Ad</Text>
+          <Text style={styles.subtitle}>
+            List items, books, hostel essentials, or student supplies with fellow LGU students.
+          </Text>
         </View>
-      ) : (
-        <Pressable style={styles.imagePickerButton} onPress={() => void pickImage()}>
-          <Text style={styles.imagePickerButtonText}>📷 Add a photo (optional)</Text>
+
+        <Text style={styles.label}>Title *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. Database Systems 6th Edition / Midterm Notes"
+          placeholderTextColor="#94a3b8"
+          value={title}
+          onChangeText={setTitle}
+        />
+
+        <Text style={styles.label}>Course Code (optional)</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="e.g. CS-301, SE-204"
+          placeholderTextColor="#94a3b8"
+          value={course}
+          onChangeText={setCourse}
+        />
+
+        <Text style={styles.label}>Category</Text>
+        <OptionGroup options={categoryOptions} selectedValue={category} onSelect={setCategory} />
+
+        <Text style={styles.label}>Condition</Text>
+        <OptionGroup options={conditionOptions} selectedValue={condition} onSelect={setCondition} />
+
+        <Text style={styles.label}>Sharing Type</Text>
+        <OptionGroup options={exchangeOptions} selectedValue={exchangeType} onSelect={setExchangeType} />
+
+        {(exchangeType === "sell" || exchangeType === "rent") && (
+          <>
+            <Text style={styles.label}>
+              {exchangeType === "rent" ? "Rental Price in PKR *" : "Price in PKR *"}
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 500"
+              placeholderTextColor="#94a3b8"
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="decimal-pad"
+            />
+          </>
+        )}
+
+        <Text style={styles.label}>Item Description *</Text>
+        <TextInput
+          style={[styles.input, styles.descriptionInput]}
+          placeholder="Describe edition, chapters covered, condition, or meetup location..."
+          placeholderTextColor="#94a3b8"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+        />
+
+        <Text style={styles.label}>Photo (optional)</Text>
+        {selectedImage ? (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
+            <Pressable style={styles.removeImageButton} onPress={() => setSelectedImage(null)}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="close" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+                <Text style={styles.removeImageText}>Remove Photo</Text>
+              </View>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable style={styles.imagePickerButton} onPress={() => void pickImage()}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+              <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+              <Text style={styles.imagePickerButtonText}>Add Item Photo</Text>
+            </View>
+          </Pressable>
+        )}
+
+        {errorMessage ? (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
+        <Pressable
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          onPress={() => void handleSubmit()}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#000000" />
+          ) : (
+            <Text style={styles.submitButtonText}>Publish Resource</Text>
+          )}
         </Pressable>
-      )}
-
-      <Text style={styles.label}>Description *</Text>
-      <TextInput
-        style={[styles.input, styles.descriptionInput]}
-        placeholder="Describe the resource, edition, condition, or anything a student should know."
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        textAlignVertical="top"
-      />
-
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-
-      <Pressable style={styles.submitButton} onPress={() => void handleSubmit()} disabled={isSubmitting}>
-        {isSubmitting ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.submitButtonText}>Publish resource</Text>}
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -225,7 +278,7 @@ function OptionGroup<T extends string>({
           onPress={() => onSelect(option.value)}
         >
           <Text style={[styles.optionText, selectedValue === option.value && styles.optionTextSelected]}>
-            {option.label}
+            {selectedValue === option.value ? `✓ ${option.label}` : option.label}
           </Text>
         </Pressable>
       ))}
@@ -234,36 +287,162 @@ function OptionGroup<T extends string>({
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 56, paddingBottom: 40, backgroundColor: "#f8fafc", gap: 10 },
-  header: { marginBottom: 8, gap: 5 },
-  backLink: { color: "#1d4ed8", fontWeight: "700", marginBottom: 10 },
-  title: { fontSize: 26, fontWeight: "700", color: "#0f172a" },
-  subtitle: { color: "#64748b", lineHeight: 20 },
-  label: { color: "#334155", fontWeight: "700", marginTop: 8 },
-  input: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, padding: 12, color: "#0f172a" },
-  descriptionInput: { minHeight: 120 },
-  imagePickerButton: {
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#F9FAFC",
+  },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  container: {
+    padding: 16,
+    gap: 10,
+  },
+  header: {
+    marginBottom: 8,
+    gap: 4,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  subtitle: {
+    color: "#64748b",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  label: {
+    color: "#070D1F",
+    fontWeight: "700",
+    fontSize: 13,
+    marginTop: 8,
+  },
+  input: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#93c5fd",
+    borderColor: "#CBD5E1",
+    borderRadius: 10,
+    padding: 12,
+    color: "#070D1F",
+    fontSize: 14,
+  },
+  descriptionInput: {
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  imagePickerButton: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: "#0D3E02",
     borderStyle: "dashed",
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 16,
     alignItems: "center",
     justifyContent: "center",
   },
-  imagePickerButtonText: { color: "#1d4ed8", fontWeight: "600" },
-  imagePreviewContainer: { alignItems: "center", gap: 8 },
-  imagePreview: { width: "100%", height: 200, borderRadius: 8, resizeMode: "cover" },
-  removeImageButton: { alignSelf: "flex-end", paddingVertical: 4 },
-  removeImageText: { color: "#b91c1c", fontWeight: "600", fontSize: 13 },
-  optionGroup: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  option: { backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
-  optionSelected: { backgroundColor: "#dbeafe", borderColor: "#1d4ed8" },
-  optionText: { color: "#475569" },
-  optionTextSelected: { color: "#1d4ed8", fontWeight: "700" },
-  errorText: { color: "#b91c1c", marginTop: 6 },
-  submitButton: { backgroundColor: "#1d4ed8", borderRadius: 8, minHeight: 48, alignItems: "center", justifyContent: "center", marginTop: 14 },
-  submitButtonText: { color: "#ffffff", fontWeight: "700", fontSize: 16 },
+  imagePickerButtonText: {
+    color: "#0D3E02",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  imagePreviewContainer: {
+    alignItems: "center",
+    gap: 8,
+  },
+  imagePreview: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    resizeMode: "cover",
+  },
+  removeImageButton: {
+    alignSelf: "flex-end",
+    paddingVertical: 4,
+  },
+  removeImageText: {
+    color: "#dc2626",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  optionGroup: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  option: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  optionSelected: {
+    backgroundColor: "#E8F5E9",
+    borderColor: "#0D3E02",
+  },
+  optionText: {
+    color: "#475569",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  optionTextSelected: {
+    color: "#0D3E02",
+    fontWeight: "800",
+  },
+  errorText: {
+    color: "#dc2626",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 6,
+  },
+  submitButton: {
+    backgroundColor: "#FDBF1E",
+    borderRadius: 12,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 14,
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 15,
+  },
 });
-

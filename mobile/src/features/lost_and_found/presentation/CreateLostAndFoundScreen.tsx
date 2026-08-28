@@ -8,12 +8,16 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { useDataStore } from "../../../core/store/DataStoreContext";
 import { createLostAndFoundItem } from "../data/lostAndFoundApi";
 import {
   LOST_AND_FOUND_CATEGORIES,
@@ -22,6 +26,8 @@ import {
 } from "../lostAndFound";
 
 export default function CreateLostAndFoundScreen() {
+  const insets = useSafeAreaInsets();
+  const { invalidateLostAndFound } = useDataStore();
   const [postType, setPostType] = useState<LostAndFoundPostType>("lost");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<LostAndFoundCategory>("other");
@@ -33,6 +39,8 @@ export default function CreateLostAndFoundScreen() {
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
 
   const pickImage = async () => {
     try {
@@ -51,16 +59,26 @@ export default function CreateLostAndFoundScreen() {
   };
 
   const onSubmit = async () => {
-    if (!title.trim()) {
+    const cleanTitle = title.trim();
+    const cleanLocation = location.trim();
+    const cleanDesc = description.trim();
+    const cleanDate = dateLostOrFound.trim();
+
+    if (!cleanTitle) {
       setErrorMessage("Please enter an item title.");
       return;
     }
-    if (!location.trim()) {
+    if (!cleanLocation) {
       setErrorMessage("Please specify where the item was lost or found on campus.");
       return;
     }
-    if (!description.trim()) {
+    if (!cleanDesc) {
       setErrorMessage("Please provide a description.");
+      return;
+    }
+
+    if (cleanDate && !/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) {
+      setErrorMessage("Please enter date in format YYYY-MM-DD (e.g. 2026-08-23).");
       return;
     }
 
@@ -70,22 +88,28 @@ export default function CreateLostAndFoundScreen() {
     try {
       await createLostAndFoundItem({
         post_type: postType,
-        title: title.trim(),
+        title: cleanTitle,
         category,
-        location: location.trim(),
-        date_lost_or_found: dateLostOrFound || null,
-        description: description.trim(),
+        location: cleanLocation,
+        date_lost_or_found: cleanDate || null,
+        description: cleanDesc,
         image: selectedImage,
       });
-      router.back();
+      invalidateLostAndFound();
+      router.replace("/(app)/lost-and-found" as any);
     } catch (err: any) {
-      const detail =
-        err?.response?.data?.detail ||
-        err?.response?.data?.title?.[0] ||
-        err?.response?.data?.location?.[0] ||
-        err?.message ||
-        "Could not create notice. Please try again.";
-      setErrorMessage(typeof detail === "string" ? detail : JSON.stringify(detail));
+      const data = err?.response?.data;
+      let detail = "";
+      if (typeof data === "string") {
+        detail = data;
+      } else if (data && typeof data === "object") {
+        const firstKey = Object.keys(data)[0];
+        const val = data[firstKey];
+        detail = Array.isArray(val) ? val[0] : (typeof val === "string" ? val : JSON.stringify(val));
+      } else {
+        detail = err?.message || "Could not create notice. Please try again.";
+      }
+      setErrorMessage(detail);
     } finally {
       setIsSubmitting(false);
     }
@@ -93,19 +117,33 @@ export default function CreateLostAndFoundScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles.rootContainer}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>← Back</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>Post Lost / Found Notice</Text>
-        </View>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        </Pressable>
+        <Text style={styles.topNavTitle}>Post Notice</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-        {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+      >
+        {errorMessage ? (
+          <View style={styles.errorBanner}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         {/* Post Type Selector */}
         <Text style={styles.fieldLabel}>Notice Type *</Text>
@@ -114,7 +152,12 @@ export default function CreateLostAndFoundScreen() {
             style={[styles.typeOption, postType === "lost" && styles.typeOptionLostActive]}
             onPress={() => setPostType("lost")}
           >
-            <Text style={styles.typeEmoji}>🔍</Text>
+            <MaterialCommunityIcons
+              name="magnify"
+              size={24}
+              color={postType === "lost" ? "#0D3E02" : "#64748b"}
+              style={{ marginBottom: 6 }}
+            />
             <Text style={[styles.typeOptionTitle, postType === "lost" && styles.typeOptionTitleActive]}>
               I Lost Something
             </Text>
@@ -125,7 +168,12 @@ export default function CreateLostAndFoundScreen() {
             style={[styles.typeOption, postType === "found" && styles.typeOptionFoundActive]}
             onPress={() => setPostType("found")}
           >
-            <Text style={styles.typeEmoji}>📦</Text>
+            <MaterialCommunityIcons
+              name="package-variant"
+              size={24}
+              color={postType === "found" ? "#0D3E02" : "#64748b"}
+              style={{ marginBottom: 6 }}
+            />
             <Text style={[styles.typeOptionTitle, postType === "found" && styles.typeOptionTitleActive]}>
               I Found Something
             </Text>
@@ -138,6 +186,7 @@ export default function CreateLostAndFoundScreen() {
         <TextInput
           style={styles.input}
           placeholder="e.g., Black Dell Laptop Charger, Student ID Card"
+          placeholderTextColor="#94a3b8"
           value={title}
           onChangeText={setTitle}
         />
@@ -158,20 +207,22 @@ export default function CreateLostAndFoundScreen() {
           ))}
         </View>
 
-        {/* Campus Location */}
-        <Text style={styles.fieldLabel}>Campus Location *</Text>
+        {/* Specific Location Details */}
+        <Text style={styles.fieldLabel}>Location on Campus *</Text>
         <TextInput
           style={styles.input}
           placeholder="e.g., Central Library 2nd Floor, CS Lab 3, Cafeteria"
+          placeholderTextColor="#94a3b8"
           value={location}
           onChangeText={setLocation}
         />
 
-        {/* Date Lost or Found */}
-        <Text style={styles.fieldLabel}>Date (YYYY-MM-DD)</Text>
+        {/* Date Lost or Found (Strict Date format YYYY-MM-DD) */}
+        <Text style={styles.fieldLabel}>Date Lost / Found (YYYY-MM-DD)</Text>
         <TextInput
           style={styles.input}
-          placeholder="YYYY-MM-DD"
+          placeholder="e.g., 2026-08-23"
+          placeholderTextColor="#94a3b8"
           value={dateLostOrFound}
           onChangeText={setDateLostOrFound}
         />
@@ -181,6 +232,7 @@ export default function CreateLostAndFoundScreen() {
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Describe distinguishing features, color, brand, or where exactly it was left/found..."
+          placeholderTextColor="#94a3b8"
           value={description}
           onChangeText={setDescription}
           multiline
@@ -193,12 +245,15 @@ export default function CreateLostAndFoundScreen() {
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: selectedImage.uri }} style={styles.previewImage} resizeMode="cover" />
             <Pressable style={styles.removeImageBtn} onPress={() => setSelectedImage(null)}>
-              <Text style={styles.removeImageText}>✕ Remove Photo</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+                <Text style={styles.removeImageText}>Remove Photo</Text>
+              </View>
             </Pressable>
           </View>
         ) : (
           <Pressable style={styles.photoUploadBtn} onPress={() => void pickImage()}>
-            <Text style={styles.photoUploadIcon}>📷</Text>
+            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#64748b" style={{ marginBottom: 4 }} />
             <Text style={styles.photoUploadText}>Tap to attach a photo</Text>
           </Pressable>
         )}
@@ -210,7 +265,7 @@ export default function CreateLostAndFoundScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#ffffff" />
+            <ActivityIndicator size="small" color="#000000" />
           ) : (
             <Text style={styles.submitButtonText}>
               Publish {postType === "lost" ? "Lost Item" : "Found Item"} Notice
@@ -223,61 +278,206 @@ export default function CreateLostAndFoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", paddingTop: 56 },
-  scrollContent: { padding: 20, paddingBottom: 40 },
-  header: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 20 },
-  backLink: { color: "#1d4ed8", fontWeight: "700", fontSize: 14 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: "#0f172a" },
-  errorBanner: { backgroundColor: "#fee2e2", color: "#b91c1c", padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 },
-  fieldLabel: { fontSize: 13, fontWeight: "700", color: "#334155", marginTop: 14, marginBottom: 6 },
-  typeRow: { flexDirection: "row", gap: 12, marginBottom: 6 },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#F9FAFC",
+  },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  errorBanner: {
+    backgroundColor: "#FEE2E2",
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#070D1F",
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  typeRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 6,
+  },
   typeOption: {
     flex: 1,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: "#ffffff",
-    borderColor: "#e2e8f0",
+    borderColor: "#E2E8F0",
     borderWidth: 2,
     alignItems: "center",
   },
-  typeOptionLostActive: { borderColor: "#ef4444", backgroundColor: "#fff5f5" },
-  typeOptionFoundActive: { borderColor: "#10b981", backgroundColor: "#f0fdf4" },
-  typeEmoji: { fontSize: 24, marginBottom: 4 },
-  typeOptionTitle: { fontSize: 13, fontWeight: "700", color: "#475569" },
-  typeOptionTitleActive: { color: "#0f172a" },
-  typeOptionDesc: { fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 2 },
+  typeOptionLostActive: {
+    borderColor: "#DC2626",
+    backgroundColor: "#FEF2F2",
+  },
+  typeOptionFoundActive: {
+    borderColor: "#0D3E02",
+    backgroundColor: "#E8F5E9",
+  },
+  typeEmoji: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  typeOptionTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#475569",
+  },
+  typeOptionTitleActive: {
+    color: "#070D1F",
+  },
+  typeOptionDesc: {
+    fontSize: 11,
+    color: "#94a3b8",
+    textAlign: "center",
+    marginTop: 2,
+  },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#cbd5e1",
+    borderColor: "#CBD5E1",
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
+    color: "#070D1F",
   },
-  textArea: { minHeight: 90, textAlignVertical: "top" },
-  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  catBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderWidth: 1 },
-  catBtnActive: { backgroundColor: "#1e293b", borderColor: "#1e293b" },
-  catBtnText: { fontSize: 12, fontWeight: "600", color: "#64748b" },
-  catBtnTextActive: { color: "#ffffff" },
+  textArea: {
+    minHeight: 90,
+    textAlignVertical: "top",
+  },
+  categoryGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  catBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    borderColor: "#E2E8F0",
+    borderWidth: 1,
+  },
+  catBtnActive: {
+    backgroundColor: "#0D3E02",
+    borderColor: "#0D3E02",
+  },
+  catBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  catBtnTextActive: {
+    color: "#FDBF1E",
+    fontWeight: "700",
+  },
   photoUploadBtn: {
     padding: 18,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#0D3E02",
     borderStyle: "dashed",
     backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
   },
-  photoUploadIcon: { fontSize: 28, marginBottom: 4 },
-  photoUploadText: { color: "#64748b", fontSize: 13, fontWeight: "600" },
-  imagePreviewContainer: { backgroundColor: "#ffffff", borderRadius: 8, padding: 10, borderColor: "#e2e8f0", borderWidth: 1, alignItems: "center" },
-  previewImage: { width: "100%", height: 180, borderRadius: 6 },
-  removeImageBtn: { marginTop: 10, paddingVertical: 6, paddingHorizontal: 12 },
-  removeImageText: { color: "#b91c1c", fontWeight: "700", fontSize: 13 },
-  submitButton: { backgroundColor: "#1d4ed8", paddingVertical: 14, borderRadius: 10, alignItems: "center", marginTop: 24 },
-  submitButtonDisabled: { backgroundColor: "#94a3b8" },
-  submitButtonText: { color: "#ffffff", fontWeight: "800", fontSize: 15 },
+  photoUploadIcon: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
+  photoUploadText: {
+    color: "#0D3E02",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  imagePreviewContainer: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 10,
+    borderColor: "#E2E8F0",
+    borderWidth: 1,
+    alignItems: "center",
+  },
+  previewImage: {
+    width: "100%",
+    height: 180,
+    borderRadius: 8,
+  },
+  removeImageBtn: {
+    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  removeImageText: {
+    color: "#B91C1C",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  submitButton: {
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 15,
+  },
 });

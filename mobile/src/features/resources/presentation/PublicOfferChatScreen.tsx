@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,13 +9,17 @@ import {
   Modal,
   Platform,
   Pressable,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { ChatHistorySkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import { fetchPublicResourceOfferChatMessages, sendPublicResourceOfferChatMessage } from "../data/resourcesApi";
 import type { PublicResourceOfferChatMessage } from "../resources";
@@ -40,6 +44,7 @@ function getImageUrl(imagePath: string | null) {
 }
 
 export default function PublicOfferChatScreen() {
+  const insets = useSafeAreaInsets();
   const { offerId, resourceTitle } = useLocalSearchParams<{ offerId: string; resourceTitle?: string }>();
   const publicOfferId = Number(offerId);
   const accessToken = useSessionStore((state) => state.accessToken);
@@ -53,6 +58,8 @@ export default function PublicOfferChatScreen() {
   const [isConnected, setIsConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
+
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
 
   const addMessage = (message: PublicResourceOfferChatMessage) => {
     setMessages((current) =>
@@ -78,150 +85,227 @@ export default function PublicOfferChatScreen() {
     }
   };
 
+  const syncMessages = useCallback(async () => {
+    if (!Number.isInteger(publicOfferId)) return;
+    try {
+      const response = await fetchPublicResourceOfferChatMessages(publicOfferId);
+      if (response?.results) {
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newItems = response.results.filter((m) => !existingIds.has(m.id));
+          if (newItems.length === 0) return prev;
+          return [...prev, ...newItems];
+        });
+      }
+    } catch {}
+  }, [publicOfferId]);
+
   useEffect(() => {
     if (!Number.isInteger(publicOfferId) || !accessToken) {
       setErrorMessage("This chat link is invalid.");
       setIsLoading(false);
       return;
     }
-    let isActive = true;
 
-    const startChat = async () => {
+    let active = true;
+
+    async function initializeChat() {
+      setIsLoading(true);
+      setErrorMessage("");
       try {
         const response = await fetchPublicResourceOfferChatMessages(publicOfferId);
-        if (!isActive) return;
+        if (!active) return;
         setMessages(response.results);
-        const socket = new WebSocket(
-          `${websocketBaseUrl()}/ws/resources/offers/${publicOfferId}/chat/?token=${encodeURIComponent(accessToken)}`,
-        );
-        socketRef.current = socket;
-        socket.onopen = () => {
-          if (isActive) setIsConnected(true);
-        };
-        socket.onmessage = (event) => {
-          const payload = JSON.parse(event.data);
-          if (payload.type === "message") addMessage(payload.message as PublicResourceOfferChatMessage);
-          if (payload.type === "error" && isActive) setErrorMessage(payload.detail);
-        };
-        socket.onclose = () => {
-          if (isActive) setIsConnected(false);
-        };
-        socket.onerror = () => {
-          if (isActive) setErrorMessage("Could not connect to live chat.");
-        };
       } catch {
-        if (isActive) setErrorMessage("Could not load this chat. It is available only for an accepted offer.");
+        if (!active) return;
+        setErrorMessage("Could not load previous messages.");
       } finally {
-        if (isActive) setIsLoading(false);
+        if (active) setIsLoading(false);
+      }
+
+      const socket = new WebSocket(
+        `${websocketBaseUrl()}/ws/resources/wanted/chat/${publicOfferId}/?token=${encodeURIComponent(accessToken || "")}`,
+      );
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        if (!active) return;
+        setIsConnected(true);
+      };
+
+      socket.onmessage = (event) => {
+        if (!active) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "chat_message" && data.message) {
+            addMessage(data.message);
+          }
+        } catch {}
+      };
+
+      socket.onclose = () => {
+        if (!active) return;
+        setIsConnected(false);
+      };
+    }
+
+    void initializeChat();
+
+    const pollingInterval = setInterval(() => {
+      if (active) void syncMessages();
+    }, 4000);
+
+    return () => {
+      active = false;
+      clearInterval(pollingInterval);
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
       }
     };
-
-    void startChat();
-    return () => {
-      isActive = false;
-      socketRef.current?.close();
-      socketRef.current = null;
-    };
-  }, [accessToken, publicOfferId]);
+  }, [accessToken, publicOfferId, syncMessages]);
 
   const sendMessage = async () => {
-    const body = draft.trim();
-    if (!body && !selectedImage) return;
+    const textToSend = draft.trim();
+    if (!textToSend && !selectedImage) return;
 
-    if (selectedImage) {
-      setIsSending(true);
-      try {
-        const newMsg = await sendPublicResourceOfferChatMessage(publicOfferId, {
-          body,
-          image: selectedImage,
-        });
-        if (newMsg) {
-          addMessage(newMsg);
-        }
+    setIsSending(true);
+    try {
+      if (selectedImage) {
+        const createdMessage = await sendPublicResourceOfferChatMessage(
+          publicOfferId,
+          { body: textToSend || "", image: selectedImage },
+        );
+        addMessage(createdMessage);
         setSelectedImage(null);
         setDraft("");
-        setErrorMessage("");
-      } catch (err: any) {
-        const errorDetail =
-          err?.response?.data?.detail ||
-          err?.response?.data?.non_field_errors?.[0] ||
-          err?.response?.data?.image?.[0] ||
-          err?.message ||
-          "Could not send photo. Please try again.";
-        setErrorMessage(typeof errorDetail === "string" ? errorDetail : JSON.stringify(errorDetail));
-      } finally {
-        setIsSending(false);
+      } else if (socketRef.current && isConnected) {
+        socketRef.current.send(
+          JSON.stringify({
+            type: "chat_message",
+            body: textToSend,
+          }),
+        );
+        setDraft("");
+      } else {
+        const createdMessage = await sendPublicResourceOfferChatMessage(
+          publicOfferId,
+          { body: textToSend },
+        );
+        addMessage(createdMessage);
+        setDraft("");
       }
-    } else {
-      if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
-      socketRef.current.send(JSON.stringify({ body }));
-      setDraft("");
+    } catch {
+      setErrorMessage("Could not send your message. Please try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
+  const renderItem = ({ item }: { item: PublicResourceOfferChatMessage }) => {
+    const isMine = item.sender_id === currentUser?.id;
+    const imageUrl = getImageUrl(item.image);
 
-  const canSend = (draft.trim().length > 0 || selectedImage !== null) && (isConnected || selectedImage !== null);
+    return (
+      <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.otherMessage]}>
+        {!isMine ? <Text style={styles.senderName}>{item.sender_name}</Text> : null}
+        {imageUrl ? (
+          <Pressable onPress={() => setViewerImageUrl(imageUrl)}>
+            <Image source={{ uri: imageUrl }} style={styles.bubbleImage} />
+          </Pressable>
+        ) : null}
+        {item.body ? (
+          <Text
+            style={[
+              styles.messageText,
+              isMine ? styles.myMessageText : styles.otherMessageText,
+              Boolean(imageUrl) && styles.captionText,
+            ]}
+          >
+            {item.body}
+          </Text>
+        ) : null}
+        <Text style={[styles.messageTime, isMine ? styles.myMessageTime : styles.otherMessageTime]}>
+          {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        </Text>
+      </View>
+    );
+  };
 
-  if (isLoading) return <View style={styles.centered}><ActivityIndicator size="large" color="#1d4ed8" /></View>;
+  const canSend = Boolean(draft.trim()) || Boolean(selectedImage);
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}><Text style={styles.backLink}>← Back</Text></Pressable>
-        <View>
-          <Text style={styles.title}>Live chat</Text>
-          <Text style={styles.summary}>Arrange how to provide “{resourceTitle || "this resource"}” with the other student.</Text>
-          <Text style={styles.connection}>{isConnected ? "Connected" : "Connecting…"}</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      {/* Top Navigation Bar */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        </Pressable>
+        <View style={styles.navTitleWrap}>
+          <Text style={styles.topNavTitle} numberOfLines={1}>
+            {resourceTitle || "Offer Chat"}
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons name="circle" size={8} color={isConnected ? "#22C55E" : "#94a3b8"} style={{ marginRight: 4 }} />
+            <Text style={styles.topNavSub}>
+              {isConnected ? "Connected Live" : "Offline Sync"}
+            </Text>
+          </View>
         </View>
+        <View style={{ width: 45 }} />
       </View>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, marginTop: 8 }}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
 
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={messages.length === 0 ? styles.emptyList : styles.messageList}
-        ListEmptyComponent={<Text style={styles.emptyText}>Start arranging this resource exchange.</Text>}
-        renderItem={({ item }) => {
-          const isMine = item.sender_id === currentUser?.id;
-          const imageUrl = getImageUrl(item.image);
-          return (
-            <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.otherMessage]}>
-              {!isMine ? <Text style={styles.senderName}>{item.sender_name}</Text> : null}
-              {imageUrl ? (
-                <Pressable onPress={() => setViewerImageUrl(imageUrl)}>
-                  <Image source={{ uri: imageUrl }} style={styles.bubbleImage} />
-                </Pressable>
-              ) : null}
-              {item.body ? (
-                <Text style={[styles.messageText, isMine && styles.myMessageText, imageUrl ? styles.captionText : null]}>
-                  {item.body}
-                </Text>
-              ) : null}
-              <Text style={[styles.messageTime, isMine && styles.myMessageTime]}>
-                {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </Text>
-            </View>
-          );
-        }}
-      />
+      {isLoading ? (
+        <ChatHistorySkeleton />
+      ) : (
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={[
+            messages.length === 0 ? styles.emptyList : styles.messageList,
+            { paddingBottom: 16 },
+          ]}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No messages yet. Chat with the student to finalize exchange!</Text>
+          }
+          renderItem={renderItem}
+        />
+      )}
 
       {selectedImage ? (
         <View style={styles.attachPreview}>
           <Image source={{ uri: selectedImage.uri }} style={styles.attachThumb} />
           <Pressable style={styles.removeAttachButton} onPress={() => setSelectedImage(null)}>
-            <Text style={styles.removeAttachText}>✕ Remove</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons name="close" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+              <Text style={styles.removeAttachText}>Remove Photo</Text>
+            </View>
           </Pressable>
         </View>
       ) : null}
 
-      <View style={styles.composer}>
+      {/* Composer */}
+      <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom + 8, 14) }]}>
         <Pressable style={styles.attachButton} onPress={() => void pickImage()}>
-          <Text style={styles.attachButtonText}>📷</Text>
+          <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
         </Pressable>
         <TextInput
           style={styles.composerInput}
-          placeholder={selectedImage ? "Add a caption (optional)" : "Write a message"}
+          placeholder={selectedImage ? "Add a caption (optional)" : "Write a message..."}
+          placeholderTextColor="#94a3b8"
           value={draft}
           onChangeText={setDraft}
           multiline
@@ -231,7 +315,11 @@ export default function PublicOfferChatScreen() {
           onPress={() => void sendMessage()}
           disabled={!canSend || isSending}
         >
-          {isSending ? <ActivityIndicator size="small" color="#ffffff" /> : <Text style={styles.sendButtonText}>Send</Text>}
+          {isSending ? (
+            <ActivityIndicator size="small" color="#000000" />
+          ) : (
+            <Text style={styles.sendButtonText}>Send</Text>
+          )}
         </Pressable>
       </View>
 
@@ -239,7 +327,10 @@ export default function PublicOfferChatScreen() {
       <Modal visible={Boolean(viewerImageUrl)} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <Pressable style={styles.modalCloseButton} onPress={() => setViewerImageUrl(null)}>
-            <Text style={styles.modalCloseText}>✕ Close</Text>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons name="close" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+              <Text style={styles.modalCloseText}>Close</Text>
+            </View>
           </Pressable>
           {viewerImageUrl ? (
             <Image source={{ uri: viewerImageUrl }} style={styles.modalImage} resizeMode="contain" />
@@ -251,50 +342,223 @@ export default function PublicOfferChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: "#f8fafc", flex: 1, paddingTop: 56 },
-  centered: { alignItems: "center", flex: 1, justifyContent: "center" },
-  header: { alignItems: "center", borderBottomColor: "#e2e8f0", borderBottomWidth: 1, flexDirection: "row", gap: 20, padding: 20 },
-  backLink: { color: "#1d4ed8", fontWeight: "700" },
-  title: { color: "#0f172a", fontSize: 20, fontWeight: "700" },
-  summary: { color: "#475569", fontSize: 12, marginTop: 3 },
-  connection: { color: "#64748b", fontSize: 12, marginTop: 2 },
-  errorText: { color: "#b91c1c", paddingHorizontal: 20, paddingTop: 10 },
-  messageList: { gap: 10, padding: 16 },
-  emptyList: { alignItems: "center", flexGrow: 1, justifyContent: "center", padding: 24 },
-  emptyText: { color: "#64748b", textAlign: "center" },
-  messageBubble: { borderRadius: 12, maxWidth: "80%", padding: 10 },
-  myMessage: { alignSelf: "flex-end", backgroundColor: "#1d4ed8" },
-  otherMessage: { alignSelf: "flex-start", backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderWidth: 1 },
-  senderName: { color: "#64748b", fontSize: 12, fontWeight: "700", marginBottom: 3 },
-  messageText: { color: "#0f172a" },
-  myMessageText: { color: "#ffffff" },
-  captionText: { marginTop: 6 },
-  messageTime: { color: "#64748b", fontSize: 11, marginTop: 4 },
-  myMessageTime: { color: "#dbeafe" },
-  bubbleImage: { width: 220, height: 160, borderRadius: 8, resizeMode: "cover" },
+  container: {
+    backgroundColor: "#F9FAFC",
+    flex: 1,
+  },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navTitleWrap: {
+    flex: 1,
+    alignItems: "center",
+    marginHorizontal: 8,
+  },
+  topNavTitle: {
+    color: "#070D1F",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  topNavSub: {
+    color: "#64748b",
+    fontSize: 10,
+    marginTop: 2,
+  },
+  centered: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+  },
+  errorText: {
+    color: "#b91c1c",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    fontSize: 12,
+  },
+  messageList: {
+    padding: 16,
+    gap: 10,
+  },
+  emptyList: {
+    alignItems: "center",
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  emptyText: {
+    color: "#64748b",
+    textAlign: "center",
+    fontSize: 13,
+  },
+  messageBubble: {
+    borderRadius: 14,
+    maxWidth: "80%",
+    padding: 12,
+  },
+  myMessage: {
+    alignSelf: "flex-end",
+    backgroundColor: "#0D3E02",
+  },
+  otherMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ffffff",
+    borderColor: "#E2E8F0",
+    borderWidth: 1,
+  },
+  senderName: {
+    color: "#0D3E02",
+    fontSize: 11,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  messageText: {
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  myMessageText: {
+    color: "#ffffff",
+  },
+  otherMessageText: {
+    color: "#070D1F",
+  },
+  captionText: {
+    marginTop: 6,
+  },
+  messageTime: {
+    fontSize: 10,
+    marginTop: 4,
+  },
+  myMessageTime: {
+    color: "#FDBF1E",
+    alignSelf: "flex-end",
+  },
+  otherMessageTime: {
+    color: "#94a3b8",
+  },
+  bubbleImage: {
+    width: 220,
+    height: 160,
+    borderRadius: 10,
+    resizeMode: "cover",
+  },
   attachPreview: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#F1F5F9",
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: "#E2E8F0",
     borderTopWidth: 1,
   },
-  attachThumb: { width: 48, height: 48, borderRadius: 6 },
-  removeAttachButton: { padding: 8 },
-  removeAttachText: { color: "#b91c1c", fontWeight: "700", fontSize: 13 },
-  composer: { alignItems: "flex-end", backgroundColor: "#ffffff", borderTopColor: "#e2e8f0", borderTopWidth: 1, flexDirection: "row", gap: 8, padding: 12 },
-  attachButton: { backgroundColor: "#f1f5f9", borderColor: "#cbd5e1", borderWidth: 1, borderRadius: 8, width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  attachButtonText: { fontSize: 20 },
-  composerInput: { borderColor: "#cbd5e1", borderRadius: 8, borderWidth: 1, flex: 1, maxHeight: 100, minHeight: 44, padding: 10 },
-  sendButton: { backgroundColor: "#1d4ed8", borderRadius: 8, paddingHorizontal: 14, minHeight: 44, alignItems: "center", justifyContent: "center" },
-  sendButtonDisabled: { backgroundColor: "#94a3b8" },
-  sendButtonText: { color: "#ffffff", fontWeight: "700" },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", alignItems: "center", padding: 16 },
-  modalCloseButton: { position: "absolute", top: 48, right: 20, zIndex: 10, padding: 10, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 20 },
-  modalCloseText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
-  modalImage: { width: "100%", height: "80%" },
+  attachThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+  },
+  removeAttachButton: {
+    padding: 8,
+  },
+  removeAttachText: {
+    color: "#b91c1c",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  composer: {
+    alignItems: "flex-end",
+    backgroundColor: "#ffffff",
+    borderTopColor: "#E2E8F0",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    padding: 10,
+  },
+  attachButton: {
+    backgroundColor: "#F1F5F9",
+    borderColor: "#CBD5E1",
+    borderWidth: 1,
+    borderRadius: 10,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  attachButtonText: {
+    fontSize: 20,
+  },
+  composerInput: {
+    borderColor: "#CBD5E1",
+    borderRadius: 10,
+    borderWidth: 1,
+    flex: 1,
+    maxHeight: 100,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#F8FAFC",
+    color: "#070D1F",
+  },
+  sendButton: {
+    backgroundColor: "#FDBF1E",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendButtonDisabled: {
+    backgroundColor: "#CBD5E1",
+  },
+  sendButtonText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalCloseButton: {
+    position: "absolute",
+    top: 48,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+  },
+  modalCloseText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  modalImage: {
+    width: "100%",
+    height: "80%",
+  },
 });
-

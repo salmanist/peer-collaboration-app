@@ -8,13 +8,18 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { useDataStore } from "../../../core/store/DataStoreContext";
+import { LostAndFoundDetailSkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import {
   createItemClaim,
@@ -43,11 +48,15 @@ function getImageUrl(imagePath: string | null) {
 export default function LostAndFoundDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const itemId = Number(id);
+  const insets = useSafeAreaInsets();
   const currentUser = useSessionStore((state) => state.user);
+  const { lostAndFoundItems } = useDataStore();
 
-  const [item, setItem] = useState<LostAndFoundItem | null>(null);
+  const cachedItem = (lostAndFoundItems || []).find((i: LostAndFoundItem) => i.id === itemId) || null;
+
+  const [item, setItem] = useState<LostAndFoundItem | null>(() => cachedItem);
   const [claims, setClaims] = useState<ItemClaim[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !cachedItem);
   const [errorMessage, setErrorMessage] = useState("");
 
   // Claim Modal State
@@ -59,6 +68,8 @@ export default function LostAndFoundDetailScreen() {
   // Full-screen Image Viewer
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
 
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+
   const loadData = useCallback(async () => {
     if (!Number.isInteger(itemId)) {
       setErrorMessage("Invalid notice link.");
@@ -67,7 +78,9 @@ export default function LostAndFoundDetailScreen() {
     }
 
     try {
-      setIsLoading(true);
+      if (!cachedItem && !item) {
+        setIsLoading(true);
+      }
       const itemData = await fetchLostAndFoundItem(itemId);
       setItem(itemData);
 
@@ -77,15 +90,17 @@ export default function LostAndFoundDetailScreen() {
       }
       setErrorMessage("");
     } catch {
-      setErrorMessage("Could not load notice details.");
+      if (!item && !cachedItem) {
+        setErrorMessage("Could not load notice details.");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [itemId, currentUser]);
+  }, [itemId, currentUser, cachedItem, item]);
 
   useEffect(() => {
     void loadData();
-  }, [loadData]);
+  }, [itemId]);
 
   const handleClaimSubmit = async () => {
     if (!claimMessage.trim()) {
@@ -140,10 +155,17 @@ export default function LostAndFoundDetailScreen() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !item) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#1d4ed8" />
+      <View style={styles.container}>
+        <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          </Pressable>
+          <Text style={styles.compactNavTitle}>Details</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <LostAndFoundDetailSkeleton />
       </View>
     );
   }
@@ -151,12 +173,20 @@ export default function LostAndFoundDetailScreen() {
   if (!item) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>← Back</Text>
+        <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          </Pressable>
+          <Text style={styles.compactNavTitle}>Details</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <View style={styles.centeredError}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#EF4444" style={{ marginBottom: 12 }} />
+          <Text style={styles.errorText}>{errorMessage || "Notice not found."}</Text>
+          <Pressable style={styles.retryBtn} onPress={() => void loadData()}>
+            <Text style={styles.retryBtnText}>Try Again</Text>
           </Pressable>
         </View>
-        <Text style={styles.errorText}>{errorMessage || "Item not found."}</Text>
       </View>
     );
   }
@@ -167,74 +197,108 @@ export default function LostAndFoundDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Top Header */}
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.backLink}>← Back to Feed</Text>
+      {/* Top App Bar */}
+      <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        </Pressable>
+        <Text style={styles.compactNavTitle}>Details</Text>
+        {isOwner ? (
+          <Pressable
+            style={styles.editHeaderBtn}
+            onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}`)}
+          >
+            <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" />
+            <Text style={styles.editHeaderBtnText}>Edit</Text>
           </Pressable>
-          {isOwner ? (
-            <View style={styles.ownerHeaderActions}>
-              <Pressable
-                style={styles.editHeaderBtn}
-                onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}`)}
-              >
-                <Text style={styles.editHeaderBtnText}>Edit</Text>
-              </Pressable>
-              <Pressable style={styles.deleteHeaderBtn} onPress={handleDelete}>
-                <Text style={styles.deleteHeaderBtnText}>Delete</Text>
-              </Pressable>
-            </View>
-          ) : null}
-        </View>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
+      </View>
 
-        {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {errorMessage ? (
+          <View style={styles.errorBannerRow}>
+            <MaterialCommunityIcons name="information" size={16} color="#B91C1C" />
+            <Text style={styles.errorBannerText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
-        {/* Photo Banner */}
+        {/* Hero Notice Visual */}
         {imageUrl ? (
-          <Pressable onPress={() => setIsImageViewerVisible(true)} style={styles.bannerPressable}>
+          <Pressable onPress={() => setIsImageViewerVisible(true)} style={styles.photoBannerCard}>
             <Image source={{ uri: imageUrl }} style={styles.photoBanner} resizeMode="cover" />
             <View style={styles.bannerTapHint}>
-              <Text style={styles.bannerTapText}>🔍 Tap to enlarge</Text>
+              <MaterialCommunityIcons name="magnify-plus-outline" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+              <Text style={styles.bannerTapText}>Tap to enlarge</Text>
             </View>
           </Pressable>
         ) : (
-          <View style={[styles.noPhotoBanner, isLost ? styles.noPhotoLost : styles.noPhotoFound]}>
-            <Text style={styles.noPhotoEmoji}>{isLost ? "🔍" : "📦"}</Text>
-            <Text style={styles.noPhotoText}>No photo attached</Text>
+          <View style={[styles.noPhotoGraphicCard, isLost ? styles.noPhotoLost : styles.noPhotoFound]}>
+            <View style={[styles.graphicIconCircle, isLost ? styles.iconCircleLost : styles.iconCircleFound]}>
+              <MaterialCommunityIcons
+                name={isLost ? "help-circle-outline" : "cube-scan"}
+                size={34}
+                color={isLost ? "#DC2626" : "#0D3E02"}
+              />
+            </View>
+            <Text style={styles.graphicTitle}>{isLost ? "Reported Lost Item" : "Reported Found Item"}</Text>
+            <Text style={styles.graphicSubtitle}>No reference photo uploaded by reporter</Text>
           </View>
         )}
 
-        {/* Main Details Card */}
+        {/* Main Details Floating Card */}
         <View style={styles.detailsCard}>
+          {/* Badges Row */}
           <View style={styles.tagsRow}>
             <View style={[styles.typeBadge, isLost ? styles.typeBadgeLost : styles.typeBadgeFound]}>
+              <MaterialCommunityIcons
+                name={isLost ? "alert-circle" : "check-decagram"}
+                size={12}
+                color={isLost ? "#B91C1C" : "#047857"}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.typeBadgeText, isLost ? styles.typeBadgeTextLost : styles.typeBadgeTextFound]}>
                 {isLost ? "LOST ITEM" : "FOUND ITEM"}
               </Text>
             </View>
             <View style={[styles.statusBadge, item.status === "open" ? styles.statusOpen : styles.statusClosed]}>
               <Text style={[styles.statusBadgeText, item.status === "open" ? styles.statusOpenText : styles.statusClosedText]}>
-                {item.status.toUpperCase()}
+                {item.status === "open" ? "ACTIVE" : "RESOLVED"}
               </Text>
             </View>
           </View>
 
+          {/* Title */}
           <Text style={styles.itemTitle}>{item.title}</Text>
 
+          {/* Meta Info Pills */}
           <View style={styles.metaRow}>
-            <Text style={styles.metaLocation}>📍 {item.location}</Text>
+            <View style={styles.metaPill}>
+              <MaterialCommunityIcons name="map-marker" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+              <Text style={styles.metaLocation}>{item.location}</Text>
+            </View>
             {item.date_lost_or_found ? (
-              <Text style={styles.metaDate}>🗓️ {item.date_lost_or_found}</Text>
+              <View style={styles.metaPill}>
+                <MaterialCommunityIcons name="calendar-clock" size={14} color="#64748B" style={{ marginRight: 4 }} />
+                <Text style={styles.metaDate}>{item.date_lost_or_found}</Text>
+              </View>
             ) : null}
           </View>
 
+          {/* Description */}
           <Text style={styles.sectionHeading}>Description</Text>
           <Text style={styles.descriptionText}>{item.description}</Text>
 
           <View style={styles.divider} />
 
-          {/* Poster Information */}
+          {/* Reporter Information */}
           <Text style={styles.sectionHeading}>Reported By</Text>
           <View style={styles.posterCard}>
             <View style={styles.posterAvatar}>
@@ -244,7 +308,7 @@ export default function LostAndFoundDetailScreen() {
             </View>
             <View style={styles.posterInfo}>
               <Text style={styles.posterName}>
-                {item.poster_name?.trim() || item.poster_email?.split("@")[0] || "Student"}
+                {item.poster_name?.trim() || item.poster_email?.split("@")[0] || "Campus Student"}
               </Text>
               <Text style={styles.posterMeta}>
                 {item.poster_department ? `${item.poster_department} • ` : ""}
@@ -252,25 +316,33 @@ export default function LostAndFoundDetailScreen() {
               </Text>
             </View>
           </View>
-
         </View>
 
-        {/* Owner Controls */}
+        {/* Action Card */}
         {isOwner ? (
           <View style={styles.actionsCard}>
             <Text style={styles.actionsTitle}>Post Management</Text>
-            {item.status === "open" ? (
-              <Pressable style={styles.resolveBtn} onPress={() => void handleStatusChange("resolved")}>
-                <Text style={styles.resolveBtnText}>✓ Mark as Resolved / Handed Over</Text>
+            <View style={styles.ownerActionsColumn}>
+              {item.status === "open" ? (
+                <Pressable style={styles.resolveBtn} onPress={() => void handleStatusChange("resolved")}>
+                  <MaterialCommunityIcons name="check-circle-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <Text style={styles.resolveBtnText}>Mark as Resolved / Handed Over</Text>
+                </Pressable>
+              ) : (
+                <Pressable style={styles.reopenBtn} onPress={() => void handleStatusChange("open")}>
+                  <MaterialCommunityIcons name="refresh" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <Text style={styles.reopenBtnText}>Re-open Notice</Text>
+                </Pressable>
+              )}
+
+              <Pressable style={styles.deletePostBtn} onPress={handleDelete}>
+                <MaterialCommunityIcons name="trash-can-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+                <Text style={styles.deletePostBtnText}>Delete Notice</Text>
               </Pressable>
-            ) : (
-              <Pressable style={styles.reopenBtn} onPress={() => void handleStatusChange("open")}>
-                <Text style={styles.reopenBtnText}>↺ Re-open Notice</Text>
-              </Pressable>
-            )}
+            </View>
 
             {/* Claims list for owner */}
-            <Text style={[styles.sectionHeading, { marginTop: 16 }]}>
+            <Text style={[styles.sectionHeading, { marginTop: 20 }]}>
               Inquiries & Claims ({claims.length})
             </Text>
             {claims.length === 0 ? (
@@ -280,7 +352,9 @@ export default function LostAndFoundDetailScreen() {
                 <View key={claim.id} style={styles.claimItem}>
                   <View style={styles.claimTopRow}>
                     <Text style={styles.claimantName}>{claim.claimant_name}</Text>
-                    <Text style={styles.claimStatus}>[{claim.status.toUpperCase()}]</Text>
+                    <View style={styles.claimStatusBadge}>
+                      <Text style={styles.claimStatusText}>{claim.status.toUpperCase()}</Text>
+                    </View>
                   </View>
                   <Text style={styles.claimMessage}>"{claim.message}"</Text>
                   {claim.status === "accepted" ? (
@@ -293,7 +367,8 @@ export default function LostAndFoundDetailScreen() {
                         })
                       }
                     >
-                      <Text style={styles.chatActionBtnText}>💬 Open Live Handover Chat</Text>
+                      <MaterialCommunityIcons name="chat-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
+                      <Text style={styles.chatActionBtnText}>Open Live Handover Chat</Text>
                     </Pressable>
                   ) : null}
                 </View>
@@ -305,20 +380,28 @@ export default function LostAndFoundDetailScreen() {
           <View style={styles.actionsCard}>
             {item.status !== "open" ? (
               <View style={styles.resolvedNotice}>
+                <MaterialCommunityIcons name="check-circle" size={20} color="#047857" style={{ marginRight: 8 }} />
                 <Text style={styles.resolvedNoticeText}>
-                  This notice has been marked as {item.status}.
+                  This notice has been marked as resolved.
                 </Text>
               </View>
             ) : item.has_user_claimed ? (
               <View style={styles.claimedNotice}>
+                <MaterialCommunityIcons name="clock-check-outline" size={20} color="#0D3E02" style={{ marginRight: 8 }} />
                 <Text style={styles.claimedNoticeText}>
-                  ✓ You have submitted a claim/inquiry for this item. Check "My Notices" to view status or chat.
+                  You have submitted a claim/inquiry for this item. Check "My Notices" to view status or chat.
                 </Text>
               </View>
             ) : (
-              <Pressable style={styles.claimBtn} onPress={() => setIsClaimModalVisible(true)}>
-                <Text style={styles.claimBtnText}>
-                  {isLost ? "💬 I Found This Item / Have Info" : "🙋 This is My Item / Claim"}
+              <Pressable style={styles.primaryClaimBtn} onPress={() => setIsClaimModalVisible(true)}>
+                <MaterialCommunityIcons
+                  name={isLost ? "information-outline" : "hand-wave-outline"}
+                  size={18}
+                  color="#0D3E02"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.primaryClaimBtnText}>
+                  {isLost ? "I Found This Item / Have Info" : "This is My Item / Claim"}
                 </Text>
               </Pressable>
             )}
@@ -334,8 +417,8 @@ export default function LostAndFoundDetailScreen() {
               <Text style={styles.modalTitle}>
                 {isLost ? "Contact Finder / Owner" : "Submit Item Claim"}
               </Text>
-              <Pressable onPress={() => setIsClaimModalVisible(false)}>
-                <Text style={styles.modalCloseX}>✕</Text>
+              <Pressable onPress={() => setIsClaimModalVisible(false)} style={styles.modalCloseBtn}>
+                <MaterialCommunityIcons name="close" size={20} color="#0F172A" />
               </Pressable>
             </View>
 
@@ -350,6 +433,7 @@ export default function LostAndFoundDetailScreen() {
             <TextInput
               style={styles.claimInput}
               placeholder="Type your message, verification details, or handover instructions..."
+              placeholderTextColor="#94A3B8"
               value={claimMessage}
               onChangeText={setClaimMessage}
               multiline
@@ -369,7 +453,7 @@ export default function LostAndFoundDetailScreen() {
                 disabled={isSubmittingClaim}
               >
                 {isSubmittingClaim ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color="#0D3E02" />
                 ) : (
                   <Text style={styles.modalSubmitText}>Submit Claim</Text>
                 )}
@@ -383,7 +467,8 @@ export default function LostAndFoundDetailScreen() {
       <Modal visible={isImageViewerVisible} transparent animationType="fade">
         <View style={styles.fullImageBackdrop}>
           <Pressable style={styles.fullImageClose} onPress={() => setIsImageViewerVisible(false)}>
-            <Text style={styles.fullImageCloseText}>✕ Close</Text>
+            <MaterialCommunityIcons name="close" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+            <Text style={styles.fullImageCloseText}>Close</Text>
           </Pressable>
           {imageUrl ? (
             <Image source={{ uri: imageUrl }} style={styles.fullImage} resizeMode="contain" />
@@ -395,95 +480,614 @@ export default function LostAndFoundDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", paddingTop: 56 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  scrollContent: { paddingBottom: 40 },
-  header: {
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  compactTopNav: {
+    backgroundColor: "#ffffff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+    zIndex: 10,
+  },
+  navBackBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  compactNavTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#0D3E02",
+    letterSpacing: -0.3,
+  },
+  ownerHeaderActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  editHeaderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FDBF1E",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  editHeaderBtnText: {
+    color: "#0D3E02",
+    fontWeight: "900",
+    fontSize: 12,
+  },
+  deleteHeaderBtn: {
+    backgroundColor: "#FEE2E2",
+    padding: 7,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollContent: {
+    paddingTop: 16,
+  },
+  errorBannerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  errorBannerText: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  photoBannerCard: {
+    marginHorizontal: 16,
+    height: 240,
+    borderRadius: 24,
+    overflow: "hidden",
+    backgroundColor: "#0F172A",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  photoBanner: {
+    width: "100%",
+    height: "100%",
+  },
+  bannerTapHint: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  bannerTapText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  noPhotoGraphicCard: {
+    marginHorizontal: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  noPhotoLost: {
+    backgroundColor: "#FFF5F5",
+    borderColor: "#FED7D7",
+  },
+  noPhotoFound: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#DCFCE7",
+  },
+  graphicIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  iconCircleLost: {
+    backgroundColor: "#FEE2E2",
+  },
+  iconCircleFound: {
+    backgroundColor: "#DCFCE7",
+  },
+  graphicTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.2,
+  },
+  graphicSubtitle: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 3,
+    fontWeight: "500",
+  },
+  detailsCard: {
+    backgroundColor: "#ffffff",
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 24,
+    padding: 20,
+    borderColor: "#F1F5F9",
+    borderWidth: 1,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tagsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 14,
   },
-  backLink: { color: "#1d4ed8", fontWeight: "700", fontSize: 14 },
-  ownerHeaderActions: { flexDirection: "row", gap: 10 },
-  editHeaderBtn: { backgroundColor: "#e2e8f0", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  editHeaderBtnText: { color: "#334155", fontWeight: "700", fontSize: 12 },
-  deleteHeaderBtn: { backgroundColor: "#fee2e2", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
-  deleteHeaderBtnText: { color: "#b91c1c", fontWeight: "700", fontSize: 12 },
-  errorBanner: { backgroundColor: "#fee2e2", color: "#b91c1c", marginHorizontal: 20, padding: 12, borderRadius: 8, marginBottom: 12 },
-  errorText: { color: "#b91c1c", fontSize: 13, marginBottom: 8 },
-  bannerPressable: { width: "100%", height: 260, backgroundColor: "#000000" },
-  photoBanner: { width: "100%", height: "100%" },
-  bannerTapHint: { position: "absolute", bottom: 10, right: 14, backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14 },
-  bannerTapText: { color: "#ffffff", fontSize: 11, fontWeight: "600" },
-  noPhotoBanner: { height: 160, justifyContent: "center", alignItems: "center", marginHorizontal: 20, borderRadius: 12 },
-  noPhotoLost: { backgroundColor: "#fee2e2" },
-  noPhotoFound: { backgroundColor: "#ecfdf5" },
-  noPhotoEmoji: { fontSize: 44, marginBottom: 6 },
-  noPhotoText: { color: "#64748b", fontSize: 13, fontWeight: "600" },
-  detailsCard: { backgroundColor: "#ffffff", margin: 20, borderRadius: 12, padding: 18, borderColor: "#e2e8f0", borderWidth: 1 },
-  tagsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  typeBadgeLost: { backgroundColor: "#fee2e2" },
-  typeBadgeFound: { backgroundColor: "#d1fae5" },
-  typeBadgeText: { fontSize: 12, fontWeight: "800" },
-  typeBadgeTextLost: { color: "#b91c1c" },
-  typeBadgeTextFound: { color: "#047857" },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  statusOpen: { backgroundColor: "#f1f5f9" },
-  statusClosed: { backgroundColor: "#e2e8f0" },
-  statusBadgeText: { fontSize: 11, fontWeight: "700" },
-  statusOpenText: { color: "#0284c7" },
-  statusClosedText: { color: "#64748b" },
-  itemTitle: { fontSize: 22, fontWeight: "800", color: "#0f172a", marginTop: 12 },
-  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 8 },
-  metaLocation: { fontSize: 13, color: "#2563eb", fontWeight: "700" },
-  metaDate: { fontSize: 13, color: "#64748b", fontWeight: "500" },
-  sectionHeading: { fontSize: 14, fontWeight: "700", color: "#0f172a", marginTop: 16, marginBottom: 6 },
-  descriptionText: { fontSize: 14, color: "#475569", lineHeight: 22 },
-  divider: { height: 1, backgroundColor: "#f1f5f9", marginVertical: 16 },
-  posterCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#f8fafc", padding: 12, borderRadius: 8 },
-  posterAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#1d4ed8", justifyContent: "center", alignItems: "center" },
-  posterAvatarText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
-  posterInfo: { flex: 1 },
-  posterName: { fontSize: 14, fontWeight: "700", color: "#0f172a" },
-  posterMeta: { fontSize: 12, color: "#64748b", marginTop: 2 },
-  actionsCard: { backgroundColor: "#ffffff", marginHorizontal: 20, borderRadius: 12, padding: 18, borderColor: "#e2e8f0", borderWidth: 1 },
-  actionsTitle: { fontSize: 15, fontWeight: "700", color: "#0f172a", marginBottom: 12 },
-  resolveBtn: { backgroundColor: "#059669", paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  resolveBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
-  reopenBtn: { backgroundColor: "#64748b", paddingVertical: 12, borderRadius: 8, alignItems: "center" },
-  reopenBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 14 },
-  noClaimsText: { fontSize: 13, color: "#94a3b8", fontStyle: "italic", marginTop: 6 },
-  claimItem: { backgroundColor: "#f8fafc", padding: 12, borderRadius: 8, marginTop: 8, borderColor: "#e2e8f0", borderWidth: 1 },
-  claimTopRow: { flexDirection: "row", justifyContent: "space-between" },
-  claimantName: { fontWeight: "700", fontSize: 13, color: "#0f172a" },
-  claimStatus: { fontSize: 11, fontWeight: "700", color: "#6366f1" },
-  claimMessage: { fontSize: 12, color: "#475569", marginTop: 4 },
-  chatActionBtn: { backgroundColor: "#1d4ed8", paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6, marginTop: 8, alignItems: "center" },
-  chatActionBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
-  claimBtn: { backgroundColor: "#1d4ed8", paddingVertical: 14, borderRadius: 10, alignItems: "center" },
-  claimBtnText: { color: "#ffffff", fontWeight: "800", fontSize: 15 },
-  resolvedNotice: { backgroundColor: "#f1f5f9", padding: 14, borderRadius: 8, alignItems: "center" },
-  resolvedNoticeText: { color: "#64748b", fontWeight: "600", fontSize: 13 },
-  claimedNotice: { backgroundColor: "#d1fae5", padding: 14, borderRadius: 8 },
-  claimedNoticeText: { color: "#065f46", fontWeight: "600", fontSize: 13, textAlign: "center" },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  claimModalCard: { backgroundColor: "#ffffff", borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 22 },
-  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a" },
-  modalCloseX: { fontSize: 18, color: "#64748b", padding: 4 },
-  modalSubtitle: { fontSize: 13, color: "#64748b", marginTop: 6, marginBottom: 14 },
-  claimInput: { borderColor: "#cbd5e1", borderWidth: 1, borderRadius: 8, padding: 12, minHeight: 90, textAlignVertical: "top", fontSize: 14 },
-  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 18 },
-  modalCancelBtn: { paddingVertical: 10, paddingHorizontal: 16 },
-  modalCancelText: { color: "#64748b", fontWeight: "700" },
-  modalSubmitBtn: { backgroundColor: "#1d4ed8", paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
-  modalSubmitText: { color: "#ffffff", fontWeight: "700" },
-  btnDisabled: { backgroundColor: "#94a3b8" },
-  fullImageBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", alignItems: "center", padding: 16 },
-  fullImageClose: { position: "absolute", top: 48, right: 20, zIndex: 10, padding: 10, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 20 },
-  fullImageCloseText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
-  fullImage: { width: "100%", height: "80%" },
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  typeBadgeLost: {
+    backgroundColor: "#FEE2E2",
+  },
+  typeBadgeFound: {
+    backgroundColor: "#D1FAE5",
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 0.3,
+  },
+  typeBadgeTextLost: {
+    color: "#B91C1C",
+  },
+  typeBadgeTextFound: {
+    color: "#047857",
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusOpen: {
+    backgroundColor: "#F1F5F9",
+  },
+  statusClosed: {
+    backgroundColor: "#E2E8F0",
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  statusOpenText: {
+    color: "#0284C7",
+  },
+  statusClosedText: {
+    color: "#64748B",
+  },
+  itemTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+    marginTop: 12,
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  metaPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  metaLocation: {
+    fontSize: 12,
+    color: "#0D3E02",
+    fontWeight: "700",
+  },
+  metaDate: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "600",
+  },
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#0F172A",
+    marginTop: 18,
+    marginBottom: 6,
+    letterSpacing: -0.2,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: "#334155",
+    lineHeight: 22,
+    fontWeight: "400",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginVertical: 18,
+  },
+  posterCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#F8FAFC",
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+  },
+  posterAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#0D3E02",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  posterAvatarText: {
+    color: "#FDBF1E",
+    fontWeight: "900",
+    fontSize: 17,
+  },
+  posterInfo: {
+    flex: 1,
+  },
+  posterName: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  posterMeta: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  actionsCard: {
+    backgroundColor: "#ffffff",
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 24,
+    padding: 20,
+    borderColor: "#F1F5F9",
+    borderWidth: 1,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  actionsTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.2,
+    marginBottom: 12,
+  },
+  ownerActionsColumn: {
+    gap: 10,
+  },
+  resolveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 13,
+    borderRadius: 14,
+  },
+  resolveBtnText: {
+    color: "#0D3E02",
+    fontWeight: "900",
+    fontSize: 13,
+  },
+  reopenBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
+    paddingVertical: 13,
+    borderRadius: 14,
+  },
+  reopenBtnText: {
+    color: "#0D3E02",
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  deletePostBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF5F5",
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#FED7D7",
+  },
+  deletePostBtnText: {
+    color: "#B91C1C",
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  noClaimsText: {
+    fontSize: 13,
+    color: "#94A3B8",
+    fontStyle: "italic",
+    marginTop: 6,
+  },
+  claimItem: {
+    backgroundColor: "#F8FAFC",
+    padding: 14,
+    borderRadius: 14,
+    marginTop: 10,
+    borderColor: "#E2E8F0",
+    borderWidth: 1,
+  },
+  claimTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  claimantName: {
+    fontWeight: "800",
+    fontSize: 13,
+    color: "#0F172A",
+  },
+  claimStatusBadge: {
+    backgroundColor: "#E0E7FF",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  claimStatusText: {
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#4338CA",
+  },
+  claimMessage: {
+    fontSize: 13,
+    color: "#475569",
+    marginTop: 6,
+    lineHeight: 18,
+  },
+  chatActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  chatActionBtnText: {
+    color: "#0D3E02",
+    fontWeight: "900",
+    fontSize: 12,
+  },
+  primaryClaimBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 14,
+    borderRadius: 16,
+    shadowColor: "#FDBF1E",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  primaryClaimBtnText: {
+    color: "#0D3E02",
+    fontWeight: "900",
+    fontSize: 15,
+  },
+  resolvedNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ECFDF5",
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  resolvedNoticeText: {
+    color: "#047857",
+    fontWeight: "700",
+    fontSize: 13,
+    flex: 1,
+  },
+  claimedNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#DCFCE7",
+  },
+  claimedNoticeText: {
+    color: "#0D3E02",
+    fontWeight: "700",
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  claimModalCard: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 6,
+    marginBottom: 14,
+    lineHeight: 18,
+  },
+  claimInput: {
+    borderColor: "#E2E8F0",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    minHeight: 100,
+    textAlignVertical: "top",
+    fontSize: 14,
+    color: "#0F172A",
+    backgroundColor: "#F8FAFC",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 18,
+  },
+  modalCancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  modalCancelText: {
+    color: "#64748B",
+    fontWeight: "800",
+  },
+  modalSubmitBtn: {
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  modalSubmitText: {
+    color: "#0D3E02",
+    fontWeight: "900",
+  },
+  btnDisabled: {
+    opacity: 0.6,
+  },
+  fullImageBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.94)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  fullImageClose: {
+    position: "absolute",
+    top: 48,
+    right: 20,
+    zIndex: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  fullImageCloseText: {
+    color: "#ffffff",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+  fullImage: {
+    width: "100%",
+    height: "80%",
+  },
+  centeredError: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  retryBtn: {
+    backgroundColor: "#0D3E02",
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+  retryBtnText: {
+    color: "#FDBF1E",
+    fontWeight: "900",
+    fontSize: 13,
+  },
 });

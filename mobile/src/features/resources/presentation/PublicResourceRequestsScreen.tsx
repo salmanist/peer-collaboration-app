@@ -1,8 +1,11 @@
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { useDataStore } from "../../../core/store/DataStoreContext";
+import { PublicRequestCardSkeleton, SkeletonList } from "../../../core/components/Skeleton";
 import { fetchMyPublicResourceOffers, fetchPublicResourceRequests } from "../data/resourcesApi";
 import type { PublicResourceOffer, PublicResourceRequest } from "../resources";
 
@@ -11,9 +14,10 @@ function toLabel(value: string) {
 }
 
 export default function PublicResourceRequestsScreen() {
-  const [requests, setRequests] = useState<PublicResourceRequest[]>([]);
+  const { publicResourceRequests: cachedRequests, setPublicResourceRequests } = useDataStore();
+  const [requests, setRequests] = useState<PublicResourceRequest[]>(cachedRequests || []);
   const [myOffers, setMyOffers] = useState<PublicResourceOffer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedRequests);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -23,7 +27,7 @@ export default function PublicResourceRequestsScreen() {
 
   const loadRequests = async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
-    else setIsLoading(true);
+    else if (!cachedRequests && requests.length === 0) setIsLoading(true);
     setErrorMessage("");
 
     try {
@@ -32,6 +36,7 @@ export default function PublicResourceRequestsScreen() {
         fetchMyPublicResourceOffers(),
       ]);
       setRequests(requestsResponse.results);
+      setPublicResourceRequests(requestsResponse.results);
       setMyOffers(offersResponse.results);
       setPage(1);
       setHasNextPage(Boolean(requestsResponse.next));
@@ -78,15 +83,16 @@ export default function PublicResourceRequestsScreen() {
             <Text style={styles.offerSent}>Offer sent: {existingOffer.status}</Text>
           ) : (
             <Pressable style={styles.offerButton} onPress={() => router.push(`/resources/wanted/offer/${request.id}`)}>
-              <Text style={styles.offerButtonText}>Send offer</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialCommunityIcons name="send-outline" size={13} color="#ffffff" style={{ marginRight: 4 }} />
+                <Text style={styles.offerButtonText}>Send offer</Text>
+              </View>
             </Pressable>
           )
         ) : null}
       </View>
     );
   }, [myOffers, user?.id]);
-
-  if (isLoading) return <View style={styles.centered}><ActivityIndicator size="large" color="#1d4ed8" /></View>;
 
   return (
     <View style={styles.container}>
@@ -96,11 +102,23 @@ export default function PublicResourceRequestsScreen() {
           <Text style={styles.subtitle}>See what LGU students are looking for.</Text>
         </View>
         <Pressable style={styles.addButton} onPress={() => router.push("/resources/wanted/create")}>
-          <Text style={styles.addButtonText}>Request</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 2 }} />
+            <Text style={styles.addButtonText}>Request</Text>
+          </View>
         </Pressable>
       </View>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {isLoading ? (
+        <SkeletonList count={4} renderItem={() => <PublicRequestCardSkeleton />} />
+      ) : (
+        <>
+          {errorMessage ? (
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#b91c1c" style={{ marginRight: 4 }} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
 
       <FlatList
         data={requests}
@@ -118,6 +136,8 @@ export default function PublicResourceRequestsScreen() {
         ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color="#1d4ed8" style={{ marginVertical: 12 }} /> : null}
         renderItem={renderItem}
       />
+        </>
+      )}
     </View>
   );
 }

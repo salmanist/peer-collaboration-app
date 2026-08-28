@@ -8,7 +8,7 @@ from rest_framework import filters, generics, parsers, permissions
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from notifications.models import create_user_notification
 from .models import ItemClaim, ItemClaimChatMessage, LostAndFoundItem
 from .permissions import IsClaimParticipant, IsItemPoster
 from .serializers import (
@@ -117,10 +117,18 @@ class ItemClaimListCreateView(generics.ListCreateAPIView):
             claimant=self.request.user,
             status=ItemClaim.Status.PENDING,
         ).exists()
-        if existing_pending:
-            raise ValidationError({"detail": "You already have a pending claim on this item."})
-
-        serializer.save(item=item, claimant=self.request.user)
+        claim = serializer.save(item=item, claimant=self.request.user)
+        try:
+            claimer_name = getattr(self.request.user, "full_name", None) or self.request.user.email
+            create_user_notification(
+                recipient=item.reported_by if hasattr(item, "reported_by") and item.reported_by else getattr(item, "poster", None),
+                title="New Claim Verification Submitted 🔍",
+                message=f"{claimer_name} submitted a claim verification for your item '{item.title}'.",
+                priority="high",
+                sender=self.request.user,
+            )
+        except Exception:
+            pass
 
 
 class MyItemClaimsListView(generics.ListAPIView):

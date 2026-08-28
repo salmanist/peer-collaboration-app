@@ -1,50 +1,76 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { PublicRequestCardSkeleton, SkeletonList } from "../../../core/components/Skeleton";
 
-import { deletePublicResourceRequest, fetchIncomingPublicResourceOffers, fetchMyPublicResourceOffers, fetchMyPublicResourceRequests, updatePublicResourceOfferStatus, updatePublicResourceRequestStatus } from "../data/resourcesApi";
-import type { PublicResourceOffer, PublicResourceOfferStatus, PublicResourceRequest, PublicResourceRequestStatus } from "../resources";
-
-type RequestTab = "requests" | "received" | "sent";
+import {
+  deletePublicResourceRequest,
+  fetchMyPublicResourceRequests,
+  updatePublicResourceRequestStatus,
+} from "../data/resourcesApi";
+import type {
+  PublicResourceRequest,
+  PublicResourceRequestStatus,
+} from "../resources";
 
 export default function MyPublicResourceRequestsScreen() {
+  const insets = useSafeAreaInsets();
   const [requests, setRequests] = useState<PublicResourceRequest[]>([]);
-  const [incomingOffers, setIncomingOffers] = useState<PublicResourceOffer[]>([]);
-  const [sentOffers, setSentOffers] = useState<PublicResourceOffer[]>([]);
-  const [activeTab, setActiveTab] = useState<RequestTab>("requests");
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const loadRequests = async () => {
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+
+  const loadRequests = async (refresh = false) => {
+    if (refresh) setIsRefreshing(true);
+    else setIsLoading(true);
+    setErrorMessage("");
+
     try {
-      const [requestsResponse, incomingOffersResponse, sentOffersResponse] = await Promise.all([
-        fetchMyPublicResourceRequests(),
-        fetchIncomingPublicResourceOffers(),
-        fetchMyPublicResourceOffers(),
-      ]);
-      setRequests(requestsResponse.results);
-      setIncomingOffers(incomingOffersResponse.results);
-      setSentOffers(sentOffersResponse.results);
+      const response = await fetchMyPublicResourceRequests();
+      setRequests(response.results);
+    } catch {
+      setErrorMessage("Could not load your requests.");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
-    catch { setErrorMessage("Could not load your requests."); }
-    finally { setIsLoading(false); }
   };
 
-  const changeOfferStatus = async (id: number, status: PublicResourceOfferStatus) => {
-    try { await updatePublicResourceOfferStatus(id, status); await loadRequests(); }
-    catch { setErrorMessage("Could not update this offer."); }
-  };
-  useEffect(() => { void loadRequests(); }, []);
+  useEffect(() => {
+    void loadRequests();
+  }, []);
 
   const changeStatus = async (id: number, status: PublicResourceRequestStatus) => {
-    try { await updatePublicResourceRequestStatus(id, status); await loadRequests(); }
-    catch { setErrorMessage("Could not update this request."); }
+    setUpdatingId(id);
+    try {
+      await updatePublicResourceRequestStatus(id, status);
+      await loadRequests();
+    } catch {
+      setErrorMessage("Could not update this request.");
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const deleteRequest = (request: PublicResourceRequest) => {
     Alert.alert(
       "Delete request?",
-      `Delete “${request.title}”? This cannot be undone.`,
+      `Are you sure you want to delete “${request.title}”? This action cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -65,82 +91,397 @@ export default function MyPublicResourceRequestsScreen() {
     );
   };
 
-  if (isLoading) return <View style={styles.centered}><ActivityIndicator size="large" color="#1d4ed8" /></View>;
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(app)/resources" as any);
+    }
+  };
+
+  const renderItem = useCallback(
+    ({ item: request }: { item: PublicResourceRequest }) => {
+      const isOpen = request.status === "open";
+      const isFulfilled = request.status === "fulfilled";
+
+      return (
+        <View style={styles.card}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {request.title}
+            </Text>
+            <View
+              style={[
+                styles.statusBadge,
+                isOpen
+                  ? styles.statusOpen
+                  : isFulfilled
+                  ? styles.statusFulfilled
+                  : styles.statusCancelled,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusBadgeText,
+                  isOpen
+                    ? styles.statusOpenText
+                    : isFulfilled
+                    ? styles.statusFulfilledText
+                    : styles.statusCancelledText,
+                ]}
+              >
+                {request.status.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          {request.description ? (
+            <Text style={styles.descriptionText}>"{request.description}"</Text>
+          ) : null}
+
+          {request.course ? (
+            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+              <MaterialCommunityIcons name="target" size={13} color="#0D3E02" style={{ marginRight: 4 }} />
+              <Text style={styles.courseTag}>Course: {request.course}</Text>
+            </View>
+          ) : null}
+
+          {/* Action Buttons Row */}
+          <View style={styles.actionsRow}>
+            {isOpen ? (
+              <>
+                <Pressable
+                  style={styles.fulfillBtn}
+                  onPress={() => void changeStatus(request.id, "fulfilled")}
+                  disabled={updatingId === request.id}
+                >
+                  {updatingId === request.id ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                      <MaterialCommunityIcons name="check-circle-outline" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                      <Text style={styles.fulfillBtnText}>Mark Fulfilled</Text>
+                    </View>
+                  )}
+                </Pressable>
+                <Pressable
+                  style={styles.editBtn}
+                  onPress={() => router.push(`/resources/wanted/edit/${request.id}` as any)}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                    <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                    <Text style={styles.editBtnText}>Edit</Text>
+                  </View>
+                </Pressable>
+              </>
+            ) : null}
+            <Pressable
+              style={styles.deleteBtn}
+              onPress={() => deleteRequest(request)}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                <MaterialCommunityIcons name="trash-can-outline" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+                <Text style={styles.deleteBtnText}>Delete</Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      );
+    },
+    [updatingId],
+  );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Pressable onPress={() => router.back()}><Text style={styles.backLink}>← My Resources</Text></Pressable>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Requests</Text>
-        <Pressable style={styles.addButton} onPress={() => router.push("/resources/wanted/create")}><Text style={styles.addButtonText}>Request resource</Text></Pressable>
-      </View>
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-      <View style={styles.tabs}>
-        <TabButton label="My requests" active={activeTab === "requests"} onPress={() => setActiveTab("requests")} />
-        <TabButton label="Received" active={activeTab === "received"} onPress={() => setActiveTab("received")} />
-        <TabButton label="Sent" active={activeTab === "sent"} onPress={() => setActiveTab("sent")} />
-      </View>
-
-      {activeTab === "received" ? <>
-        {incomingOffers.length === 0 ? <Text style={styles.emptyText}>No one has offered a resource yet.</Text> : null}
-        {incomingOffers.map((offer) => (
-          <View key={offer.id} style={styles.offerCard}>
-            <Text style={styles.cardTitle}>{offer.public_request_title}</Text>
-            <Text style={styles.description}>From: {offer.offerer_name}</Text>
-            {offer.message ? <Text style={styles.description}>“{offer.message}”</Text> : null}
-            <Text style={styles.status}>Status: {offer.status}</Text>
-            {offer.status === "pending" ? <View style={styles.actions}>
-              <Pressable style={styles.fulfilledButton} onPress={() => void changeOfferStatus(offer.id, "accepted")}><Text style={styles.actionText}>Accept offer</Text></Pressable>
-              <Pressable style={styles.cancelButton} onPress={() => void changeOfferStatus(offer.id, "declined")}><Text style={styles.cancelText}>Decline</Text></Pressable>
-            </View> : null}
-            {offer.status === "accepted" ? <Pressable style={styles.chatButton} onPress={() => router.push({ pathname: "/resources/wanted/chat/[offerId]", params: { offerId: String(offer.id), resourceTitle: offer.public_request_title } })}><Text style={styles.actionText}>Open chat</Text></Pressable> : null}
+    <View style={styles.rootContainer}>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={handleBack}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        </Pressable>
+        <Text style={styles.topNavTitle}>My Requests</Text>
+        <Pressable
+          style={styles.navActionBtn}
+          onPress={() => router.push("/(app)/resources/wanted/create" as any)}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons name="plus" size={14} color="#0D3E02" style={{ marginRight: 2 }} />
+            <Text style={styles.navActionBtnText}>Request</Text>
           </View>
-        ))}
-      </> : null}
+        </Pressable>
+      </View>
 
-      {activeTab === "sent" ? <>
-        {sentOffers.length === 0 ? <Text style={styles.emptyText}>You have not offered a resource yet.</Text> : null}
-        {sentOffers.map((offer) => (
-          <View key={offer.id} style={styles.sentOfferCard}>
-            <Text style={styles.cardTitle}>{offer.public_request_title}</Text>
-            {offer.message ? <Text style={styles.description}>“{offer.message}”</Text> : null}
-            <Text style={styles.status}>Status: {offer.status}</Text>
-            {offer.status === "pending" ? <Pressable style={styles.cancelButton} onPress={() => void changeOfferStatus(offer.id, "cancelled")}><Text style={styles.cancelText}>Cancel offer</Text></Pressable> : null}
-            {offer.status === "accepted" ? <Pressable style={styles.chatButton} onPress={() => router.push({ pathname: "/resources/wanted/chat/[offerId]", params: { offerId: String(offer.id), resourceTitle: offer.public_request_title } })}><Text style={styles.actionText}>Open chat</Text></Pressable> : null}
-          </View>
-        ))}
-      </> : null}
+      {errorMessage ? (
+        <View style={styles.errorBox}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
 
-      {activeTab === "requests" ? <>
-        {requests.length === 0 ? <Text style={styles.emptyText}>You have not requested a resource yet.</Text> : null}
-        {requests.map((request) => (
-          <View key={request.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{request.title}</Text>
-            <Text style={styles.status}>Status: {request.status}</Text>
-            <Text style={styles.description}>{request.description}</Text>
-            <View style={styles.manageActions}>
-              {request.status === "open" ? <Pressable style={styles.editButton} onPress={() => router.push(`/resources/wanted/edit/${request.id}`)}><Text style={styles.editText}>Edit</Text></Pressable> : null}
-              <Pressable style={styles.deleteButton} onPress={() => deleteRequest(request)}><Text style={styles.deleteText}>Delete</Text></Pressable>
+      {isLoading ? (
+        <SkeletonList count={3} renderItem={() => <PublicRequestCardSkeleton />} />
+      ) : (
+        <FlatList
+          data={requests}
+          keyExtractor={(item) => String(item.id)}
+          refreshing={isRefreshing}
+          onRefresh={() => void loadRequests(true)}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === "android"}
+          contentContainerStyle={[
+            requests.length === 0 ? styles.emptyList : styles.list,
+            { paddingBottom: Math.max(insets.bottom + 40, 60) },
+          ]}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="hand-wave-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyTitle}>No Requests Posted</Text>
+              <Text style={styles.emptySub}>
+                You haven't posted any resource requests yet.
+              </Text>
+              <Pressable
+                style={styles.emptyAddBtn}
+                onPress={() => router.push("/(app)/resources/wanted/create" as any)}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                  <Text style={styles.emptyAddBtnText}>Post New Request</Text>
+                </View>
+              </Pressable>
             </View>
-            {request.status === "open" ? <View style={styles.actions}>
-              <Pressable style={styles.fulfilledButton} onPress={() => void changeStatus(request.id, "fulfilled")}><Text style={styles.actionText}>Mark fulfilled</Text></Pressable>
-              <Pressable style={styles.cancelButton} onPress={() => void changeStatus(request.id, "cancelled")}><Text style={styles.cancelText}>Cancel</Text></Pressable>
-            </View> : null}
-          </View>
-        ))}
-      </> : null}
-    </ScrollView>
+          }
+          renderItem={renderItem}
+        />
+      )}
+    </View>
   );
 }
 
-function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return <Pressable style={[styles.tab, active && styles.activeTab]} onPress={onPress}><Text style={[styles.tabText, active && styles.activeTabText]}>{label}</Text></Pressable>;
-}
-
 const styles = StyleSheet.create({
-  container: { backgroundColor: "#f8fafc", flexGrow: 1, padding: 20, paddingTop: 56 }, centered: { alignItems: "center", flex: 1, justifyContent: "center" },
-  backLink: { color: "#1d4ed8", fontWeight: "700", marginBottom: 20 }, header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 18 }, title: { color: "#0f172a", fontSize: 26, fontWeight: "700" },
-  addButton: { backgroundColor: "#1d4ed8", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }, addButtonText: { color: "#ffffff", fontWeight: "700" }, card: { backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 12, padding: 16 },
-  cardTitle: { color: "#0f172a", fontSize: 17, fontWeight: "700" }, status: { color: "#1d4ed8", fontWeight: "700", textTransform: "capitalize" }, description: { color: "#475569" }, manageActions: { flexDirection: "row", gap: 10, marginTop: 4 }, editButton: { backgroundColor: "#dbeafe", borderRadius: 7, paddingHorizontal: 12, paddingVertical: 8 }, editText: { color: "#1d4ed8", fontWeight: "700" }, deleteButton: { borderColor: "#b91c1c", borderRadius: 7, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 }, deleteText: { color: "#b91c1c", fontWeight: "700" }, actions: { flexDirection: "row", gap: 10, marginTop: 6 }, fulfilledButton: { backgroundColor: "#047857", borderRadius: 7, paddingHorizontal: 10, paddingVertical: 9 }, cancelButton: { borderColor: "#b91c1c", borderRadius: 7, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 9 }, actionText: { color: "#ffffff", fontWeight: "700" }, cancelText: { color: "#b91c1c", fontWeight: "700" },
-  tabs: { backgroundColor: "#e2e8f0", borderRadius: 9, flexDirection: "row", marginBottom: 16, padding: 3 }, tab: { alignItems: "center", borderRadius: 7, flex: 1, paddingHorizontal: 6, paddingVertical: 9 }, activeTab: { backgroundColor: "#ffffff" }, tabText: { color: "#475569", fontSize: 12, fontWeight: "700" }, activeTabText: { color: "#1d4ed8" }, offerCard: { backgroundColor: "#f0fdf4", borderColor: "#86efac", borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 10, padding: 16 }, sentOfferCard: { backgroundColor: "#eff6ff", borderColor: "#93c5fd", borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 10, padding: 16 }, chatButton: { alignSelf: "flex-start", backgroundColor: "#7c3aed", borderRadius: 7, paddingHorizontal: 12, paddingVertical: 9 }, emptyText: { color: "#64748b", textAlign: "center", marginTop: 50 }, errorText: { color: "#b91c1c", marginBottom: 12 },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "900",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
+  navActionBtn: {
+    backgroundColor: "#FDBF1E",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  navActionBtnText: {
+    color: "#0D3E02",
+    fontWeight: "900",
+    fontSize: 12,
+  },
+  list: {
+    padding: 16,
+    gap: 14,
+  },
+  emptyList: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderColor: "#F1F5F9",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 16,
+    gap: 8,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  cardTitle: {
+    color: "#070D1F",
+    fontSize: 15,
+    fontWeight: "700",
+    flex: 1,
+    lineHeight: 20,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  statusOpen: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#86EFAC",
+    borderWidth: 1,
+  },
+  statusOpenText: {
+    color: "#15803D",
+  },
+  statusFulfilled: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#BFDBFE",
+    borderWidth: 1,
+  },
+  statusFulfilledText: {
+    color: "#1E40AF",
+  },
+  statusCancelled: {
+    backgroundColor: "#FEE2E2",
+    borderColor: "#FCA5A5",
+    borderWidth: 1,
+  },
+  statusCancelledText: {
+    color: "#DC2626",
+  },
+  descriptionText: {
+    color: "#475569",
+    fontSize: 12,
+    fontStyle: "italic",
+    lineHeight: 16,
+  },
+  courseTag: {
+    color: "#0D3E02",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  fulfillBtn: {
+    flex: 1,
+    backgroundColor: "#0D3E02",
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fulfillBtnText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  editBtn: {
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+  },
+  editBtnText: {
+    color: "#0D3E02",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  deleteBtn: {
+    backgroundColor: "#FEE2E2",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  deleteBtnText: {
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  errorBox: {
+    margin: 16,
+    padding: 12,
+    backgroundColor: "#fee2e2",
+    borderRadius: 8,
+  },
+  errorText: {
+    color: "#b91c1c",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 30,
+  },
+  emptyEmoji: {
+    fontSize: 40,
+    marginBottom: 8,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#070D1F",
+    marginBottom: 4,
+  },
+  emptySub: {
+    fontSize: 12,
+    color: "#64748b",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  emptyAddBtn: {
+    backgroundColor: "#0D3E02",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  emptyAddBtnText: {
+    color: "#FDBF1E",
+    fontWeight: "800",
+    fontSize: 13,
+  },
 });

@@ -8,19 +8,18 @@ from .models import EmailVerification, StudentRoster, User
 class AccountAdmin(UserAdmin):
     model = User
     ordering = ["email"]
-    list_display = ["email", "full_name", "role", "is_email_verified", "is_active", "created_at"]
-    list_filter = ["role", "is_active", "is_email_verified", "department"]
-    search_fields = ["email", "full_name"]
+    list_display = ["email", "full_name", "department", "role", "is_email_verified", "is_active", "created_at"]
+    list_filter = ["role", "is_active", "is_email_verified"]
+    search_fields = ["email"]
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profile", {"fields": ("full_name", "department", "enrollment_year", "gender", "role")}),
-        ("Status", {"fields": ("is_email_verified", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Role & Permissions", {"fields": ("role", "is_email_verified", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Dates", {"fields": ("last_login",)}),
     )
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("email", "full_name", "password1", "password2", "is_active", "is_staff"),
+            "fields": ("email", "password1", "password2", "is_active", "is_staff"),
         }),
     )
     readonly_fields = ["last_login"]
@@ -34,5 +33,5 @@ class EmailVerificationAdmin(admin.ModelAdmin):
 
 @admin.register(StudentRoster)
 class StudentRosterAdmin(admin.ModelAdmin):
-    list_display = ["email", "imported_at"]
-    search_fields = ["email"]
+    list_display = ["email", "full_name", "dept", "enrollment_year", "phone_number", "imported_at"]
+    search_fields = ["email", "full_name", "dept__name", "dept__short_name"]

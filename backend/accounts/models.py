@@ -33,12 +33,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         ADMIN = "admin", "Admin"
 
     email = models.EmailField(unique=True)
-    full_name = models.CharField(max_length=150)
-    department = models.CharField(max_length=100, blank=True)
-    enrollment_year = models.PositiveIntegerField(null=True, blank=True)
-    # The existing Neon schema stores this legacy column as varchar(6).
-    # "other" keeps new accounts compatible without making gender required in the app.
-    gender = models.CharField(max_length=6, default="other")
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
 
     is_email_verified = models.BooleanField(default=False)
@@ -51,15 +45,79 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager()
 
+    ADMIN_EMAILS = {"salman@lgu.edu.pk", "zahra@lgu.edu.pk"}
+
+    def save(self, *args, **kwargs):
+        if self.email and self.email.lower() in self.ADMIN_EMAILS:
+            self.role = self.Role.ADMIN
+            self.is_staff = True
+        super().save(*args, **kwargs)
+
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["full_name"]
+    REQUIRED_FIELDS = []
+
+    @property
+    def roster_entry(self):
+        """Fetch student details from StudentRoster matching email."""
+        if not hasattr(self, "_cached_roster"):
+            self._cached_roster = (
+                StudentRoster.objects.filter(email__iexact=self.email)
+                .select_related("dept")
+                .first()
+            )
+        return self._cached_roster
+
+    @property
+    def full_name(self) -> str:
+        roster = self.roster_entry
+        if roster and roster.full_name and roster.full_name.strip():
+            return roster.full_name.strip()
+        username = self.email.split("@")[0]
+        return username.replace(".", " ").replace("_", " ").title()
+
+    @property
+    def department(self) -> str:
+        roster = self.roster_entry
+        return roster.dept_name if roster else ""
+
+    @property
+    def dept_name(self) -> str:
+        return self.department
+
+    @property
+    def dept_id(self):
+        roster = self.roster_entry
+        return roster.dept_id if roster else None
+
+    @property
+    def enrollment_year(self) -> str:
+        roster = self.roster_entry
+        return str(roster.enrollment_year) if roster and roster.enrollment_year else ""
+
+    @property
+    def gender(self) -> str:
+        roster = self.roster_entry
+        return roster.gender if roster else "other"
+
+    @property
+    def phone_number(self) -> str:
+        roster = self.roster_entry
+        return roster.phone_number if roster else ""
 
     @property
     def display_name(self) -> str:
-        if self.full_name and self.full_name.strip():
-            return self.full_name.strip()
-        username = self.email.split("@")[0]
-        return username.replace(".", " ").replace("_", " ").title()
+        return self.full_name
+
+    @property
+    def roll_number(self) -> str:
+        roster = self.roster_entry
+        if roster and roster.roll_no and roster.roll_no.strip():
+            return roster.roll_no.strip()
+        return self.email.split("@")[0].upper()
+
+    @property
+    def roll_no(self) -> str:
+        return self.roll_number
 
     def __str__(self):
         return self.display_name or self.email
@@ -89,11 +147,31 @@ class StudentRoster(models.Model):
     checks against this instead of trusting the email domain alone."""
 
     email = models.EmailField(unique=True)
-    department = models.CharField(max_length=100, blank=True, default="")
-    enrollment_year = models.PositiveIntegerField(null=True, blank=True)
+    roll_no = models.CharField(max_length=50, blank=True, default="")
     full_name = models.CharField(max_length=150, blank=True, default="")
+    dept = models.ForeignKey(
+        "common.Department",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        db_column="dept_id",
+        related_name="roster_students",
+    )
+    enrollment_year = models.CharField(max_length=50, blank=True, default="")
     gender = models.CharField(max_length=6, default="other")
+    phone_number = models.CharField(max_length=20, blank=True, default="")
     imported_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def dept_name(self) -> str:
+        if self.dept:
+            return self.dept.name
+        elif self.dept_id:
+            from common.models import Department
+            d = Department.objects.filter(id=self.dept_id).first()
+            return d.name if d else ""
+        return ""
+
     def __str__(self):
-        return self.email
+        dept_text = self.dept_name or (f"Dept #{self.dept_id}" if self.dept_id else "No Dept")
+        return f"{self.full_name or self.email} - {self.roll_no or 'No Roll No'} ({dept_text})"

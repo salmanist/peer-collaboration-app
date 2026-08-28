@@ -13,6 +13,24 @@ from .models import (
 class ResourceListingSerializer(serializers.ModelSerializer):
     owner_id = serializers.IntegerField(source="owner.id", read_only=True)
     owner_name = serializers.CharField(source="owner.display_name", read_only=True)
+    owner_email = serializers.EmailField(source="owner.email", read_only=True)
+    owner_department = serializers.CharField(source="owner.department", read_only=True)
+    owner_enrollment_year = serializers.CharField(source="owner.enrollment_year", read_only=True)
+    has_requested = serializers.SerializerMethodField()
+    interest_request_id = serializers.SerializerMethodField()
+
+    def get_has_requested(self, obj) -> bool:
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            return ResourceInterestRequest.objects.filter(resource=obj, requester=request.user).exists()
+        return False
+
+    def get_interest_request_id(self, obj):
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            req = ResourceInterestRequest.objects.filter(resource=obj, requester=request.user).first()
+            return req.id if req else None
+        return None
 
     class Meta:
         model = ResourceListing
@@ -20,6 +38,11 @@ class ResourceListingSerializer(serializers.ModelSerializer):
             "id",
             "owner_id",
             "owner_name",
+            "owner_email",
+            "owner_department",
+            "owner_enrollment_year",
+            "has_requested",
+            "interest_request_id",
             "title",
             "category",
             "course",
@@ -36,6 +59,11 @@ class ResourceListingSerializer(serializers.ModelSerializer):
             "id",
             "owner_id",
             "owner_name",
+            "owner_email",
+            "owner_department",
+            "owner_enrollment_year",
+            "has_requested",
+            "interest_request_id",
             "status",
             "created_at",
             "updated_at",
@@ -106,6 +134,9 @@ class ResourceListingStatusSerializer(serializers.ModelSerializer):
 class PublicResourceRequestSerializer(serializers.ModelSerializer):
     requester_id = serializers.IntegerField(source="requester.id", read_only=True)
     requester_name = serializers.CharField(source="requester.display_name", read_only=True)
+    requester_email = serializers.EmailField(source="requester.email", read_only=True)
+    requester_department = serializers.CharField(source="requester.department", read_only=True)
+    requester_enrollment_year = serializers.CharField(source="requester.enrollment_year", read_only=True)
 
     class Meta:
         model = PublicResourceRequest
@@ -113,6 +144,9 @@ class PublicResourceRequestSerializer(serializers.ModelSerializer):
             "id",
             "requester_id",
             "requester_name",
+            "requester_email",
+            "requester_department",
+            "requester_enrollment_year",
             "title",
             "category",
             "course",
@@ -126,6 +160,9 @@ class PublicResourceRequestSerializer(serializers.ModelSerializer):
             "id",
             "requester_id",
             "requester_name",
+            "requester_email",
+            "requester_department",
+            "requester_enrollment_year",
             "status",
             "created_at",
             "updated_at",

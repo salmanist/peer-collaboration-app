@@ -4,13 +4,19 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   Pressable,
   RefreshControl,
+  StatusBar,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { useDataStore } from "../../../core/store/DataStoreContext";
+import { SkeletonList, LostAndFoundCardSkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import {
   deleteLostAndFoundItem,
@@ -41,20 +47,24 @@ function getImageUrl(imagePath: string | null) {
 }
 
 export default function MyLostAndFoundScreen() {
+  const insets = useSafeAreaInsets();
   const markClaimsSeen = useLostAndFoundNotificationStore((state) => state.markClaimsSeen);
+  const { myLostAndFoundItems: cachedMyNotices, setMyLostAndFoundItems } = useDataStore();
   const [activeTab, setActiveTab] = useState<TabType>("my_notices");
 
-  const [myNotices, setMyNotices] = useState<LostAndFoundItem[]>([]);
+  const [myNotices, setMyNotices] = useState<LostAndFoundItem[]>(() => cachedMyNotices || []);
   const [incomingClaims, setIncomingClaims] = useState<ItemClaim[]>([]);
   const [myClaims, setMyClaims] = useState<ItemClaim[]>([]);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !(cachedMyNotices && cachedMyNotices.length > 0));
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+
   const loadData = useCallback(async (shouldRefresh: boolean = false) => {
     try {
-      if (!shouldRefresh) setIsLoading(true);
+      if (!shouldRefresh && !myNotices.length) setIsLoading(true);
       const [noticesRes, incomingRes, myClaimsRes] = await Promise.all([
         fetchMyLostAndFoundItems(),
         fetchIncomingItemClaims(),
@@ -62,6 +72,7 @@ export default function MyLostAndFoundScreen() {
       ]);
 
       setMyNotices(noticesRes.results);
+      setMyLostAndFoundItems(noticesRes.results);
       setIncomingClaims(incomingRes.results);
       setMyClaims(myClaimsRes.results);
       setErrorMessage("");
@@ -71,12 +82,14 @@ export default function MyLostAndFoundScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [myNotices.length, setMyLostAndFoundItems]);
 
   useEffect(() => {
     markClaimsSeen();
-    void loadData();
-  }, [loadData, markClaimsSeen]);
+    if (!cachedMyNotices || cachedMyNotices.length === 0) {
+      void loadData();
+    }
+  }, [cachedMyNotices, loadData, markClaimsSeen]);
 
   const onRefresh = () => {
     setIsRefreshing(true);
@@ -114,12 +127,16 @@ export default function MyLostAndFoundScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>My Notices & Claims</Text>
-        <Pressable style={styles.postBtn} onPress={() => router.push("/(app)/lost-and-found/create")}>
-          <Text style={styles.postBtnText}>+ Post Notice</Text>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <Pressable
+          style={styles.navBackBtn}
+          onPress={() => router.back()}
+        >
+          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
+        <Text style={styles.topNavTitle}>My Notices & Claims</Text>
+        <View style={{ width: 36 }} />
       </View>
 
       {/* Tabs */}
@@ -128,103 +145,193 @@ export default function MyLostAndFoundScreen() {
           style={[styles.tab, activeTab === "my_notices" && styles.tabActive]}
           onPress={() => setActiveTab("my_notices")}
         >
-          <Text style={[styles.tabText, activeTab === "my_notices" && styles.tabTextActive]}>
-            My Notices ({myNotices.length})
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons
+              name="bullhorn-outline"
+              size={15}
+              color={activeTab === "my_notices" ? "#0D3E02" : "#475569"}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.tabText, activeTab === "my_notices" && styles.tabTextActive]}>
+              My Notices ({myNotices.length})
+            </Text>
+          </View>
         </Pressable>
         <Pressable
           style={[styles.tab, activeTab === "incoming_claims" && styles.tabActive]}
           onPress={() => setActiveTab("incoming_claims")}
         >
-          <Text style={[styles.tabText, activeTab === "incoming_claims" && styles.tabTextActive]}>
-            Incoming ({incomingClaims.length})
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons
+              name="inbox-arrow-down-outline"
+              size={15}
+              color={activeTab === "incoming_claims" ? "#0D3E02" : "#475569"}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.tabText, activeTab === "incoming_claims" && styles.tabTextActive]}>
+              Incoming ({incomingClaims.length})
+            </Text>
+          </View>
         </Pressable>
         <Pressable
           style={[styles.tab, activeTab === "my_claims" && styles.tabActive]}
           onPress={() => setActiveTab("my_claims")}
         >
-          <Text style={[styles.tabText, activeTab === "my_claims" && styles.tabTextActive]}>
-            Sent Claims ({myClaims.length})
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons
+              name="send-outline"
+              size={15}
+              color={activeTab === "my_claims" ? "#0D3E02" : "#475569"}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={[styles.tabText, activeTab === "my_claims" && styles.tabTextActive]}>
+              Sent Claims ({myClaims.length})
+            </Text>
+          </View>
         </Pressable>
       </View>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
 
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
-        </View>
+        <SkeletonList
+          count={4}
+          renderItem={() => <LostAndFoundCardSkeleton />}
+          contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 40, 60) }]}
+        />
       ) : activeTab === "my_notices" ? (
         /* Tab 1: My Notices */
         <FlatList
           data={myNotices}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={myNotices.length === 0 ? styles.emptyList : styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 40, 60) }]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📋</Text>
+              <MaterialCommunityIcons name="package-variant" size={48} color="#64748b" style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No notices posted yet</Text>
-              <Text style={styles.emptySubtitle}>You haven't posted any lost or found notices yet.</Text>
+              <Text style={styles.emptySubtitle}>
+                Notices you post about lost or found campus items will appear here.
+              </Text>
             </View>
           }
           renderItem={({ item }) => {
             const isLost = item.post_type === "lost";
             const imageUrl = getImageUrl(item.image);
+
             return (
               <View style={styles.card}>
-                <Pressable
-                  style={styles.cardHeader}
-                  onPress={() => router.push(`/(app)/lost-and-found/${item.id}`)}
-                >
+                <View style={styles.cardHeader}>
                   {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={styles.cardThumb} resizeMode="cover" />
                   ) : (
-                    <View style={[styles.cardThumbPlaceholder, isLost ? styles.placeholderLost : styles.placeholderFound]}>
-                      <Text style={styles.placeholderEmoji}>{isLost ? "🔍" : "📦"}</Text>
+                    <View
+                      style={[
+                        styles.cardThumbPlaceholder,
+                        isLost ? styles.placeholderLost : styles.placeholderFound,
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name={isLost ? "help-circle-outline" : "package-variant-closed"}
+                        size={24}
+                        color="#64748b"
+                      />
                     </View>
                   )}
                   <View style={styles.cardInfo}>
                     <View style={styles.badgeRow}>
-                      <View style={[styles.typeBadge, isLost ? styles.typeBadgeLost : styles.typeBadgeFound]}>
-                        <Text style={[styles.typeBadgeText, isLost ? styles.typeBadgeTextLost : styles.typeBadgeTextFound]}>
-                          {isLost ? "LOST" : "FOUND"}
+                      <View
+                        style={[
+                          styles.typeBadge,
+                          isLost ? styles.typeBadgeLost : styles.typeBadgeFound,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.typeBadgeText,
+                            isLost ? styles.typeBadgeTextLost : styles.typeBadgeTextFound,
+                          ]}
+                        >
+                          {item.post_type.toUpperCase()}
                         </Text>
                       </View>
-                      <View style={[styles.statusBadge, item.status === "open" ? styles.statusOpen : styles.statusClosed]}>
-                        <Text style={[styles.statusBadgeText, item.status === "open" ? styles.statusOpenText : styles.statusClosedText]}>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          item.status === "open" ? styles.statusOpen : styles.statusClosed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusBadgeText,
+                            item.status === "open" ? styles.statusOpenText : styles.statusClosedText,
+                          ]}
+                        >
                           {item.status.toUpperCase()}
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                    <Text style={styles.cardLocation} numberOfLines={1}>📍 {item.location}</Text>
-                    <Text style={styles.claimsCountText}>💬 {item.claims_count} claim{item.claims_count === 1 ? "" : "s"}</Text>
-                  </View>
-                </Pressable>
 
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
+                      <MaterialCommunityIcons name="map-marker" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                      <Text style={styles.cardLocation} numberOfLines={1}>
+                        {item.location}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                      <MaterialCommunityIcons name="chat-processing-outline" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                      <Text style={styles.claimsCountText}>
+                        {item.claims_count} claim inquiry{item.claims_count === 1 ? "" : "s"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Actions */}
                 <View style={styles.cardActions}>
                   <Pressable
                     style={styles.statusActionBtn}
                     onPress={() => void handleItemStatusToggle(item.id, item.status)}
                   >
-                    <Text style={styles.statusActionBtnText}>
-                      {item.status === "open" ? "✓ Mark Resolved" : "↺ Re-open"}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <MaterialCommunityIcons
+                        name={item.status === "open" ? "check-circle-outline" : "refresh"}
+                        size={14}
+                        color="#0D3E02"
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text style={styles.statusActionBtnText}>
+                        {item.status === "open" ? "Mark Resolved" : "Re-open Notice"}
+                      </Text>
+                    </View>
                   </Pressable>
+
                   <Pressable
                     style={styles.editActionBtn}
-                    onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}`)}
+                    onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}` as any)}
                   >
-                    <Text style={styles.editActionBtnText}>Edit</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                      <Text style={styles.editActionBtnText}>Edit</Text>
+                    </View>
                   </Pressable>
+
                   <Pressable
                     style={styles.deleteActionBtn}
                     onPress={() => void handleDeleteItem(item.id)}
                   >
-                    <Text style={styles.deleteActionBtnText}>Delete</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <MaterialCommunityIcons name="trash-can-outline" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+                      <Text style={styles.deleteActionBtnText}>Delete</Text>
+                    </View>
                   </Pressable>
                 </View>
               </View>
@@ -236,76 +343,98 @@ export default function MyLostAndFoundScreen() {
         <FlatList
           data={incomingClaims}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={incomingClaims.length === 0 ? styles.emptyList : styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 40, 60) }]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📬</Text>
+              <MaterialCommunityIcons name="inbox-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No incoming claims</Text>
-              <Text style={styles.emptySubtitle}>When other students respond to your notices, you will see their claims here.</Text>
+              <Text style={styles.emptySubtitle}>
+                When peers reach out about items you reported found or lost, they will show up here.
+              </Text>
             </View>
           }
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.claimItemHeader}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.claimNoticeTitle}>For: {item.item_title}</Text>
+                  <Text style={styles.claimNoticeTitle}>Re: {item.item_title}</Text>
                   <Text style={styles.claimantDetails}>
-                    Claim by <Text style={{ fontWeight: "700" }}>{item.claimant_name}</Text> ({item.claimant_email})
+                    Claimant: <Text style={{ fontWeight: "700", color: "#070D1F" }}>{item.claimant_name}</Text> ({item.claimant_department || "LGU Student"})
                   </Text>
                 </View>
-                <View style={[styles.statusBadge, item.status === "accepted" ? styles.statusAccepted : styles.statusOpen]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    item.status === "accepted"
+                      ? styles.statusAccepted
+                      : item.status === "declined"
+                      ? styles.statusClosed
+                      : styles.statusOpen,
+                  ]}
+                >
                   <Text style={styles.statusBadgeText}>{item.status.toUpperCase()}</Text>
                 </View>
               </View>
 
               <Text style={styles.claimBodyText}>"{item.message}"</Text>
 
-              <View style={styles.claimActionsRow}>
-                {item.status === "pending" ? (
-                  <>
-                    <Pressable
-                      style={styles.acceptBtn}
-                      onPress={() => void handleClaimStatus(item.id, "accepted")}
-                    >
-                      <Text style={styles.acceptBtnText}>✓ Accept Claim</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.declineBtn}
-                      onPress={() => void handleClaimStatus(item.id, "declined")}
-                    >
-                      <Text style={styles.declineBtnText}>✕ Decline</Text>
-                    </Pressable>
-                  </>
-                ) : item.status === "accepted" ? (
+              {item.status === "pending" ? (
+                <View style={styles.claimActionsRow}>
+                  <Pressable
+                    style={styles.acceptBtn}
+                    onPress={() => void handleClaimStatus(item.id, "accepted")}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <MaterialCommunityIcons name="check" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                      <Text style={styles.acceptBtnText}>Accept Claim & Chat</Text>
+                    </View>
+                  </Pressable>
+                  <Pressable
+                    style={styles.declineBtn}
+                    onPress={() => void handleClaimStatus(item.id, "declined")}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+                      <Text style={styles.declineBtnText}>Decline</Text>
+                    </View>
+                  </Pressable>
+                </View>
+              ) : item.status === "accepted" ? (
+                <View style={{ marginTop: 10 }}>
                   <Pressable
                     style={styles.chatBtn}
                     onPress={() =>
                       router.push({
-                        pathname: "/(app)/lost-and-found/chat/[claimId]",
-                        params: { claimId: String(item.id), itemTitle: item.item_title },
+                        pathname: "/(app)/lost-and-found/chat/[claimId]" as any,
+                        params: { claimId: item.id, itemTitle: item.item_title },
                       })
                     }
                   >
-                    <Text style={styles.chatBtnText}>💬 Open Handover Chat</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                      <MaterialCommunityIcons name="chat-outline" size={15} color="#ffffff" style={{ marginRight: 5 }} />
+                      <Text style={styles.chatBtnText}>Open Handover Chat</Text>
+                    </View>
                   </Pressable>
-                ) : null}
-              </View>
+                </View>
+              ) : null}
             </View>
           )}
         />
       ) : (
-        /* Tab 3: My Claims (Sent) */
+        /* Tab 3: Sent Claims */
         <FlatList
           data={myClaims}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={myClaims.length === 0 ? styles.emptyList : styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: Math.max(insets.bottom + 40, 60) }]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📤</Text>
-              <Text style={styles.emptyTitle}>No sent claims</Text>
-              <Text style={styles.emptySubtitle}>You haven't submitted any claims or inquiries on items yet.</Text>
+              <MaterialCommunityIcons name="send-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyTitle}>No claims sent</Text>
+              <Text style={styles.emptySubtitle}>
+                Inquiries and claims you submit on posted notices will be tracked here.
+              </Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -313,27 +442,43 @@ export default function MyLostAndFoundScreen() {
               <View style={styles.claimItemHeader}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.claimNoticeTitle}>{item.item_title}</Text>
-                  <Text style={styles.claimantDetails}>Posted by {item.poster_name} • 📍 {item.item_location}</Text>
+                  <Text style={styles.claimantDetails}>
+                    Posted by: <Text style={{ fontWeight: "700", color: "#070D1F" }}>{item.poster_name}</Text>
+                  </Text>
                 </View>
-                <View style={[styles.statusBadge, item.status === "accepted" ? styles.statusAccepted : styles.statusOpen]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    item.status === "accepted"
+                      ? styles.statusAccepted
+                      : item.status === "declined"
+                      ? styles.statusClosed
+                      : styles.statusOpen,
+                  ]}
+                >
                   <Text style={styles.statusBadgeText}>{item.status.toUpperCase()}</Text>
                 </View>
               </View>
 
-              <Text style={styles.claimBodyText}>Your message: "{item.message}"</Text>
+              <Text style={styles.claimBodyText}>"{item.message}"</Text>
 
               {item.status === "accepted" ? (
-                <Pressable
-                  style={[styles.chatBtn, { marginTop: 10 }]}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(app)/lost-and-found/chat/[claimId]",
-                      params: { claimId: String(item.id), itemTitle: item.item_title },
-                    })
-                  }
-                >
-                  <Text style={styles.chatBtnText}>💬 Open Handover Chat</Text>
-                </Pressable>
+                <View style={{ marginTop: 10 }}>
+                  <Pressable
+                    style={styles.chatBtn}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(app)/lost-and-found/chat/[claimId]" as any,
+                        params: { claimId: item.id, itemTitle: item.item_title },
+                      })
+                    }
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                      <MaterialCommunityIcons name="chat-outline" size={15} color="#ffffff" style={{ marginRight: 5 }} />
+                      <Text style={styles.chatBtnText}>Open Handover Chat</Text>
+                    </View>
+                  </Pressable>
+                </View>
               ) : null}
             </View>
           )}
@@ -344,66 +489,90 @@ export default function MyLostAndFoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc", paddingTop: 56 },
+  container: { flex: 1, backgroundColor: "#f8fafc" },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingBottom: 14 },
-  title: { fontSize: 22, fontWeight: "800", color: "#0f172a" },
-  postBtn: { backgroundColor: "#1d4ed8", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6 },
-  postBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
-  tabBar: { flexDirection: "row", paddingHorizontal: 20, gap: 6, marginVertical: 8 },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: "#e2e8f0", alignItems: "center" },
-  tabActive: { backgroundColor: "#1d4ed8" },
-  tabText: { fontSize: 12, fontWeight: "700", color: "#475569" },
-  tabTextActive: { color: "#ffffff" },
-  errorText: { color: "#b91c1c", paddingHorizontal: 20, paddingVertical: 6, fontSize: 13 },
-  list: { padding: 20, gap: 14 },
-  emptyList: { flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  emptyContainer: { alignItems: "center", maxWidth: 300 },
-  emptyEmoji: { fontSize: 44, marginBottom: 10 },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#0f172a" },
-  emptySubtitle: { fontSize: 13, color: "#64748b", textAlign: "center", marginTop: 4 },
-  card: { backgroundColor: "#ffffff", borderRadius: 12, borderColor: "#e2e8f0", borderWidth: 1, padding: 14, shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 1 },
-  cardHeader: { flexDirection: "row", gap: 12 },
-  cardThumb: { width: 80, height: 80, borderRadius: 8 },
-  cardThumbPlaceholder: { width: 80, height: 80, borderRadius: 8, justifyContent: "center", alignItems: "center" },
-  placeholderLost: { backgroundColor: "#fee2e2" },
-  placeholderFound: { backgroundColor: "#ecfdf5" },
+  topNavBar: {
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#E8F5E9",
+    borderWidth: 1,
+    borderColor: "#A5D6A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  tabBar: { flexDirection: "row", padding: 4, marginHorizontal: 16, marginVertical: 12, backgroundColor: "#E2E8F0", borderRadius: 14 },
+  tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  tabActive: { backgroundColor: "#ffffff", shadowColor: "#000000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, elevation: 2 },
+  tabText: { fontSize: 12, fontWeight: "700", color: "#64748B", textAlign: "center", includeFontPadding: false },
+  tabTextActive: { color: "#0D3E02", fontWeight: "800" },
+  errorBanner: { flexDirection: "row", alignItems: "center", backgroundColor: "#fee2e2", marginHorizontal: 16, marginVertical: 6, padding: 10, borderRadius: 8 },
+  errorText: { color: "#b91c1c", fontSize: 13, flex: 1 },
+  list: { padding: 16, gap: 14 },
+  emptyContainer: { alignItems: "center", maxWidth: 300, alignSelf: "center", marginTop: 40 },
+  emptyTitle: { fontSize: 17, fontWeight: "900", color: "#0F172A", letterSpacing: -0.3 },
+  emptySubtitle: { fontSize: 13, color: "#64748B", textAlign: "center", marginTop: 4, lineHeight: 18 },
+  card: { backgroundColor: "#ffffff", borderRadius: 20, borderColor: "#F1F5F9", borderWidth: 1, padding: 16, shadowColor: "#0F172A", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  cardHeader: { flexDirection: "row", gap: 14 },
+  cardThumb: { width: 88, height: 88, borderRadius: 14 },
+  cardThumbPlaceholder: { width: 88, height: 88, borderRadius: 14, justifyContent: "center", alignItems: "center" },
+  placeholderLost: { backgroundColor: "#FEE2E2" },
+  placeholderFound: { backgroundColor: "#ECFDF5" },
   placeholderEmoji: { fontSize: 26 },
   cardInfo: { flex: 1, justifyContent: "space-between" },
   badgeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  typeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  typeBadgeLost: { backgroundColor: "#fee2e2" },
-  typeBadgeFound: { backgroundColor: "#d1fae5" },
-  typeBadgeText: { fontSize: 10, fontWeight: "800" },
-  typeBadgeTextLost: { color: "#b91c1c" },
+  typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  typeBadgeLost: { backgroundColor: "#FEE2E2" },
+  typeBadgeFound: { backgroundColor: "#D1FAE5" },
+  typeBadgeText: { fontSize: 10, fontWeight: "900", textAlign: "center", includeFontPadding: false },
+  typeBadgeTextLost: { color: "#B91C1C" },
   typeBadgeTextFound: { color: "#047857" },
-  statusBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  statusOpen: { backgroundColor: "#f1f5f9" },
-  statusClosed: { backgroundColor: "#e2e8f0" },
-  statusAccepted: { backgroundColor: "#d1fae5" },
-  statusBadgeText: { fontSize: 10, fontWeight: "700" },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignItems: "center", justifyContent: "center" },
+  statusOpen: { backgroundColor: "#F1F5F9" },
+  statusClosed: { backgroundColor: "#E2E8F0" },
+  statusAccepted: { backgroundColor: "#D1FAE5" },
+  statusBadgeText: { fontSize: 10, fontWeight: "800", textAlign: "center", includeFontPadding: false },
   statusOpenText: { color: "#0284c7" },
-  statusClosedText: { color: "#64748b" },
-
-  cardTitle: { fontSize: 15, fontWeight: "700", color: "#0f172a", marginTop: 2 },
-  cardLocation: { fontSize: 12, color: "#2563eb", fontWeight: "600", marginTop: 1 },
-  claimsCountText: { fontSize: 11, color: "#6366f1", fontWeight: "600", marginTop: 2 },
-  cardActions: { flexDirection: "row", gap: 8, marginTop: 12, paddingTop: 10, borderTopColor: "#f1f5f9", borderTopWidth: 1 },
-  statusActionBtn: { flex: 1, backgroundColor: "#f1f5f9", paddingVertical: 8, borderRadius: 6, alignItems: "center" },
-  statusActionBtnText: { color: "#334155", fontWeight: "700", fontSize: 12 },
-  editActionBtn: { paddingHorizontal: 14, backgroundColor: "#e2e8f0", paddingVertical: 8, borderRadius: 6, alignItems: "center" },
-  editActionBtnText: { color: "#334155", fontWeight: "700", fontSize: 12 },
-  deleteActionBtn: { paddingHorizontal: 12, backgroundColor: "#fee2e2", paddingVertical: 8, borderRadius: 6, alignItems: "center" },
-  deleteActionBtnText: { color: "#b91c1c", fontWeight: "700", fontSize: 12 },
+  statusClosedText: { color: "#64748B" },
+  cardTitle: { fontSize: 15, fontWeight: "900", color: "#0F172A", letterSpacing: -0.2, marginTop: 2 },
+  cardLocation: { fontSize: 12, color: "#0D3E02", fontWeight: "700", marginTop: 1 },
+  claimsCountText: { fontSize: 11, color: "#64748B", fontWeight: "600", marginTop: 2 },
+  cardActions: { flexDirection: "row", gap: 8, marginTop: 14, paddingTop: 12, borderTopColor: "#F1F5F9", borderTopWidth: 1 },
+  statusActionBtn: { flex: 1, backgroundColor: "#F8FAFC", paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E2E8F0" },
+  statusActionBtnText: { color: "#334155", fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
+  editActionBtn: { paddingHorizontal: 14, backgroundColor: "#F1F5F9", paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  editActionBtnText: { color: "#334155", fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
+  deleteActionBtn: { paddingHorizontal: 12, backgroundColor: "#FEE2E2", paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  deleteActionBtnText: { color: "#B91C1C", fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
   claimItemHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  claimNoticeTitle: { fontSize: 15, fontWeight: "700", color: "#0f172a" },
-  claimantDetails: { fontSize: 12, color: "#64748b", marginTop: 2 },
-  claimBodyText: { fontSize: 13, color: "#475569", backgroundColor: "#f8fafc", padding: 10, borderRadius: 6, marginTop: 8, fontStyle: "italic" },
-  claimActionsRow: { flexDirection: "row", gap: 10, marginTop: 10 },
-  acceptBtn: { flex: 1, backgroundColor: "#059669", paddingVertical: 8, borderRadius: 6, alignItems: "center" },
-  acceptBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 12 },
-  declineBtn: { paddingHorizontal: 14, backgroundColor: "#f1f5f9", paddingVertical: 8, borderRadius: 6, alignItems: "center" },
-  declineBtnText: { color: "#64748b", fontWeight: "700", fontSize: 12 },
-  chatBtn: { width: "100%", backgroundColor: "#1d4ed8", paddingVertical: 9, borderRadius: 6, alignItems: "center" },
-  chatBtnText: { color: "#ffffff", fontWeight: "700", fontSize: 13 },
+  claimNoticeTitle: { fontSize: 15, fontWeight: "900", color: "#0F172A", letterSpacing: -0.2 },
+  claimantDetails: { fontSize: 12, color: "#64748B", marginTop: 2, fontWeight: "500" },
+  claimBodyText: { fontSize: 13, color: "#475569", backgroundColor: "#F8FAFC", padding: 12, borderRadius: 10, marginTop: 8, fontStyle: "italic", borderWidth: 1, borderColor: "#F1F5F9" },
+  claimActionsRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+  acceptBtn: { flex: 1, backgroundColor: "#0D3E02", paddingVertical: 9, borderRadius: 10, alignItems: "center" },
+  acceptBtnText: { color: "#FDBF1E", fontWeight: "900", fontSize: 12 },
+  declineBtn: { paddingHorizontal: 14, backgroundColor: "#F1F5F9", paddingVertical: 9, borderRadius: 10, alignItems: "center" },
+  declineBtnText: { color: "#64748B", fontWeight: "800", fontSize: 12 },
+  chatBtn: { width: "100%", backgroundColor: "#0D3E02", paddingVertical: 10, borderRadius: 10, alignItems: "center" },
+  chatBtnText: { color: "#FDBF1E", fontWeight: "900", fontSize: 13 },
 });
