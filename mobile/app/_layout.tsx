@@ -11,7 +11,7 @@ import {
 } from "@expo-google-fonts/inter";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, View } from "react-native";
+import { ActivityIndicator, Platform, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../src/core/auth/session";
@@ -73,8 +73,10 @@ export default function RootLayout() {
 
   if (!isHydrated || (!fontsLoaded && Platform.OS !== "web")) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0D3E02" }}>
-        <ActivityIndicator color="#FDBF1E" size="large" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#ffffff" }}>
+        <Text style={{ fontSize: 44, fontWeight: "900", color: "#0D3E02", letterSpacing: 0.2 }}>
+          FELLOo
+        </Text>
       </View>
     );
   }

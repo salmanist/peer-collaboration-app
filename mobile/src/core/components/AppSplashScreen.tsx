@@ -54,7 +54,7 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
 
   return (
     <Animated.View style={[styles.container, { opacity: exitFade }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D3E02" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       
       {/* Centered Brand Content */}
       <Animated.View
@@ -67,7 +67,7 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
         ]}
       >
         <View style={styles.iconCircle}>
-          <MaterialCommunityIcons name="school" size={48} color="#0D3E02" />
+          <MaterialCommunityIcons name="school" size={44} color="#0D3E02" />
         </View>
 
         <View style={styles.titleRow}>
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 99999,
-    backgroundColor: "#0D3E02",
+    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -104,55 +104,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   iconCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#FDBF1E",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   titleFellOo: {
     fontSize: 46,
     fontWeight: "900",
-    color: "#ffffff",
+    color: "#0D3E02",
     letterSpacing: 0.2,
     textAlign: "center",
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: "800",
-    color: "#E2E8F0",
-    letterSpacing: 2,
+    color: "#64748B",
+    letterSpacing: 1.8,
     marginTop: 4,
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: "center",
   },
   badgePill: {
-    backgroundColor: "rgba(253, 191, 30, 0.15)",
+    backgroundColor: "#F8FAFC",
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(253, 191, 30, 0.4)",
+    borderColor: "#E2E8F0",
     marginTop: 4,
   },
   badgePillText: {
-    color: "#FDBF1E",
+    color: "#0D3E02",
     fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   footer: {
     position: "absolute",
@@ -160,7 +157,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "rgba(255, 255, 255, 0.6)",
+    color: "#94A3B8",
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 1.5,
