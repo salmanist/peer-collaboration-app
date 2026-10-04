@@ -259,3 +259,4 @@
 2026-10-04 18:51 - zahra: Removed the yellow outline/border from circular avatars and header profile buttons across Tutor Discovery Feed, Tutor Profile Screen, Profile Screen, Lost & Found Feed, and Resource Feed for a clean, borderless aesthetic.
 2026-10-04 18:55 - zahra: Updated AppSplashScreen.tsx to display 'FELLOo' prominently centered in the middle of the screen with bold typography and balanced entrance animation.
 2026-10-04 19:04 - zahra: Updated root layout hydration screen (app/_layout.tsx) and splash screen (AppSplashScreen.tsx) to a clean white background with the green 'FELLOo' brand name (#0D3E02) centered in the middle, removing the green background and yellow loading spinner.
+2026-10-04 19:25 - zahra: Increased splash screen display duration (2200ms hold delay) and added a subtle 'Lahore Garrison University' subtitle directly underneath 'FELLOo' across AppSplashScreen.tsx and app/_layout.tsx.

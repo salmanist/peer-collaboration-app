@@ -77,6 +77,9 @@ export default function RootLayout() {
         <Text style={{ fontSize: 44, fontWeight: "900", color: "#0D3E02", letterSpacing: 0.2 }}>
           FELLOo
         </Text>
+        <Text style={{ fontSize: 13, fontWeight: "700", color: "#475569", letterSpacing: 0.6, marginTop: 4 }}>
+          Lahore Garrison University
+        </Text>
       </View>
     );
   }

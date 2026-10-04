@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
-  Dimensions,
   Platform,
   StatusBar,
   StyleSheet,
@@ -16,35 +15,35 @@ interface AppSplashScreenProps {
 
 export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const subtitleFade = useRef(new Animated.Value(0)).current;
   const exitFade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Sequence of animations: Entrance -> Subtitle -> Exit
+    // Sequence of animations: Entrance -> Subtitle -> Extended Hold -> Exit
     Animated.sequence([
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 600,
+          duration: 650,
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
           friction: 6,
-          tension: 40,
+          tension: 35,
           useNativeDriver: true,
         }),
       ]),
       Animated.timing(subtitleFade, {
         toValue: 1,
-        duration: 400,
+        duration: 450,
         useNativeDriver: true,
       }),
-      Animated.delay(1000),
+      Animated.delay(2200), // Extended display duration
       Animated.timing(exitFade, {
         toValue: 0,
-        duration: 400,
+        duration: 450,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -74,10 +73,12 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
           <Text style={styles.titleFellOo}>FELLOo</Text>
         </View>
 
+        {/* Small university subtitle directly under FELLOo */}
+        <Text style={styles.subtitleLGU}>Lahore Garrison University</Text>
+
         <Animated.View style={{ opacity: subtitleFade, alignItems: "center" }}>
-          <Text style={styles.tagline}>CAMPUS PEER COLLABORATION</Text>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>Lahore Garrison University</Text>
+          <View style={styles.taglineBadge}>
+            <Text style={styles.taglineText}>Campus Peer Collaboration</Text>
           </View>
         </Animated.View>
       </Animated.View>
@@ -118,38 +119,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 6,
+    marginBottom: 2,
   },
   titleFellOo: {
-    fontSize: 46,
+    fontSize: 48,
     fontWeight: "900",
     color: "#0D3E02",
     letterSpacing: 0.2,
     textAlign: "center",
   },
-  tagline: {
-    fontSize: 11.5,
-    fontWeight: "800",
-    color: "#64748B",
-    letterSpacing: 1.8,
-    marginTop: 4,
-    marginBottom: 8,
+  subtitleLGU: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#475569",
+    letterSpacing: 0.6,
     textAlign: "center",
+    marginBottom: 14,
   },
-  badgePill: {
+  taglineBadge: {
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 14,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    marginTop: 4,
   },
-  badgePillText: {
+  taglineText: {
     color: "#0D3E02",
     fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   footer: {
     position: "absolute",
