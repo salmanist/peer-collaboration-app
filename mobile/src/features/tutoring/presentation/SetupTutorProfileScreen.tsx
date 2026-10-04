@@ -63,8 +63,6 @@ export function SetupTutorProfileScreen() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [availability, setAvailability] = useState("");
-  const [isFree, setIsFree] = useState(true);
-  const [hourlyFee, setHourlyFee] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -84,7 +82,7 @@ export function SetupTutorProfileScreen() {
   const [skillSearch, setSkillSearch] = useState("");
   const [skillCatFilter, setSkillCatFilter] = useState("All");
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -128,8 +126,6 @@ export function SetupTutorProfileScreen() {
           setSelectedSubjects(profile.subjects || []);
           setSelectedSkills(profile.skills || []);
           setAvailability(profile.availability || "");
-          setIsFree(profile.is_free);
-          if (profile.hourly_fee) setHourlyFee(String(profile.hourly_fee));
           setIsActive(profile.is_active);
         }
       })
@@ -268,10 +264,6 @@ export function SetupTutorProfileScreen() {
       setErrorMsg("Please select at least one subject or skill.");
       return;
     }
-    if (!isFree && (!hourlyFee || Number(hourlyFee) <= 0)) {
-      setErrorMsg("Please specify a valid hourly fee.");
-      return;
-    }
 
     setIsSaving(true);
     setErrorMsg(null);
@@ -283,8 +275,8 @@ export function SetupTutorProfileScreen() {
       subjects: selectedSubjects,
       skills: selectedSkills,
       availability: availability.trim(),
-      is_free: isFree,
-      hourly_fee: isFree ? null : Number(hourlyFee),
+      is_free: true,
+      hourly_fee: null,
       is_active: isActive,
     };
 
@@ -309,7 +301,7 @@ export function SetupTutorProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable
             style={styles.navBackBtn}
             onPress={handleBack}
@@ -335,7 +327,7 @@ export function SetupTutorProfileScreen() {
   return (
     <View style={styles.container}>
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={handleBack}
@@ -343,7 +335,7 @@ export function SetupTutorProfileScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
         <Text style={styles.topNavTitle}>
-          {existingProfile ? "Edit Profile" : "Register"}
+          {existingProfile ? "Edit Tutor Profile" : "Become a Peer Tutor"}
         </Text>
         <View style={{ width: 36 }} />
       </View>
@@ -356,12 +348,12 @@ export function SetupTutorProfileScreen() {
         ]}
       >
         <Text style={styles.title}>
-          {existingProfile ? "Edit your profile" : "Create your profile"}
+          {existingProfile ? "Edit Tutor Profile" : "Become a Peer Tutor"}
         </Text>
         <Text style={styles.subtitle}>
           {existingProfile
-            ? "Update your tutoring profile, subjects, skills, availability, and rates."
-            : "Register your subjects, skills, and schedule to offer tutoring and mentorship at LGU."}
+            ? "Update your tutoring subjects, skills, schedule, and availability."
+            : "Share your academic knowledge! Register your subjects, skills, and schedule to help fellow LGU students."}
         </Text>
 
         {errorMsg ? (
@@ -577,37 +569,6 @@ export function SetupTutorProfileScreen() {
             placeholder="e.g. Mon-Thu after 2:00 PM (LGU Library or CS Labs)"
             placeholderTextColor="#94a3b8"
           />
-        </View>
-
-        {/* Pricing / Fee */}
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Session Pricing</Text>
-          <View style={styles.switchRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.switchLabel}>Offer Free Peer Assistance</Text>
-              <Text style={styles.switchSub}>Help fellow students with volunteer tutoring</Text>
-            </View>
-            <Switch
-              value={isFree}
-              onValueChange={setIsFree}
-              trackColor={{ false: "#cbd5e1", true: "#0D3E02" }}
-              thumbColor={isFree ? "#FDBF1E" : "#f4f3f4"}
-            />
-          </View>
-
-          {!isFree && (
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.label}>Hourly Fee (PKR)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={hourlyFee}
-                onChangeText={setHourlyFee}
-                placeholder="e.g. 500"
-                placeholderTextColor="#94a3b8"
-                keyboardType="numeric"
-              />
-            </View>
-          )}
         </View>
 
         {/* Profile Active Toggle */}
@@ -881,34 +842,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   scrollContainer: {
     flex: 1,

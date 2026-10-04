@@ -68,7 +68,7 @@ export default function LostAndFoundDetailScreen() {
   // Full-screen Image Viewer
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const loadData = useCallback(async () => {
     if (!Number.isInteger(itemId)) {
@@ -158,7 +158,7 @@ export default function LostAndFoundDetailScreen() {
   if (isLoading && !item) {
     return (
       <View style={styles.container}>
-        <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+        <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
             <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
           </Pressable>
@@ -173,7 +173,7 @@ export default function LostAndFoundDetailScreen() {
   if (!item) {
     return (
       <View style={styles.container}>
-        <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+        <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
             <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
           </Pressable>
@@ -198,7 +198,7 @@ export default function LostAndFoundDetailScreen() {
   return (
     <View style={styles.container}>
       {/* Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
           <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
@@ -485,28 +485,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   compactTopNav: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
     zIndex: 10,
   },
   navBackBtn: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },

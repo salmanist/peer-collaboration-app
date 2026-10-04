@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -17,8 +18,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
 import { API_BASE_URL } from "../../../core/network/apiClient";
-import { fetchLostAndFoundItem, updateLostAndFoundItem } from "../data/lostAndFoundApi";
+import { deleteLostAndFoundItem, fetchLostAndFoundItem, updateLostAndFoundItem } from "../data/lostAndFoundApi";
 import {
   LOST_AND_FOUND_CATEGORIES,
   type LostAndFoundCategory,
@@ -54,12 +56,14 @@ export default function EditLostAndFoundScreen() {
   const [description, setDescription] = useState("");
   const [existingImage, setExistingImage] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [status, setStatus] = useState<LostAndFoundStatus>("open");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   useEffect(() => {
     if (!Number.isInteger(itemId)) {
@@ -89,21 +93,36 @@ export default function EditLostAndFoundScreen() {
     void loadItem();
   }, [itemId]);
 
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage({ uri: result.assets[0].uri });
+  const confirmDelete = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to delete this notice? This action cannot be undone.");
+      if (confirmed) {
+        void handleDelete();
       }
-    } catch {
-      setErrorMessage("Could not open gallery.");
+    } else {
+      Alert.alert(
+        "Delete Notice",
+        "Are you sure you want to delete this notice? This action cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: () => void handleDelete() },
+        ]
+      );
     }
   };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setErrorMessage("");
+    try {
+      await deleteLostAndFoundItem(itemId);
+      router.replace("/(app)/lost-and-found/mine" as any);
+    } catch {
+      setErrorMessage("Could not delete this notice. Please try again.");
+      setIsDeleting(false);
+    }
+  };
+
 
   const onSubmit = async () => {
     const cleanTitle = title.trim();
@@ -174,8 +193,8 @@ export default function EditLostAndFoundScreen() {
       style={styles.rootContainer}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      {/* Top Navigation Bar with Back Button and Delete Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={() => router.back()}
@@ -183,7 +202,14 @@ export default function EditLostAndFoundScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Notice</Text>
-        <View style={{ width: 36 }} />
+        <Pressable
+          style={styles.navDeleteBtn}
+          onPress={confirmDelete}
+          disabled={isDeleting || isSubmitting}
+          accessibilityLabel="Delete Notice"
+        >
+          <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -272,25 +298,25 @@ export default function EditLostAndFoundScreen() {
         ) : existingImage ? (
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: getImageUrl(existingImage)! }} style={styles.previewImage} resizeMode="cover" />
-            <Pressable style={styles.photoUploadBtn} onPress={() => void pickImage()}>
+            <Pressable style={styles.photoUploadBtn} onPress={() => setIsImagePickerOpen(true)}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <MaterialCommunityIcons name="camera-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
-                <Text style={styles.photoUploadText}>Replace Photo</Text>
+                <Text style={styles.photoUploadText}>Replace Photo (Camera / Gallery)</Text>
               </View>
             </Pressable>
           </View>
         ) : (
-          <Pressable style={styles.photoUploadBtn} onPress={() => void pickImage()}>
-            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#64748b" style={{ marginBottom: 4 }} />
-            <Text style={styles.photoUploadText}>Tap to add a photo</Text>
+          <Pressable style={styles.photoUploadBtn} onPress={() => setIsImagePickerOpen(true)}>
+            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#0D3E02" style={{ marginBottom: 4 }} />
+            <Text style={styles.photoUploadText}>Tap to add photo (Camera or Gallery)</Text>
           </Pressable>
         )}
 
         {/* Save Button */}
         <Pressable
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (isSubmitting || isDeleting) && styles.submitButtonDisabled]}
           onPress={() => void onSubmit()}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isDeleting}
         >
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#000000" />
@@ -298,7 +324,30 @@ export default function EditLostAndFoundScreen() {
             <Text style={styles.submitButtonText}>Save Changes</Text>
           )}
         </Pressable>
+
+        {/* Delete Notice Button */}
+        <Pressable
+          style={[styles.deleteButton, (isSubmitting || isDeleting) && styles.deleteButtonDisabled]}
+          onPress={confirmDelete}
+          disabled={isSubmitting || isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#DC2626" />
+          ) : (
+            <View style={styles.deleteButtonContent}>
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.deleteButtonText}>Delete Notice</Text>
+            </View>
+          )}
+        </Pressable>
       </ScrollView>
+
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedImage({ uri: img.uri })}
+        title="Update Item Photo"
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -309,34 +358,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   centered: {
     flex: 1,
@@ -471,5 +513,38 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "800",
     fontSize: 15,
+  },
+  navDeleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(220, 38, 38, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: {
+    marginTop: 12,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1.5,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  deleteButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });

@@ -42,7 +42,8 @@ def auto_complete_expired_sessions():
     """
     now = timezone.now()
     expired_sessions = TutoringSession.objects.filter(
-        status__in=[TutoringSession.Status.ACCEPTED, TutoringSession.Status.PENDING]
+        status__in=[TutoringSession.Status.ACCEPTED, TutoringSession.Status.PENDING],
+        scheduled_at__lte=now,
     )
     to_complete = []
     for s in expired_sessions:

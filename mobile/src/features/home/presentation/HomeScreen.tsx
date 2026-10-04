@@ -16,10 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
-import { useDrawerStore } from "../../../core/navigation/drawerStore";
 import { useCollapsibleHeader } from "../../../core/navigation/useCollapsibleHeader";
 import { useModuleUsageStore } from "../../../core/store/useModuleUsageStore";
-import { fetchMe } from "../../auth/data/authApi";
 import { useResourceNotificationStore } from "../../resources/resourceNotifications";
 import { useLostAndFoundNotificationStore } from "../../lost_and_found/lostAndFoundNotifications";
 import { useTutoringNotificationStore } from "../../tutoring/tutoringNotifications";
@@ -75,36 +73,62 @@ const formatDepartmentCode = (dept?: any) => {
   return `BS${upper}`;
 };
 
-const UPCOMING_CAMPUS_EVENTS = [
+interface CampusSpotlightEvent {
+  id: string;
+  tag: string;
+  icon: string;
+  title: string;
+  eventDate: string;
+  dateTime: string;
+  venue: string;
+  description: string;
+  ctaText: string;
+}
+
+const ALL_CAMPUS_EVENTS: CampusSpotlightEvent[] = [
   {
-    id: "evt-1",
-    tag: "Upcoming Workshop",
+    id: "evt-carnival",
+    tag: "Upcoming Mega Event",
+    icon: "party-popper",
+    title: "LGU Annual Winter Carnival & Food Fiesta 2026",
+    eventDate: "2026-11-27T10:00:00",
+    dateTime: "Friday, Nov 27 • 10:00 AM – 8:00 PM",
+    venue: "Main Campus Grounds & Central Courtyard",
+    description: "The biggest annual winter festival is coming! Enjoy 30+ student food stalls, live acoustic music stage, e-gaming tournament, startup project showcases, and cultural society performances.",
+    ctaText: "Explore Carnival Info",
+  },
+  {
+    id: "evt-mids",
+    tag: "Academic Notification",
+    icon: "file-document-edit-outline",
+    title: "Fall 2026 Midterm Examination Date Sheet & Guidelines",
+    eventDate: "2026-11-09T08:30:00",
+    dateTime: "Starts Monday, Nov 9 • 8:30 AM",
+    venue: "Main Examination Halls, Block A & C",
+    description: "Official Midterm Date Sheet has been announced for all academic departments (BSCS, BSSE, BSIT, BSAI, BBA). Student ID cards and admit slips are mandatory for examination hall entry.",
+    ctaText: "View Date Sheet & Rules",
+  },
+  {
+    id: "evt-internals",
+    tag: "Internal Evaluations",
     icon: "laptop-account",
-    title: "AI & Mobile App Development Workshop",
-    dateTime: "Friday, Sept 5 • 3:30 PM",
-    venue: "Main CS Lab 3, Block B",
-    description: "Hands-on bootcamp on React Native, Django REST APIs, and collaborative Git workflow with senior peer mentors.",
-    ctaText: "View Workshop Info",
+    title: "Pre-Mid Internal Lab Evaluations & Quiz Week",
+    eventDate: "2026-10-26T09:00:00",
+    dateTime: "Starts Monday, Oct 26 • Regular Lab Slots",
+    venue: "CS & SE Department Labs (1 to 6)",
+    description: "Mandatory practical evaluations and project check-ins for Programming Fundamentals, Data Structures & Algorithms, Database Systems, and Object-Oriented Analysis.",
+    ctaText: "Review Lab Syllabus",
   },
   {
-    id: "evt-2",
-    tag: "Campus Seminar",
-    icon: "school-outline",
-    title: "Careers in Tech & Freelancing Guide",
-    dateTime: "Wednesday, Sept 10 • 11:00 AM",
-    venue: "LGU Main Auditorium",
-    description: "Senior alumni panel sharing practical insights on software engineering interviews, remote jobs, and freelancing.",
-    ctaText: "Explore Seminar Info",
-  },
-  {
-    id: "evt-3",
+    id: "evt-hackathon",
     tag: "Coding Challenge",
     icon: "code-braces",
-    title: "LGU Speed Coding & DSA Contest",
-    dateTime: "Monday, Sept 15 • 2:00 PM",
-    venue: "Software Engineering Lab 1",
-    description: "Compete with peers to solve algorithmic puzzles. Earn certificates, rewards, and peer tutoring badges.",
-    ctaText: "Contest Details",
+    title: "LGU 24-Hour CodeFest & AI Innovation Challenge",
+    eventDate: "2026-12-05T09:00:00",
+    dateTime: "Saturday, Dec 5 • 9:00 AM – 9:00 PM",
+    venue: "Software Incubation Center & Lab 2",
+    description: "Form student peer teams to build creative mobile and AI solutions. Win shields, cash rewards, and direct recognition from tech industry mentors.",
+    ctaText: "Register Peer Team",
   },
 ];
 
@@ -115,17 +139,28 @@ export default function HomeScreen() {
   const isLargeScreen = width >= 768;
   const boxWidth = Math.floor((width - 32 - 10) / 2);
 
-  const [activeTab, setActiveTab] = useState<"spotlight" | "activity">("spotlight");
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
-  const [selectedEventForModal, setSelectedEventForModal] = useState<(typeof UPCOMING_CAMPUS_EVENTS)[0] | null>(null);
+
+  // Filter out any event whose scheduled date/time has passed
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    return ALL_CAMPUS_EVENTS.filter((evt) => {
+      const eventTime = new Date(evt.eventDate);
+      return eventTime >= now;
+    });
+  }, []);
+
+  const activeEvent = useMemo(() => {
+    if (!upcomingEvents.length) return null;
+    return upcomingEvents[currentEventIndex % upcomingEvents.length];
+  }, [upcomingEvents, currentEventIndex]);
+
+  const [selectedEventForModal, setSelectedEventForModal] = useState<CampusSpotlightEvent | null>(null);
 
   const user = useSessionStore((state) => state.user);
   const accessToken = useSessionStore((state) => state.accessToken);
-  const updateUser = useSessionStore((state) => state.updateUser);
-  const openDrawer = useDrawerStore((state) => state.openDrawer);
-
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
-  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 54);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
+  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 44);
 
   const pendingTutoringRequests = useTutoringNotificationStore((state) => state.pendingRequestsCount);
   const hasNewLostClaims = useLostAndFoundNotificationStore((state) => state.hasNewClaims);
@@ -155,12 +190,9 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (accessToken) {
-      fetchMe()
-        .then((me) => updateUser(me))
-        .catch(() => {});
       void fetchNotifications();
     }
-  }, [accessToken, updateUser, fetchNotifications]);
+  }, [accessToken, fetchNotifications]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -182,23 +214,17 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.rootContainer}>
-      {/* Sleek Top Navigation Bar */}
+      {/* Sleek Top Navigation Bar (Instagram Style) */}
       <Animated.View
         style={[
           styles.collapsibleTopBar,
           {
-            paddingTop: topOffset + 6,
+            paddingTop: topOffset > 0 ? topOffset + 2 : 8,
             transform: [{ translateY: headerTranslateY }],
           },
         ]}
       >
-        <Pressable style={styles.hamburgerButton} onPress={openDrawer}>
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-        </Pressable>
-
-        <View style={styles.topNavCenter}>
+        <View style={styles.topNavLeft}>
           <Text style={styles.topNavBrand}>
             LGU <Text style={styles.topNavBrandAccent}>FellOo</Text>
           </Text>
@@ -208,11 +234,12 @@ export default function HomeScreen() {
           <Pressable
             style={styles.notificationHeaderButton}
             onPress={openCenter}
+            accessibilityLabel="Notifications"
           >
             <MaterialCommunityIcons
               name={unseenCount > 0 ? "bell-badge" : "bell-outline"}
-              size={20}
-              color={unseenCount > 0 ? "#0D3E02" : "#0D3E02"}
+              size={22}
+              color="#0D3E02"
             />
             {unseenCount > 0 && (
               <View style={styles.notificationBadgePill}>
@@ -226,10 +253,9 @@ export default function HomeScreen() {
           <Pressable
             style={styles.profileHeaderButton}
             onPress={() => router.push("/(app)/profile" as any)}
+            accessibilityLabel="My Profile"
           >
-            <View style={styles.headerAvatar}>
-              <MaterialCommunityIcons name="account" size={19} color="#FDBF1E" />
-            </View>
+            <MaterialCommunityIcons name="account-circle-outline" size={24} color="#0D3E02" />
           </Pressable>
         </View>
       </Animated.View>
@@ -241,8 +267,8 @@ export default function HomeScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: topOffset + 62,
-            paddingBottom: Math.max(insets.bottom + 16, 20),
+            paddingTop: topOffset + 58,
+            paddingBottom: Math.max(insets.bottom, 16) + 84,
           },
         ]}
       >
@@ -290,7 +316,7 @@ export default function HomeScreen() {
                   <MaterialCommunityIcons
                     name={item.icon as any}
                     size={16}
-                    color={item.iconColor}
+                    color="#0D3E02"
                     style={{ marginRight: 6 }}
                   />
                   <Text style={styles.topVisitChipText}>{item.title}</Text>
@@ -322,10 +348,10 @@ export default function HomeScreen() {
             >
               <View style={styles.serviceBoxTopRow}>
                 <View style={[styles.serviceBoxIconCircle, { backgroundColor: item.bgColor }]}>
-                  <MaterialCommunityIcons name={item.icon as any} size={22} color={item.iconColor} />
+                  <MaterialCommunityIcons name={item.icon as any} size={22} color="#ffffff" />
                 </View>
                 <View style={styles.serviceBoxArrowCircle}>
-                  <MaterialCommunityIcons name="arrow-top-right" size={13} color={item.iconColor} />
+                  <MaterialCommunityIcons name="arrow-top-right" size={13} color="#94A3B8" />
                 </View>
               </View>
 
@@ -337,80 +363,64 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Segmented Campus Hub Tabs */}
-        <View style={styles.segmentContainer}>
-          <View style={styles.segmentBar}>
-            <Pressable
-              style={[styles.segmentBtn, activeTab === "spotlight" && styles.segmentBtnActive]}
-              onPress={() => setActiveTab("spotlight")}
-            >
-              <MaterialCommunityIcons
-                name="lightning-bolt"
-                size={16}
-                color={activeTab === "spotlight" ? "#0D3E02" : "#64748B"}
-                style={{ marginRight: 6 }}
-              />
-              <Text style={[styles.segmentBtnText, activeTab === "spotlight" && styles.segmentBtnTextActive]}>
-                Campus Spotlight
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.segmentBtn, activeTab === "activity" && styles.segmentBtnActive]}
-              onPress={() => setActiveTab("activity")}
-            >
-              <MaterialCommunityIcons
-                name="history"
-                size={16}
-                color={activeTab === "activity" ? "#0D3E02" : "#64748B"}
-                style={{ marginRight: 6 }}
-              />
-              <Text style={[styles.segmentBtnText, activeTab === "activity" && styles.segmentBtnTextActive]}>
-                My Activity
-              </Text>
-            </Pressable>
+        {/* Campus Spotlight & Highlights Header */}
+        <View style={styles.spotlightSectionHeader}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <MaterialCommunityIcons
+              name="lightning-bolt"
+              size={18}
+              color="#0D3E02"
+              style={{ marginRight: 6 }}
+            />
+            <Text style={styles.spotlightSectionTitle}>Campus Spotlight & Highlights</Text>
+          </View>
+          <View style={styles.spotlightUpcomingBadge}>
+            <View style={styles.spotlightLiveDot} />
+            <Text style={styles.spotlightUpcomingText}>UPCOMING</Text>
           </View>
         </View>
 
-        {/* Tab 1: Classic Signature Emerald Campus Spotlight Card */}
-        {activeTab === "spotlight" ? (
+        {/* Signature Emerald Campus Spotlight Card */}
+        {activeEvent ? (
           <Pressable
             style={styles.spotlightCard}
-            onPress={() => setSelectedEventForModal(UPCOMING_CAMPUS_EVENTS[currentEventIndex])}
+            onPress={() => setSelectedEventForModal(activeEvent)}
           >
             <View style={styles.spotlightHeader}>
               <View style={styles.spotlightTagPill}>
                 <View style={styles.spotlightLiveDot} />
                 <Text style={styles.spotlightTagText}>
-                  {UPCOMING_CAMPUS_EVENTS[currentEventIndex].tag}
+                  {activeEvent.tag}
                 </Text>
               </View>
 
-              <View style={styles.spotlightPagingRow}>
-                {UPCOMING_CAMPUS_EVENTS.map((_, idx) => (
-                  <Pressable
-                    key={idx}
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      setCurrentEventIndex(idx);
-                    }}
-                    style={[
-                      styles.spotlightDot,
-                      currentEventIndex === idx && styles.spotlightDotActive,
-                    ]}
-                  />
-                ))}
-              </View>
+              {upcomingEvents.length > 1 && (
+                <View style={styles.spotlightPagingRow}>
+                  {upcomingEvents.map((_, idx) => (
+                    <Pressable
+                      key={idx}
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        setCurrentEventIndex(idx);
+                      }}
+                      style={[
+                        styles.spotlightDot,
+                        (currentEventIndex % upcomingEvents.length) === idx && styles.spotlightDotActive,
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
 
             <Text style={styles.spotlightTitle} numberOfLines={1}>
-              {UPCOMING_CAMPUS_EVENTS[currentEventIndex].title}
+              {activeEvent.title}
             </Text>
 
             <View style={styles.spotlightLocationRow}>
               <MaterialCommunityIcons name="calendar-clock" size={13} color="#FDBF1E" style={{ marginRight: 5 }} />
               <Text style={styles.spotlightLocation} numberOfLines={1}>
-                {UPCOMING_CAMPUS_EVENTS[currentEventIndex].dateTime} • {UPCOMING_CAMPUS_EVENTS[currentEventIndex].venue}
+                {activeEvent.dateTime} • {activeEvent.venue}
               </Text>
             </View>
 
@@ -420,12 +430,12 @@ export default function HomeScreen() {
                 <MaterialCommunityIcons name="arrow-right" size={14} color="#0D3E02" />
               </View>
 
-              {UPCOMING_CAMPUS_EVENTS.length > 1 && (
+              {upcomingEvents.length > 1 && (
                 <Pressable
                   style={styles.spotlightNextBtn}
                   onPress={(e) => {
                     e.stopPropagation?.();
-                    setCurrentEventIndex((prev) => (prev + 1) % UPCOMING_CAMPUS_EVENTS.length);
+                    setCurrentEventIndex((prev) => (prev + 1) % upcomingEvents.length);
                   }}
                 >
                   <MaterialCommunityIcons name="chevron-right" size={18} color="#ffffff" />
@@ -434,58 +444,12 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         ) : (
-          /* Tab 2: My Activity */
-          <View style={styles.activityList}>
-            <Pressable
-              style={styles.activityCard}
-              onPress={() => router.push("/(app)/resources/mine" as any)}
-            >
-              <View style={[styles.activityIconBox, { backgroundColor: "#FFF8E1" }]}>
-                <MaterialCommunityIcons name="storefront" size={20} color="#B45309" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.activityTitleRow}>
-                  <Text style={styles.activityCardTitle}>Marketplace Ads</Text>
-                  <Text style={styles.activityChipGold}>Active</Text>
-                </View>
-                <Text style={styles.activityCardSub}>Manage your posted items and inquiries</Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={18} color="#94A3B8" />
-            </Pressable>
-
-            <Pressable
-              style={styles.activityCard}
-              onPress={() => router.push("/(app)/lost-and-found/mine" as any)}
-            >
-              <View style={[styles.activityIconBox, { backgroundColor: "#DCFCE7" }]}>
-                <MaterialCommunityIcons name="map-marker-question" size={20} color="#166534" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.activityTitleRow}>
-                  <Text style={styles.activityCardTitle}>My Lost Notices</Text>
-                  <Text style={styles.activityChipGreen}>Live</Text>
-                </View>
-                <Text style={styles.activityCardSub}>Track status & claim verification chats</Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={18} color="#94A3B8" />
-            </Pressable>
-
-            <Pressable
-              style={styles.activityCard}
-              onPress={() => router.push("/(app)/tutoring/sessions/mine" as any)}
-            >
-              <View style={[styles.activityIconBox, { backgroundColor: "#E8F5E9" }]}>
-                <MaterialCommunityIcons name="account-school" size={20} color="#0D3E02" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.activityTitleRow}>
-                  <Text style={styles.activityCardTitle}>Tutoring Bookings</Text>
-                  <Text style={styles.activityChipGreen}>Sessions</Text>
-                </View>
-                <Text style={styles.activityCardSub}>Scheduled study meetings & chat</Text>
-              </View>
-              <MaterialCommunityIcons name="chevron-right" size={18} color="#94A3B8" />
-            </Pressable>
+          <View style={styles.spotlightEmptyCard}>
+            <MaterialCommunityIcons name="calendar-check" size={28} color="#166534" style={{ marginBottom: 6 }} />
+            <Text style={styles.spotlightEmptyTitle}>All Caught Up</Text>
+            <Text style={styles.spotlightEmptySub}>
+              No upcoming events at this moment. Check back soon for new campus announcements!
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -568,19 +532,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 7,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 3,
   },
   hamburgerButton: {
     backgroundColor: "#F8FAFC",
@@ -599,17 +556,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D3E02",
     borderRadius: 2,
   },
-  topNavCenter: {
+  topNavLeft: {
+    flexDirection: "row",
     alignItems: "center",
   },
   topNavBrand: {
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 19,
+    fontWeight: "900",
     color: "#0D3E02",
     letterSpacing: -0.3,
   },
   topNavBrandAccent: {
-    color: "#FDBF1E",
+    color: "#166534",
   },
   topRightActions: {
     flexDirection: "row",
@@ -644,39 +602,30 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   profileHeaderButton: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 2,
-    borderWidth: 1.5,
-    borderColor: "#FDBF1E",
-  },
-  headerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#0D3E02",
+    width: 36,
+    height: 36,
     justifyContent: "center",
     alignItems: "center",
   },
   heroGreetingSection: {
-    paddingTop: 10,
-    paddingBottom: 24,
+    paddingTop: 12,
+    paddingBottom: 20,
     paddingHorizontal: 4,
   },
   heroGreetingSub: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: "#D97706",
     textTransform: "uppercase",
-    letterSpacing: 1.2,
-    marginBottom: 6,
+    letterSpacing: 1.0,
+    marginBottom: 4,
   },
   heroGreetingName: {
-    fontSize: 27,
+    fontSize: 28,
     fontWeight: "900",
     color: "#0D3E02",
     letterSpacing: -0.4,
-    lineHeight: 34,
+    lineHeight: 35,
   },
 
   // Alert Notice
@@ -828,40 +777,35 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Segments
-  segmentContainer: {
+  // Spotlight Section Header
+  spotlightSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 20,
     marginBottom: 12,
   },
-  segmentBar: {
-    flexDirection: "row",
-    backgroundColor: "#E2E8F0",
-    borderRadius: 12,
-    padding: 3,
+  spotlightSectionTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#0D3E02",
+    letterSpacing: -0.3,
   },
-  segmentBtn: {
-    flex: 1,
+  spotlightUpcomingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-    borderRadius: 10,
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
   },
-  segmentBtnActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  segmentBtnText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748B",
-  },
-  segmentBtnTextActive: {
-    color: "#0D3E02",
+  spotlightUpcomingText: {
+    fontSize: 10,
     fontWeight: "800",
+    color: "#166534",
+    letterSpacing: 0.5,
   },
 
   // Classic Signature Emerald Spotlight Card
@@ -963,66 +907,37 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // Activity List
-  activityList: {
-    gap: 8,
-  },
-  activityCard: {
-    flexDirection: "row",
-    alignItems: "center",
+  spotlightEmptyCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 14,
-    padding: 12,
+    borderRadius: 20,
+    padding: 24,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    gap: 10,
-  },
-  activityIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    alignItems: "center",
     justifyContent: "center",
-    alignItems: "center",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  activityTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  activityCardTitle: {
-    fontSize: 13,
-    fontWeight: "700",
+  spotlightEmptyTitle: {
+    fontSize: 15,
+    fontWeight: "800",
     color: "#0F172A",
+    marginBottom: 4,
   },
-  activityChipGold: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#B45309",
-    backgroundColor: "#FFF8E1",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  activityChipGreen: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#0D3E02",
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 6,
-  },
-  activityCardSub: {
-    fontSize: 11,
+  spotlightEmptySub: {
+    fontSize: 12,
     color: "#64748B",
-    marginTop: 1,
+    textAlign: "center",
+    lineHeight: 18,
   },
 
   // Dedicated Event Modal
   eventModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.12)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

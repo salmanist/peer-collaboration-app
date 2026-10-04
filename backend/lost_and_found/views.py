@@ -46,6 +46,15 @@ class LostAndFoundItemListCreateView(generics.ListCreateAPIView):
             .all()
         )
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        request = self.request
+        if request and request.user and request.user.is_authenticated:
+            context["user_claimed_item_ids"] = set(
+                ItemClaim.objects.filter(claimant=request.user).values_list("item_id", flat=True)
+            )
+        return context
+
     def perform_create(self, serializer):
         serializer.save(poster=self.request.user)
 

@@ -7,6 +7,7 @@ export interface CampusNotificationItem {
   category: "general" | "enrollment" | "results" | "sessions" | "events" | "urgent";
   priority: "normal" | "high" | "urgent";
   action_url?: string | null;
+  image?: string | null;
   created_by?: string | null;
   created_by_name: string;
   created_at: string;
@@ -28,6 +29,7 @@ export interface CreateNotificationPayload {
   category?: "general" | "enrollment" | "results" | "sessions" | "events" | "urgent";
   priority?: "normal" | "high" | "urgent";
   action_url?: string;
+  image?: { uri: string; name?: string; type?: string } | null;
 }
 
 export async function fetchCampusNotifications(): Promise<NotificationListResponse> {
@@ -55,6 +57,30 @@ export async function adminFetchNotifications(): Promise<CampusNotificationItem[
 export async function adminCreateNotification(
   payload: CreateNotificationPayload
 ): Promise<CampusNotificationItem> {
+  if (payload.image) {
+    const formData = new FormData();
+    formData.append("title", payload.title);
+    formData.append("message", payload.message);
+    if (payload.category) formData.append("category", payload.category);
+    if (payload.priority) formData.append("priority", payload.priority);
+    if (payload.action_url) formData.append("action_url", payload.action_url);
+
+    const fileUri = payload.image.uri;
+    const filename = payload.image.name || fileUri.split("/").pop() || "announcement.jpg";
+    const mimeType = payload.image.type || "image/jpeg";
+
+    formData.append("image", {
+      uri: fileUri,
+      name: filename,
+      type: mimeType,
+    } as any);
+
+    const res = await apiClient.post<CampusNotificationItem>("/notifications/admin/", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  }
+
   const res = await apiClient.post<CampusNotificationItem>("/notifications/admin/", payload);
   return res.data;
 }

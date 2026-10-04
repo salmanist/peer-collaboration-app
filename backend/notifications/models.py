@@ -16,6 +16,7 @@ class CampusNotification(models.Model):
     category = models.CharField(max_length=30, default="general")
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="normal")
     action_url = models.CharField(max_length=500, blank=True, null=True)
+    image = models.ImageField(upload_to="notifications/", null=True, blank=True)
 
     # When target_user is null, this is a platform-wide broadcast.
     # When target_user is set, this is a targeted direct notification (e.g. session request, claim, marketplace inquiry).

@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
 import { useDataStore } from "../../../core/store/DataStoreContext";
 import { createLostAndFoundItem } from "../data/lostAndFoundApi";
 import {
@@ -37,26 +38,11 @@ export default function CreateLostAndFoundScreen() {
   );
   const [description, setDescription] = useState("");
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage({ uri: result.assets[0].uri });
-      }
-    } catch {
-      setErrorMessage("Could not open gallery.");
-    }
-  };
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const onSubmit = async () => {
     const cleanTitle = title.trim();
@@ -121,7 +107,7 @@ export default function CreateLostAndFoundScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={() => router.back()}
@@ -252,9 +238,9 @@ export default function CreateLostAndFoundScreen() {
             </Pressable>
           </View>
         ) : (
-          <Pressable style={styles.photoUploadBtn} onPress={() => void pickImage()}>
-            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#64748b" style={{ marginBottom: 4 }} />
-            <Text style={styles.photoUploadText}>Tap to attach a photo</Text>
+          <Pressable style={styles.photoUploadBtn} onPress={() => setIsImagePickerOpen(true)}>
+            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#0D3E02" style={{ marginBottom: 4 }} />
+            <Text style={styles.photoUploadText}>Tap to add photo (Camera or Gallery)</Text>
           </Pressable>
         )}
 
@@ -273,6 +259,13 @@ export default function CreateLostAndFoundScreen() {
           )}
         </Pressable>
       </ScrollView>
+
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedImage({ uri: img.uri })}
+        title="Attach Item Photo"
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -283,34 +276,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   scrollContent: {
     padding: 16,

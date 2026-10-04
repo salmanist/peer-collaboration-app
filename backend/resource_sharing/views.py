@@ -44,6 +44,16 @@ class ResourceListingListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return ResourceListing.objects.select_related("owner").all()
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        request = self.request
+        if request and request.user and request.user.is_authenticated:
+            reqs = ResourceInterestRequest.objects.filter(
+                requester=request.user
+            ).values_list("resource_id", "id")
+            context["user_interest_requests"] = dict(reqs)
+        return context
+
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
@@ -58,6 +68,16 @@ class ResourceListingDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return ResourceListing.objects.select_related("owner").all()
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        request = self.request
+        if request and request.user and request.user.is_authenticated:
+            reqs = ResourceInterestRequest.objects.filter(
+                requester=request.user
+            ).values_list("resource_id", "id")
+            context["user_interest_requests"] = dict(reqs)
+        return context
+
 
 class MyResourceListingListView(generics.ListAPIView):
     serializer_class = ResourceListingSerializer
@@ -69,6 +89,16 @@ class MyResourceListingListView(generics.ListAPIView):
             .filter(owner=self.request.user)
             .order_by("-created_at")
         )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        request = self.request
+        if request and request.user and request.user.is_authenticated:
+            reqs = ResourceInterestRequest.objects.filter(
+                requester=request.user
+            ).values_list("resource_id", "id")
+            context["user_interest_requests"] = dict(reqs)
+        return context
 
 
 class ResourceListingStatusUpdateView(generics.UpdateAPIView):

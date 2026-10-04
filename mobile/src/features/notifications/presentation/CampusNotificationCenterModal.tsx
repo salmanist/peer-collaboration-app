@@ -152,7 +152,7 @@ export default function CampusNotificationCenterModal() {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.08)",
     justifyContent: "flex-end",
   },
   backdropPressable: {

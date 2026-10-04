@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -95,7 +96,7 @@ export default function CampusNotificationPopupModal() {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.65)",
+    backgroundColor: "rgba(15, 23, 42, 0.12)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

@@ -16,6 +16,7 @@ class CampusNotificationSerializer(serializers.ModelSerializer):
             "category",
             "priority",
             "action_url",
+            "image",
             "created_by",
             "created_by_name",
             "created_at",
@@ -35,6 +36,9 @@ class CampusNotificationSerializer(serializers.ModelSerializer):
         return "LGU Administration"
 
     def get_is_popup_dismissed(self, obj):
+        if "user_states" in self.context:
+            state = self.context["user_states"].get(obj.id)
+            return state.is_popup_dismissed if state else False
         user = self.context.get("request").user if self.context.get("request") else None
         if user and user.is_authenticated:
             state = obj.user_states.filter(user=user).first()
@@ -42,6 +46,9 @@ class CampusNotificationSerializer(serializers.ModelSerializer):
         return False
 
     def get_is_read(self, obj):
+        if "user_states" in self.context:
+            state = self.context["user_states"].get(obj.id)
+            return state.is_read if state else False
         user = self.context.get("request").user if self.context.get("request") else None
         if user and user.is_authenticated:
             state = obj.user_states.filter(user=user).first()
@@ -58,4 +65,5 @@ class CreateCampusNotificationSerializer(serializers.ModelSerializer):
             "category",
             "priority",
             "action_url",
+            "image",
         ]

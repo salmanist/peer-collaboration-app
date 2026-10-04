@@ -84,15 +84,15 @@ class TutorProfileSerializer(serializers.ModelSerializer):
         ]
 
     def get_recent_reviews(self, obj):
-        reviews = SessionReview.objects.filter(tutor=obj.user).order_by("-created_at")[:3]
+        if "recent_reviews_by_tutor" in self.context:
+            reviews = self.context["recent_reviews_by_tutor"].get(obj.user_id, [])
+            return SessionReviewSerializer(reviews, many=True).data
+        reviews = SessionReview.objects.select_related("reviewer").filter(tutor=obj.user).order_by("-created_at")[:3]
         return SessionReviewSerializer(reviews, many=True).data
 
     def validate(self, attrs):
-        is_free = attrs.get("is_free", getattr(self.instance, "is_free", True))
-        hourly_fee = attrs.get("hourly_fee", getattr(self.instance, "hourly_fee", None))
-
-        if not is_free and (hourly_fee is None or hourly_fee <= 0):
-            raise serializers.ValidationError({"hourly_fee": "Hourly fee is required when tutoring is not free."})
+        attrs["is_free"] = True
+        attrs["hourly_fee"] = None
         return attrs
 
 

@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Platform,
   Pressable,
@@ -16,7 +17,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { fetchResourceListing, updateResourceListing } from "../data/resourcesApi";
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
+import { deleteResourceListing, fetchResourceListing, updateResourceListing } from "../data/resourcesApi";
 import type { ResourceCategory, ResourceCondition, ResourceExchangeType } from "../resources";
 
 const categoryOptions: { value: ResourceCategory; label: string }[] = [
@@ -50,32 +52,17 @@ export default function EditResourceScreen() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
   const [category, setCategory] = useState<ResourceCategory>("notes");
   const [condition, setCondition] = useState<ResourceCondition>("used");
   const [exchangeType, setExchangeType] = useState<ResourceExchangeType>("free");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage({ uri: result.assets[0].uri });
-      }
-    } catch {
-      setErrorMessage("Could not open image picker.");
-    }
-  };
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   useEffect(() => {
     async function loadListing() {
@@ -102,6 +89,36 @@ export default function EditResourceScreen() {
     }
     void loadListing();
   }, [listingId]);
+
+  const confirmDelete = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to delete this listing? This action cannot be undone.");
+      if (confirmed) {
+        void handleDelete();
+      }
+    } else {
+      Alert.alert(
+        "Delete Listing",
+        "Are you sure you want to delete this listing? This action cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: () => void handleDelete() },
+        ]
+      );
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setErrorMessage("");
+    try {
+      await deleteResourceListing(listingId);
+      router.replace("/(app)/resources/mine" as any);
+    } catch {
+      setErrorMessage("Could not delete this listing. Please try again.");
+      setIsDeleting(false);
+    }
+  };
 
   const save = async () => {
     const cleanTitle = title.trim();
@@ -149,8 +166,8 @@ export default function EditResourceScreen() {
 
   return (
     <View style={styles.rootContainer}>
-      {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      {/* Top Navigation Bar with Back Button and Delete Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={() => router.back()}
@@ -158,7 +175,14 @@ export default function EditResourceScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Resource</Text>
-        <View style={{ width: 36 }} />
+        <Pressable
+          style={styles.navDeleteBtn}
+          onPress={confirmDelete}
+          disabled={isDeleting || isSaving}
+          accessibilityLabel="Delete Listing"
+        >
+          <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -260,18 +284,18 @@ export default function EditResourceScreen() {
         {displayImageUri ? (
           <View style={styles.imagePreviewContainer}>
             <Image source={{ uri: displayImageUri }} style={styles.imagePreview} />
-            <Pressable style={styles.changeImageButton} onPress={() => void pickImage()}>
+            <Pressable style={styles.changeImageButton} onPress={() => setIsImagePickerOpen(true)}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
                 <MaterialCommunityIcons name="camera-retake-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
-                <Text style={styles.changeImageText}>Change Photo</Text>
+                <Text style={styles.changeImageText}>Change Photo (Camera / Gallery)</Text>
               </View>
             </Pressable>
           </View>
         ) : (
-          <Pressable style={styles.imagePickerButton} onPress={() => void pickImage()}>
+          <Pressable style={styles.imagePickerButton} onPress={() => setIsImagePickerOpen(true)}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
               <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
-              <Text style={styles.imagePickerButtonText}>Add Photo (optional)</Text>
+              <Text style={styles.imagePickerButtonText}>Add Photo (Camera or Gallery)</Text>
             </View>
           </Pressable>
         )}
@@ -294,9 +318,9 @@ export default function EditResourceScreen() {
         ) : null}
 
         <Pressable
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          style={[styles.saveButton, (isSaving || isDeleting) && styles.saveButtonDisabled]}
           onPress={() => void save()}
-          disabled={isSaving}
+          disabled={isSaving || isDeleting}
         >
           {isSaving ? (
             <ActivityIndicator color="#000000" />
@@ -304,7 +328,29 @@ export default function EditResourceScreen() {
             <Text style={styles.saveText}>Save Changes</Text>
           )}
         </Pressable>
+
+        <Pressable
+          style={[styles.deleteButton, (isSaving || isDeleting) && styles.deleteButtonDisabled]}
+          onPress={confirmDelete}
+          disabled={isSaving || isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#DC2626" />
+          ) : (
+            <View style={styles.deleteButtonContent}>
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.deleteButtonText}>Delete Listing</Text>
+            </View>
+          )}
+        </Pressable>
       </ScrollView>
+
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedImage({ uri: img.uri })}
+        title="Update Item Photo"
+      />
     </View>
   );
 }
@@ -315,34 +361,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   centered: {
     flex: 1,
@@ -453,6 +492,39 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "800",
     fontSize: 14,
+  },
+  navDeleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(220, 38, 38, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: {
+    marginTop: 12,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1.5,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  deleteButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "800",
   },
   errorText: {
     color: "#dc2626",

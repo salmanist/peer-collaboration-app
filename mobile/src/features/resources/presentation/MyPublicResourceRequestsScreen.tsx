@@ -33,7 +33,7 @@ export default function MyPublicResourceRequestsScreen() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const loadRequests = async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
@@ -194,7 +194,7 @@ export default function MyPublicResourceRequestsScreen() {
   return (
     <View style={styles.rootContainer}>
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={handleBack}
@@ -267,34 +267,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#0F172A",
+    color: "#0D3E02",
     letterSpacing: -0.3,
   },
   navActionBtn: {

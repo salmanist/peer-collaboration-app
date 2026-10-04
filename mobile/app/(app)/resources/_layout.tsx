@@ -9,6 +9,7 @@ export default function ResourcesLayout() {
       <Stack.Screen name="requests" />
       <Stack.Screen name="mine" />
       <Stack.Screen name="listings" />
+      <Stack.Screen name="my-listings" />
       <Stack.Screen name="wanted" />
       <Stack.Screen name="edit" />
       <Stack.Screen name="chat" />

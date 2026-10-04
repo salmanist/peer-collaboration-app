@@ -18,7 +18,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
 import { SkeletonList, TutorCardSkeleton } from "../../../core/components/Skeleton";
-import { useDrawerStore } from "../../../core/navigation/drawerStore";
+import { ModuleOptionsMenu, type ModuleDropdownItem } from "../../../core/components/ModuleOptionsMenu";
 import { useDataStore } from "../../../core/store/DataStoreContext";
 import { fetchTutors } from "../data/tutoringApi";
 import { useTutoringNotificationStore } from "../tutoringNotifications";
@@ -28,8 +28,32 @@ export function TutorDiscoveryFeedScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useSessionStore((state) => state.user);
-  const openDrawer = useDrawerStore((state) => state.openDrawer);
   const { hasActiveTutorProfile, pollSummary } = useTutoringNotificationStore();
+  const pendingRequestsCount = useTutoringNotificationStore((state) => state.pendingRequestsCount);
+
+  const dropdownItems: ModuleDropdownItem[] = useMemo(
+    () => [
+      {
+        key: "my_sessions",
+        label: "My Tutoring Sessions",
+        subtitle: "View upcoming & past sessions",
+        icon: "calendar-clock",
+        iconColor: "#0D3E02",
+        badgeCount: pendingRequestsCount,
+        onPress: () => router.push("/(app)/tutoring/sessions" as any),
+      },
+      {
+        key: "tutor_profile",
+        label: hasActiveTutorProfile ? "Edit Tutor Profile" : "Become a Peer Tutor",
+        subtitle: hasActiveTutorProfile ? "Update your tutoring subjects & bio" : "Offer academic help to peers",
+        icon: "account-edit-outline",
+        iconColor: "#0284C7",
+        isAction: true,
+        onPress: () => router.push("/(app)/tutoring/setup" as any),
+      },
+    ],
+    [pendingRequestsCount, hasActiveTutorProfile]
+  );
 
   // In-Memory DataStore
   const { tutors: cachedTutors, setTutors: setStoreTutors } = useDataStore();
@@ -39,11 +63,9 @@ export function TutorDiscoveryFeedScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | "tutor" | "mentor">("all");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [onlyFree, setOnlyFree] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const initial = (user?.full_name || user?.email || "S").charAt(0).toUpperCase();
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const loadData = useCallback(
     async (refresh = false) => {
@@ -54,7 +76,6 @@ export function TutorDiscoveryFeedScreen() {
         const params: any = {};
         if (activeTab === "tutor") params.profile_type = "tutor";
         if (activeTab === "mentor") params.profile_type = "mentor";
-        if (onlyFree) params.is_free = true;
         if (selectedTag) {
           if (POPULAR_SUBJECTS.includes(selectedTag)) params.subject = selectedTag;
           else params.skill = selectedTag;
@@ -64,7 +85,7 @@ export function TutorDiscoveryFeedScreen() {
         const data = await fetchTutors(params);
         setTutors(data.results || []);
 
-        if (activeTab === "all" && !onlyFree && !selectedTag && !searchQuery.trim()) {
+        if (activeTab === "all" && !selectedTag && !searchQuery.trim()) {
           setStoreTutors(data.results || []);
         }
       } catch (err) {
@@ -74,20 +95,18 @@ export function TutorDiscoveryFeedScreen() {
         setIsRefreshing(false);
       }
     },
-    [activeTab, onlyFree, selectedTag, searchQuery, tutors.length, setStoreTutors],
+    [activeTab, selectedTag, searchQuery, tutors.length, setStoreTutors],
   );
 
   useEffect(() => {
     void loadData();
-  }, [activeTab, selectedTag, onlyFree]);
+  }, [activeTab, selectedTag]);
 
   useFocusEffect(
     useCallback(() => {
-      pollSummary();
-      if (!cachedTutors || cachedTutors.length === 0) {
-        void loadData();
-      }
-    }, [cachedTutors, loadData, pollSummary]),
+      // Re-fetch in background without showing full screen loader
+      void loadData(true);
+    }, [loadData]),
   );
 
   const handleTabChange = (tab: "all" | "tutor" | "mentor") => {
@@ -96,7 +115,7 @@ export function TutorDiscoveryFeedScreen() {
   };
 
   const handleTagToggle = (tag: string) => {
-    setSelectedTag((prev) => (prev === tag ? null : tag));
+    setSelectedTag(selectedTag === tag ? null : tag);
   };
 
   const filteredTutors = useMemo(() => {
@@ -105,10 +124,6 @@ export function TutorDiscoveryFeedScreen() {
       list = list.filter((t) => t.profile_type === "tutor" || t.profile_type === "both");
     } else if (activeTab === "mentor") {
       list = list.filter((t) => t.profile_type === "mentor" || t.profile_type === "both");
-    }
-
-    if (onlyFree) {
-      list = list.filter((t) => t.is_free);
     }
 
     if (selectedTag) {
@@ -134,29 +149,20 @@ export function TutorDiscoveryFeedScreen() {
     }
 
     return list;
-  }, [tutors, activeTab, onlyFree, selectedTag, searchQuery]);
+  }, [tutors, activeTab, selectedTag, searchQuery]);
 
   return (
     <View style={styles.container}>
       {/* Compact Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
-        <Pressable style={styles.hamburgerBtn} onPress={openDrawer}>
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-        </Pressable>
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Text style={styles.compactNavTitle}>Peer Tutoring</Text>
-        <Pressable
-          style={styles.avatarBtn}
-          onPress={() => router.push("/(app)/profile" as any)}
-        >
-          <View style={styles.headerAvatar}>
-            <MaterialCommunityIcons name="account" size={19} color="#FDBF1E" />
-          </View>
-        </Pressable>
+        <ModuleOptionsMenu
+          items={dropdownItems}
+          hasNotification={pendingRequestsCount > 0}
+        />
       </View>
 
-      {/* Floating Action & Search Row */}
+      {/* Search Row */}
       <View style={styles.actionSearchRow}>
         <View style={styles.searchBar}>
           <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
@@ -175,38 +181,15 @@ export function TutorDiscoveryFeedScreen() {
             </Pressable>
           )}
         </View>
-        <Pressable
-          style={styles.postBtn}
-          onPress={() => router.push("/(app)/tutoring/profile/setup")}
-        >
-          <MaterialCommunityIcons
-            name={hasActiveTutorProfile ? "account-edit-outline" : "school"}
-            size={16}
-            color="#0D3E02"
-          />
-          <Text style={styles.postBtnText}>{hasActiveTutorProfile ? "Edit" : "Register"}</Text>
-        </Pressable>
       </View>
 
-      {/* Filters (Subjects/Skills Pills + Free Toggle) */}
+      {/* Filters (Subjects/Skills Pills) */}
       <View style={styles.filtersWrapper}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tagsScroll}
         >
-          <Pressable
-            style={[styles.tagPill, onlyFree && styles.tagPillActive]}
-            onPress={() => setOnlyFree(!onlyFree)}
-          >
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              {onlyFree && <MaterialCommunityIcons name="check" size={13} color="#0D3E02" style={{ marginRight: 3 }} />}
-              <Text style={[styles.tagPillText, onlyFree && styles.tagPillTextActive]}>
-                Free Only
-              </Text>
-            </View>
-          </Pressable>
-
           {[...POPULAR_SUBJECTS, ...POPULAR_SKILLS].map((tag) => {
             const isSelected = selectedTag === tag;
             return (
@@ -313,9 +296,19 @@ export function TutorDiscoveryFeedScreen() {
 
                 {/* Card Footer */}
                 <View style={styles.cardFooter}>
-                  <View style={styles.rateBadge}>
-                    <Text style={[styles.rateText, item.is_free && styles.freeText]}>
-                      {item.is_free ? "Free Tutoring" : `${item.hourly_fee} PKR / hr`}
+                  <View style={styles.roleTagWrap}>
+                    <MaterialCommunityIcons
+                      name={item.profile_type === "mentor" ? "briefcase-outline" : "school-outline"}
+                      size={13}
+                      color="#0D3E02"
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={styles.roleTagText}>
+                      {item.profile_type === "both"
+                        ? "Tutor & Mentor"
+                        : item.profile_type === "mentor"
+                        ? "Academic Mentor"
+                        : "Peer Tutor"}
                     </Text>
                   </View>
                   <View style={styles.bookButton}>
@@ -338,19 +331,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   compactTopNav: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingBottom: 7,
+  },
+  mySessionsHeaderBtn: {
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+    justifyContent: "center",
+    alignItems: "center",
   },
   hamburgerBtn: {
     backgroundColor: "#F8FAFC",
@@ -431,25 +427,6 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     fontSize: 13,
     fontWeight: "700",
-  },
-  postBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FDBF1E",
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === "ios" ? 11 : 9,
-    borderRadius: 14,
-    gap: 4,
-    shadowColor: "#FDBF1E",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  postBtnText: {
-    color: "#0D3E02",
-    fontSize: 13,
-    fontWeight: "900",
   },
   filtersWrapper: {
     paddingVertical: 12,
@@ -653,20 +630,18 @@ const styles = StyleSheet.create({
     borderTopColor: "#F1F5F9",
     paddingTop: 12,
   },
-  rateBadge: {
-    backgroundColor: "#F8FAFC",
+  roleTagWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
   },
-  rateText: {
-    fontSize: 12,
+  roleTagText: {
+    fontSize: 11.5,
     fontWeight: "800",
     color: "#0D3E02",
-  },
-  freeText: {
-    color: "#16A34A",
-    fontWeight: "900",
   },
   bookButton: {
     flexDirection: "row",

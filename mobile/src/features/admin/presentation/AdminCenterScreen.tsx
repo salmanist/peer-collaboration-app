@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Modal,
   Platform,
   Pressable,
@@ -20,6 +21,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../../../core/auth/session";
 import { AdminOverviewSkeleton } from "../../../core/components/Skeleton";
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
+import { API_BASE_URL } from "../../../core/network/apiClient";
 import {
   AdminCourseItem,
   AdminDepartmentItem,
@@ -115,7 +118,24 @@ export function AdminCenterScreen() {
     "general" | "enrollment" | "results" | "sessions" | "events" | "urgent"
   >("general");
   const [bPriority, setBPriority] = useState<"normal" | "high" | "urgent">("normal");
+  const [bImage, setBImage] = useState<{ uri: string; name?: string; type?: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [isPostingBroadcast, setIsPostingBroadcast] = useState(false);
+
+  function getImageUrl(imagePath: string | null | undefined) {
+    if (!imagePath) return null;
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+      try {
+        const url = new URL(imagePath);
+        const backendUrl = new URL(API_BASE_URL);
+        return `${backendUrl.protocol}//${backendUrl.host}${url.pathname}${url.search}`;
+      } catch {
+        return imagePath;
+      }
+    }
+    const host = API_BASE_URL.replace(/\/api\/?$/, "");
+    return `${host}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
+  }
 
   const adminBroadcasts = useCampusNotificationStore((state) => state.adminBroadcasts);
   const fetchAdminBroadcasts = useCampusNotificationStore((state) => state.fetchAdminBroadcasts);
@@ -822,6 +842,29 @@ export function AdminCenterScreen() {
                   numberOfLines={4}
                 />
 
+                {/* Event / Announcement Photo */}
+                <Text style={styles.inputLabel}>Event / Announcement Photo (Optional)</Text>
+                {bImage ? (
+                  <View style={styles.broadcastImagePreviewWrap}>
+                    <Image source={{ uri: bImage.uri }} style={styles.broadcastImagePreview} resizeMode="cover" />
+                    <Pressable
+                      style={styles.broadcastRemoveImageBtn}
+                      onPress={() => setBImage(null)}
+                    >
+                      <MaterialCommunityIcons name="close-circle" size={16} color="#EF4444" style={{ marginRight: 4 }} />
+                      <Text style={styles.broadcastRemoveImageText}>Remove Photo</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={styles.broadcastImagePickerBtn}
+                    onPress={() => setIsImagePickerOpen(true)}
+                  >
+                    <MaterialCommunityIcons name="camera-plus-outline" size={20} color="#0D3E02" style={{ marginRight: 8 }} />
+                    <Text style={styles.broadcastImagePickerBtnText}>Add Event Photo (Camera or Gallery)</Text>
+                  </Pressable>
+                )}
+
                 {/* Send Button */}
                 <Pressable
                   style={[
@@ -838,11 +881,13 @@ export function AdminCenterScreen() {
                       await createBroadcast({
                         title: bTitle.trim(),
                         message: bMessage.trim(),
-                        category: "general",
+                        category: "events",
                         priority: bPriority,
+                        image: bImage,
                       });
                       setBTitle("");
                       setBMessage("");
+                      setBImage(null);
                       setBPriority("normal");
                       Alert.alert("Success", "Campus notification published to students!");
                     } catch {
@@ -894,6 +939,16 @@ export function AdminCenterScreen() {
 
                       <Text style={styles.broadcastItemTitle}>{item.title}</Text>
                       <Text style={styles.broadcastItemMessage}>{item.message}</Text>
+
+                      {item.image ? (
+                        <View style={styles.broadcastCardImageWrap}>
+                          <Image
+                            source={{ uri: getImageUrl(item.image) || "" }}
+                            style={styles.broadcastCardImage}
+                            resizeMode="cover"
+                          />
+                        </View>
+                      ) : null}
 
                       <View style={styles.broadcastItemFooter}>
                         <Text style={styles.broadcastAuthorText}>
@@ -1179,8 +1234,8 @@ export function AdminCenterScreen() {
                         <Text style={styles.cardMetaText}>{tutor.rating_avg} ({tutor.rating_count} reviews)</Text>
                       </View>
                       <View style={styles.cardMetaPill}>
-                        <MaterialCommunityIcons name="cash" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
-                        <Text style={styles.cardMetaText}>{tutor.hourly_rate ? `PKR ${tutor.hourly_rate}/hr` : "Free Tutoring"}</Text>
+                        <MaterialCommunityIcons name="school-outline" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                        <Text style={styles.cardMetaText}>Peer Tutor</Text>
                       </View>
                     </View>
                   </View>
@@ -1550,6 +1605,13 @@ export function AdminCenterScreen() {
           </View>
         </View>
       </Modal>
+
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setBImage(img)}
+        title="Add Event Announcement Photo"
+      />
     </View>
   );
 }
@@ -1564,18 +1626,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    paddingVertical: 9,
+    backgroundColor: "transparent",
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1588,7 +1648,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   adminBadge: {
     flexDirection: "row",
@@ -2049,7 +2109,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(7, 13, 31, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.08)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -2378,5 +2438,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#64748B",
     fontWeight: "500",
+  },
+  broadcastImagePreviewWrap: {
+    marginTop: 6,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  broadcastImagePreview: {
+    width: "100%",
+    height: 140,
+    backgroundColor: "#F1F5F9",
+  },
+  broadcastRemoveImageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    backgroundColor: "#FEF2F2",
+    borderTopWidth: 1,
+    borderTopColor: "#FEE2E2",
+  },
+  broadcastRemoveImageText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#EF4444",
+  },
+  broadcastImagePickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0FDF4",
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#86EFAC",
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 6,
+  },
+  broadcastImagePickerBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0D3E02",
+  },
+  broadcastCardImageWrap: {
+    borderRadius: 10,
+    overflow: "hidden",
+    marginTop: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  broadcastCardImage: {
+    width: "100%",
+    height: 130,
+    backgroundColor: "#F1F5F9",
   },
 });

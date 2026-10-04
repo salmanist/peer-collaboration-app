@@ -20,12 +20,16 @@ class ResourceListingSerializer(serializers.ModelSerializer):
     interest_request_id = serializers.SerializerMethodField()
 
     def get_has_requested(self, obj) -> bool:
+        if "user_interest_requests" in self.context:
+            return obj.id in self.context["user_interest_requests"]
         request = self.context.get("request")
         if request and request.user and request.user.is_authenticated:
             return ResourceInterestRequest.objects.filter(resource=obj, requester=request.user).exists()
         return False
 
     def get_interest_request_id(self, obj):
+        if "user_interest_requests" in self.context:
+            return self.context["user_interest_requests"].get(obj.id)
         request = self.context.get("request")
         if request and request.user and request.user.is_authenticated:
             req = ResourceInterestRequest.objects.filter(resource=obj, requester=request.user).first()

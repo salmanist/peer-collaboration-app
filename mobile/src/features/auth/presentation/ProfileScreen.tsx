@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
-import { useDrawerStore } from "../../../core/navigation/drawerStore";
 import { useCollapsibleHeader } from "../../../core/navigation/useCollapsibleHeader";
 import { ProfileSkeleton } from "../../../core/components/Skeleton";
 import { fetchMe } from "../data/authApi";
@@ -72,7 +71,6 @@ export default function ProfileScreen() {
   const user = useSessionStore((state) => state.user);
   const accessToken = useSessionStore((state) => state.accessToken);
   const updateUser = useSessionStore((state) => state.updateUser);
-  const openDrawer = useDrawerStore((state) => state.openDrawer);
   const clearSession = useSessionStore((state) => state.clearSession);
 
   useEffect(() => {
@@ -83,22 +81,16 @@ export default function ProfileScreen() {
     }
   }, [accessToken, updateUser]);
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
-  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 54);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
+  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 44);
 
   if (!user) {
     return (
       <View style={styles.rootContainer}>
-        <View style={[styles.collapsibleTopBar, { paddingTop: topOffset + 6 }]}>
-          <Pressable style={styles.hamburgerButton} onPress={openDrawer}>
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-            <View style={styles.hamburgerLine} />
-          </Pressable>
+        <View style={[styles.collapsibleTopBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Text style={styles.topNavTitle}>My Profile</Text>
-          <View style={{ width: 36 }} />
         </View>
-        <View style={{ marginTop: topOffset + 66 }}>
+        <View style={{ marginTop: topOffset + 50 }}>
           <ProfileSkeleton />
         </View>
       </View>
@@ -123,6 +115,10 @@ export default function ProfileScreen() {
   const sessionText = formatEnrollmentSession(user.enrollment_year);
   const departmentText = formatDepartmentCode(user.department);
 
+  const isAdmin =
+    user.role === "admin" ||
+    (user.email && ["salman@lgu.edu.pk", "zahra@lgu.edu.pk"].includes(user.email.toLowerCase()));
+
   const handleLogout = async () => {
     await clearSession();
     router.replace("/(auth)/login");
@@ -130,29 +126,23 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.rootContainer}>
-      {/* Dynamic Collapsible Top Header (Instagram Style) */}
+      {/* Dynamic Collapsible Top Header */}
       <Animated.View
         style={[
           styles.collapsibleTopBar,
           {
-            paddingTop: topOffset + 6,
+            paddingTop: topOffset > 0 ? topOffset + 2 : 8,
             transform: [{ translateY: headerTranslateY }],
           },
         ]}
       >
-        <Pressable style={styles.hamburgerButton} onPress={openDrawer}>
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-        </Pressable>
-
         <Text style={styles.topNavTitle}>My Profile</Text>
 
         <Pressable
-          style={styles.homeIconBtn}
-          onPress={() => router.push("/(app)" as any)}
+          style={styles.logoutHeaderBtn}
+          onPress={handleLogout}
         >
-          <MaterialCommunityIcons name="home" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="logout" size={18} color="#DC2626" />
         </Pressable>
       </Animated.View>
 
@@ -163,7 +153,7 @@ export default function ProfileScreen() {
         contentContainerStyle={[
           styles.contentContainer,
           {
-            paddingTop: topOffset + 66,
+            paddingTop: topOffset + 58,
             paddingBottom: Math.max(insets.bottom + 40, 60),
           },
         ]}
@@ -284,6 +274,33 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
+        {/* Administration Section (If Admin) */}
+        {isAdmin ? (
+          <View style={{ marginBottom: 20 }}>
+            <Text style={styles.hubTitle}>Administration</Text>
+            <Pressable
+              style={styles.adminCard}
+              onPress={() => router.push("/(app)/admin" as any)}
+            >
+              <View style={styles.adminIconContainer}>
+                <MaterialCommunityIcons name="shield-crown" size={24} color="#0D3E02" />
+              </View>
+              <View style={styles.adminCardBody}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text style={styles.adminCardTitle}>Admin Center</Text>
+                  <View style={styles.adminRoleBadge}>
+                    <Text style={styles.adminRoleBadgeText}>STAFF</Text>
+                  </View>
+                </View>
+                <Text style={styles.adminCardSub}>
+                  Manage student roster, campus notices & platform moderation
+                </Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={22} color="#0D3E02" />
+            </Pressable>
+          </View>
+        ) : null}
+
         {/* Logout Action */}
         <Pressable style={styles.logoutBtn} onPress={handleLogout}>
           <MaterialCommunityIcons name="logout" size={16} color="#DC2626" style={{ marginRight: 6 }} />
@@ -311,19 +328,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 7,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 3,
   },
   hamburgerButton: {
     backgroundColor: "#F8FAFC",
@@ -596,5 +606,65 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 14,
     fontWeight: "800",
+  },
+  logoutHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#FEE2E2",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  adminCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: "#0D3E02",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  adminIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#E8F5E9",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+  },
+  adminCardBody: {
+    flex: 1,
+  },
+  adminCardTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#070D1F",
+  },
+  adminRoleBadge: {
+    backgroundColor: "#0D3E02",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  adminRoleBadgeText: {
+    color: "#FDBF1E",
+    fontSize: 9,
+    fontWeight: "900",
+  },
+  adminCardSub: {
+    fontSize: 11.5,
+    color: "#64748B",
+    marginTop: 2,
+    lineHeight: 16,
   },
 });

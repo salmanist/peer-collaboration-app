@@ -39,7 +39,7 @@ export function MyTutoringSessionsScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [ratingSession, setRatingSession] = useState<TutoringSession | null>(null);
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const loadSessions = useCallback(
     async (refresh = false) => {
@@ -149,7 +149,7 @@ export function MyTutoringSessionsScreen() {
   return (
     <View style={styles.container}>
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={handleBack}
@@ -166,15 +166,18 @@ export function MyTutoringSessionsScreen() {
           style={[styles.tabBtn, activeTab === "learner" && styles.tabBtnActive]}
           onPress={() => setActiveTab("learner")}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={styles.tabContentRow}>
             <MaterialCommunityIcons
               name="book-open-outline"
-              size={15}
-              color={activeTab === "learner" ? "#0D3E02" : "#475569"}
+              size={14}
+              color={activeTab === "learner" ? "#FDBF1E" : "#475569"}
               style={{ marginRight: 4 }}
             />
-            <Text style={[styles.tabBtnText, activeTab === "learner" && styles.tabBtnTextActive]}>
-              My Bookings
+            <Text
+              numberOfLines={1}
+              style={[styles.tabBtnText, activeTab === "learner" && styles.tabBtnTextActive]}
+            >
+              Bookings
             </Text>
           </View>
         </Pressable>
@@ -183,15 +186,18 @@ export function MyTutoringSessionsScreen() {
           style={[styles.tabBtn, activeTab === "tutor" && styles.tabBtnActive]}
           onPress={() => setActiveTab("tutor")}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={styles.tabContentRow}>
             <MaterialCommunityIcons
               name="school-outline"
-              size={15}
-              color={activeTab === "tutor" ? "#0D3E02" : "#475569"}
+              size={14}
+              color={activeTab === "tutor" ? "#FDBF1E" : "#475569"}
               style={{ marginRight: 4 }}
             />
-            <Text style={[styles.tabBtnText, activeTab === "tutor" && styles.tabBtnTextActive]}>
-              Tutor Requests
+            <Text
+              numberOfLines={1}
+              style={[styles.tabBtnText, activeTab === "tutor" && styles.tabBtnTextActive]}
+            >
+              Requests
             </Text>
           </View>
         </Pressable>
@@ -200,14 +206,17 @@ export function MyTutoringSessionsScreen() {
           style={[styles.tabBtn, activeTab === "history" && styles.tabBtnActive]}
           onPress={() => setActiveTab("history")}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={styles.tabContentRow}>
             <MaterialCommunityIcons
               name="history"
-              size={15}
-              color={activeTab === "history" ? "#0D3E02" : "#475569"}
+              size={14}
+              color={activeTab === "history" ? "#FDBF1E" : "#475569"}
               style={{ marginRight: 4 }}
             />
-            <Text style={[styles.tabBtnText, activeTab === "history" && styles.tabBtnTextActive]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.tabBtnText, activeTab === "history" && styles.tabBtnTextActive]}
+            >
               History
             </Text>
           </View>
@@ -472,55 +481,54 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#0F172A",
+    color: "#0D3E02",
     letterSpacing: -0.3,
   },
   tabsRow: {
     flexDirection: "row",
     backgroundColor: "#ffffff",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 9,
-    borderRadius: 12,
+    height: 38,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F1F5F9",
+    paddingHorizontal: 4,
   },
   tabBtnActive: {
     backgroundColor: "#0D3E02",
+  },
+  tabContentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   tabBtnText: {
     fontSize: 12,

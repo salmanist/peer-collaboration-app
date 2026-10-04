@@ -93,7 +93,7 @@ export default function MyListingsScreen() {
   const [updatingRequestId, setUpdatingRequestId] = useState<number | null>(null);
 
   const [errorMessage, setErrorMessage] = useState("");
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const loadListings = useCallback(async (refresh = false) => {
     if (refresh) setIsListingsRefreshing(true);
@@ -423,7 +423,7 @@ export default function MyListingsScreen() {
   return (
     <View style={styles.rootContainer}>
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={handleBack}
@@ -508,15 +508,6 @@ export default function MyListingsScreen() {
                 <Text style={styles.emptySub}>
                   You haven't listed any textbooks, notes, or gear yet.
                 </Text>
-                <Pressable
-                  style={styles.emptyAddBtn}
-                  onPress={() => router.push("/(app)/resources/create" as any)}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 4 }} />
-                    <Text style={styles.emptyAddBtnText}>Share New Item</Text>
-                  </View>
-                </Pressable>
               </View>
             }
             renderItem={renderListingItem}
@@ -551,39 +542,12 @@ export default function MyListingsScreen() {
                 <Text style={styles.emptySub}>
                   You haven't posted any resource requests yet.
                 </Text>
-                <Pressable
-                  style={styles.emptyAddBtn}
-                  onPress={() => router.push("/(app)/resources/wanted/create" as any)}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 4 }} />
-                    <Text style={styles.emptyAddBtnText}>Post New Request</Text>
-                  </View>
-                </Pressable>
               </View>
             }
             renderItem={renderRequestItem}
           />
         )
       )}
-
-      {/* Floating Action Button */}
-      <Pressable
-        style={[
-          styles.floatingActionBtn,
-          { bottom: Math.max(insets.bottom + 20, 24) },
-        ]}
-        onPress={() =>
-          activeTab === "listings"
-            ? router.push("/(app)/resources/create" as any)
-            : router.push("/(app)/resources/wanted/create" as any)
-        }
-      >
-        <MaterialCommunityIcons name="plus" size={18} color="#FDBF1E" />
-        <Text style={styles.floatingActionBtnText}>
-          {activeTab === "listings" ? "Share Item" : "Post Request"}
-        </Text>
-      </Pressable>
     </View>
   );
 }
@@ -594,34 +558,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   navSpacer: {
     width: 36,

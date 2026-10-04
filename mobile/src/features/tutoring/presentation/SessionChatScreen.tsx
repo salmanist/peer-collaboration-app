@@ -21,6 +21,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
 import { Skeleton } from "../../../core/components/Skeleton";
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import {
   fetchSessionChatMessages,
@@ -71,7 +72,7 @@ export function SessionChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -220,27 +221,7 @@ export function SessionChatScreen() {
     };
   }, [sessionId, accessToken, syncMessages]);
 
-  const handlePickPhoto = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        setSelectedPhoto({
-          uri: asset.uri,
-          name: asset.fileName || "tutoring_photo.jpg",
-          type: asset.mimeType || "image/jpeg",
-        });
-      }
-    } catch (err) {
-      console.error("Error picking photo:", err);
-      Alert.alert("Error", "Could not pick image.");
-    }
-  };
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
 
   const handleSend = async () => {
     const text = inputText.trim();
@@ -271,7 +252,7 @@ export function SessionChatScreen() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+        <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable
             style={styles.navBackBtn}
             onPress={handleBack}
@@ -308,7 +289,7 @@ export function SessionChatScreen() {
       keyboardVerticalOffset={0}
     >
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={handleBack}
@@ -450,7 +431,7 @@ export function SessionChatScreen() {
             { paddingBottom: Math.max(insets.bottom + 8, 12) },
           ]}
         >
-          <Pressable style={styles.attachBtn} onPress={handlePickPhoto}>
+          <Pressable style={styles.attachBtn} onPress={() => setIsImagePickerOpen(true)}>
             <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
           </Pressable>
 
@@ -502,6 +483,14 @@ export function SessionChatScreen() {
           }}
         />
       )}
+
+      {/* Camera vs Gallery Picker Modal */}
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedPhoto(img)}
+        title="Send a Photo"
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -512,27 +501,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -544,7 +526,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   topNavSub: {
     fontSize: 11,

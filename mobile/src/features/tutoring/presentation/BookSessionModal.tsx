@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -278,14 +279,6 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
               placeholder="What topics or questions would you like to cover in this session?"
               placeholderTextColor="#94a3b8"
             />
-
-            {/* Pricing Summary */}
-            <View style={styles.priceSummary}>
-              <Text style={styles.priceSummaryLabel}>Estimated Cost:</Text>
-              <Text style={styles.priceSummaryValue}>
-                {tutor.is_free ? "FREE" : `Rs. ${tutor.hourly_fee} / hr`}
-              </Text>
-            </View>
           </ScrollView>
 
           {/* Submit Button */}
@@ -309,7 +302,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(7, 13, 31, 0.6)",
+    backgroundColor: "rgba(15, 23, 42, 0.08)",
     justifyContent: "flex-end",
   },
   modalContent: {
@@ -458,27 +451,6 @@ const styles = StyleSheet.create({
   durationTextActive: {
     color: "#FDBF1E",
     fontWeight: "800",
-  },
-  priceSummary: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#F8FAF8",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  priceSummaryLabel: {
-    fontSize: 13,
-    color: "#64748b",
-    fontWeight: "500",
-  },
-  priceSummaryValue: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#0D3E02",
   },
   submitButton: {
     backgroundColor: "#FDBF1E",

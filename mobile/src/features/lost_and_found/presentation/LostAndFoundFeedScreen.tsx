@@ -19,7 +19,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
 import { SkeletonList, LostAndFoundCardSkeleton } from "../../../core/components/Skeleton";
-import { useDrawerStore } from "../../../core/navigation/drawerStore";
+import { ModuleOptionsMenu, type ModuleDropdownItem } from "../../../core/components/ModuleOptionsMenu";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import { useDataStore } from "../../../core/store/DataStoreContext";
 import { fetchLostAndFoundItems } from "../data/lostAndFoundApi";
@@ -49,13 +49,29 @@ function getImageUrl(imagePath: string | null) {
 export default function LostAndFoundFeedScreen() {
   const insets = useSafeAreaInsets();
   const user = useSessionStore((state) => state.user);
-  const openDrawer = useDrawerStore((state) => state.openDrawer);
   const markItemsSeen = useLostAndFoundNotificationStore((state) => state.markItemsSeen);
+  const hasNewClaims = useLostAndFoundNotificationStore((state) => state.hasNewClaims);
+  const hasNewItems = useLostAndFoundNotificationStore((state) => state.hasNewItems);
+
+  const dropdownItems: ModuleDropdownItem[] = useMemo(
+    () => [
+      {
+        key: "my_notices",
+        label: "My Notices & Claims",
+        subtitle: "Track your posted items & claims",
+        icon: "clipboard-list-outline",
+        iconColor: "#0D3E02",
+        hasDot: hasNewClaims,
+        onPress: () => router.push("/(app)/lost-and-found/my-notices" as any),
+      },
+    ],
+    [hasNewClaims]
+  );
 
   // In-Memory DataStore
   const { lostAndFoundItems: cachedItems, setLostAndFoundItems } = useDataStore();
 
-  const [items, setItems] = useState<LostAndFoundItem[]>(() => cachedItems || []);
+  const [allLoadedItems, setAllLoadedItems] = useState<LostAndFoundItem[]>(() => cachedItems || []);
   const [postTypeFilter, setPostTypeFilter] = useState<LostAndFoundPostType | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<LostAndFoundCategory | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,29 +82,47 @@ export default function LostAndFoundFeedScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const initial = (user?.full_name || user?.email || "S").charAt(0).toUpperCase();
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
+
+  // Instant 0ms In-Memory Filtering for ultra-responsive tab and category switching
+  const displayItems = useMemo(() => {
+    let list = allLoadedItems;
+    if (postTypeFilter !== "all") {
+      list = list.filter((i) => i.post_type === postTypeFilter);
+    }
+    if (categoryFilter !== "all") {
+      list = list.filter((i) => i.category === categoryFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (i) =>
+          (i.title || "").toLowerCase().includes(q) ||
+          (i.description || "").toLowerCase().includes(q) ||
+          (i.location || "").toLowerCase().includes(q) ||
+          (i.poster_name || "").toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [allLoadedItems, postTypeFilter, categoryFilter, searchQuery]);
 
   const loadItems = useCallback(
     async (targetPage: number = 1, shouldRefresh: boolean = false) => {
       try {
-        if (targetPage === 1 && !shouldRefresh && !items.length && !cachedItems?.length) setIsLoading(true);
+        if (targetPage === 1 && !shouldRefresh && !allLoadedItems.length && !cachedItems?.length) {
+          setIsLoading(true);
+        }
         if (targetPage > 1) setIsLoadingMore(true);
 
         const response = await fetchLostAndFoundItems({
-          post_type: postTypeFilter === "all" ? undefined : postTypeFilter,
-          category: categoryFilter === "all" ? undefined : categoryFilter,
-          search: searchQuery.trim() || undefined,
           page: targetPage,
         });
 
         if (targetPage === 1) {
-          setItems(response.results);
-          if (postTypeFilter === "all" && categoryFilter === "all" && !searchQuery.trim()) {
-            setLostAndFoundItems(response.results);
-          }
+          setAllLoadedItems(response.results);
+          setLostAndFoundItems(response.results);
         } else {
-          setItems((prev) => {
+          setAllLoadedItems((prev) => {
             const existingIds = new Set(prev.map((i) => i.id));
             const newUnique = response.results.filter((i) => !existingIds.has(i.id));
             return [...prev, ...newUnique];
@@ -105,25 +139,13 @@ export default function LostAndFoundFeedScreen() {
         setIsLoadingMore(false);
       }
     },
-    [postTypeFilter, categoryFilter, searchQuery, setLostAndFoundItems],
+    [allLoadedItems.length, cachedItems?.length, setLostAndFoundItems],
   );
 
   useEffect(() => {
-    if (
-      cachedItems &&
-      cachedItems.length > 0 &&
-      postTypeFilter === "all" &&
-      categoryFilter === "all" &&
-      !searchQuery.trim()
-    ) {
-      setItems(cachedItems);
-      setIsLoading(false);
-      markItemsSeen();
-      return;
-    }
     void loadItems(1);
     markItemsSeen();
-  }, [postTypeFilter, categoryFilter]);
+  }, [loadItems, markItemsSeen]);
 
   const onRefresh = () => {
     setIsRefreshing(true);
@@ -139,24 +161,15 @@ export default function LostAndFoundFeedScreen() {
   return (
     <View style={styles.container}>
       {/* Compact Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset + 8 }]}>
-        <Pressable style={styles.hamburgerBtn} onPress={openDrawer}>
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-          <View style={styles.hamburgerLine} />
-        </Pressable>
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Text style={styles.compactNavTitle}>Lost & Found</Text>
-        <Pressable
-          style={styles.avatarBtn}
-          onPress={() => router.push("/(app)/profile" as any)}
-        >
-          <View style={styles.headerAvatar}>
-            <MaterialCommunityIcons name="account" size={19} color="#FDBF1E" />
-          </View>
-        </Pressable>
+        <ModuleOptionsMenu
+          items={dropdownItems}
+          hasNotification={hasNewClaims || hasNewItems}
+        />
       </View>
 
-      {/* Floating Action & Search Row */}
+      {/* Search Bar Row */}
       <View style={styles.actionSearchRow}>
         <View style={styles.searchBar}>
           <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
@@ -175,13 +188,6 @@ export default function LostAndFoundFeedScreen() {
             </Pressable>
           ) : null}
         </View>
-        <Pressable
-          style={styles.postBtn}
-          onPress={() => router.push("/(app)/lost-and-found/create")}
-        >
-          <MaterialCommunityIcons name="plus" size={16} color="#0D3E02" />
-          <Text style={styles.postBtnText}>Post</Text>
-        </Pressable>
       </View>
 
       {/* Segment Tabs (All, Lost, Found) */}
@@ -276,11 +282,11 @@ export default function LostAndFoundFeedScreen() {
         />
       ) : (
         <FlatList
-          data={items}
+          data={displayItems}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[
-            items.length === 0 ? styles.emptyList : styles.feedList,
-            { paddingBottom: Math.max(insets.bottom + 50, 70) },
+            displayItems.length === 0 ? styles.emptyList : styles.feedList,
+            { paddingBottom: Math.max(insets.bottom + 80, 100) },
           ]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           onEndReached={onEndReached}
@@ -294,7 +300,7 @@ export default function LostAndFoundFeedScreen() {
               <MaterialCommunityIcons name="magnify-close" size={48} color="#64748b" style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No notices found</Text>
               <Text style={styles.emptySub}>
-                No lost or found items match your filters. Tap "Post Notice" to add one!
+                No lost or found items match your filters. Tap the + button to add one!
               </Text>
             </View>
           }
@@ -370,6 +376,17 @@ export default function LostAndFoundFeedScreen() {
           }}
         />
       )}
+
+      {/* Floating Action Button */}
+      <Pressable
+        style={[
+          styles.floatingAddBtn,
+          { bottom: Math.max(insets.bottom + 65, 80) },
+        ]}
+        onPress={() => router.push("/(app)/lost-and-found/create")}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+      </Pressable>
     </View>
   );
 }
@@ -380,19 +397,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   compactTopNav: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingBottom: 7,
+  },
+  myNoticesHeaderBtn: {
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#C8E6C9",
+    justifyContent: "center",
+    alignItems: "center",
   },
   hamburgerBtn: {
     backgroundColor: "#F8FAFC",
@@ -472,24 +492,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     padding: 4,
   },
-  postBtn: {
-    flexDirection: "row",
+  floatingAddBtn: {
+    position: "absolute",
+    right: 20,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#0D3E02",
+    borderWidth: 1.5,
+    borderColor: "#0D3E02",
     alignItems: "center",
-    backgroundColor: "#FDBF1E",
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === "ios" ? 11 : 9,
-    borderRadius: 14,
-    gap: 4,
-    shadowColor: "#FDBF1E",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  postBtnText: {
-    color: "#0D3E02",
-    fontSize: 13,
-    fontWeight: "900",
+    justifyContent: "center",
+    shadowColor: "#0D3E02",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 99,
   },
   segmentContainer: {
     flexDirection: "row",

@@ -182,7 +182,7 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(7, 13, 31, 0.55)",
+    backgroundColor: "rgba(15, 23, 42, 0.08)",
     justifyContent: "flex-end",
   },
   backdropTouch: {

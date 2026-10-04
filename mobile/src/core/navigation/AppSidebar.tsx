@@ -32,6 +32,7 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
   const hasNewClaims = useLostAndFoundNotificationStore((state) => state.hasNewClaims);
   const hasNewLostItems = useLostAndFoundNotificationStore((state) => state.hasNewItems);
   const pendingTutoringRequests = useTutoringNotificationStore((state) => state.pendingRequestsCount);
+  const hasActiveTutorProfile = useTutoringNotificationStore((state) => state.hasActiveTutorProfile);
 
   const [isMarketplaceOpen, setIsMarketplaceOpen] = useState(true);
   const [isLostFoundOpen, setIsLostFoundOpen] = useState(true);
@@ -61,6 +62,8 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
 
   const tutoringItems = [
     { label: "Find Tutors & Mentors", path: "/tutoring", notification: "none", icon: "account-search-outline" as const },
+    { label: hasActiveTutorProfile ? "Edit Tutor Profile" : "Become a Peer Tutor", path: "/tutoring/setup", notification: "none", icon: "school-outline" as const },
+    { label: "Study & Project Collabs", path: "/tutoring/collaborations", notification: "none", icon: "account-group-outline" as const },
     { label: "My Tutoring Sessions", path: "/tutoring/sessions/mine", notification: "sessions", icon: "calendar-account-outline" as const },
   ];
 

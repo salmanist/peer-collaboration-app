@@ -1,6 +1,6 @@
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -17,20 +17,26 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
 import { useDataStore } from "../../../core/store/DataStoreContext";
-import { createResourceListing } from "../data/resourcesApi";
+import {
+  createPublicResourceRequest,
+  createResourceListing,
+} from "../data/resourcesApi";
 import type {
   ResourceCategory,
   ResourceCondition,
   ResourceExchangeType,
 } from "../resources";
 
-const categoryOptions: { value: ResourceCategory; label: string }[] = [
-  { value: "notes", label: "Notes" },
-  { value: "books", label: "Books" },
-  { value: "stationery", label: "Stationery" },
-  { value: "lab_equipment", label: "Lab equipment" },
-  { value: "other", label: "Other" },
+type PostMode = "share" | "request";
+
+const categoryOptions: { value: ResourceCategory; label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+  { value: "notes", label: "Course Notes", icon: "file-document-edit-outline" },
+  { value: "books", label: "Textbooks", icon: "book-open-page-variant" },
+  { value: "stationery", label: "Stationery", icon: "ruler-square" },
+  { value: "lab_equipment", label: "Lab Gear", icon: "flask-outline" },
+  { value: "other", label: "Other", icon: "package-variant-closed" },
 ];
 
 const conditionOptions: { value: ResourceCondition; label: string }[] = [
@@ -39,17 +45,25 @@ const conditionOptions: { value: ResourceCondition; label: string }[] = [
   { value: "digital", label: "Digital" },
 ];
 
-const exchangeOptions: { value: ResourceExchangeType; label: string }[] = [
+const shareExchangeOptions: { value: ResourceExchangeType; label: string }[] = [
   { value: "free", label: "Free" },
-  { value: "lend", label: "Lend" },
-  { value: "exchange", label: "Exchange" },
   { value: "sell", label: "Sell" },
   { value: "rent", label: "Rent" },
+  { value: "lend", label: "Lend" },
+  { value: "exchange", label: "Exchange" },
+];
+
+const requestExchangeOptions: { value: ResourceExchangeType; label: string }[] = [
+  { value: "free", label: "Get Free" },
+  { value: "sell", label: "Buy" },
+  { value: "borrow" as any, label: "Borrow" },
+  { value: "rent", label: "Rent" },
+  { value: "exchange", label: "Exchange" },
 ];
 
 function getCreateErrorMessage(error: unknown) {
   if (!axios.isAxiosError(error)) {
-    return "Could not add the resource. Please try again.";
+    return "Could not add the post. Please try again.";
   }
 
   if (!error.response) {
@@ -66,36 +80,25 @@ function getCreateErrorMessage(error: unknown) {
 
 export default function CreateResourceScreen() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ mode?: string }>();
   const { invalidateResourceListings } = useDataStore();
+
+  const [postMode, setPostMode] = useState<PostMode>(
+    params.mode === "request" ? "request" : "share"
+  );
   const [title, setTitle] = useState("");
   const [course, setCourse] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [category, setCategory] = useState<ResourceCategory>("notes");
   const [condition, setCondition] = useState<ResourceCondition>("used");
   const [exchangeType, setExchangeType] = useState<ResourceExchangeType>("free");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage({ uri: result.assets[0].uri });
-      }
-    } catch {
-      setErrorMessage("Could not open image picker.");
-    }
-  };
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const handleSubmit = async () => {
     const cleanTitle = title.trim();
@@ -107,7 +110,11 @@ export default function CreateResourceScreen() {
       return;
     }
 
-    if ((exchangeType === "sell" || exchangeType === "rent") && (!cleanPrice || Number(cleanPrice) <= 0)) {
+    if (
+      postMode === "share" &&
+      (exchangeType === "sell" || exchangeType === "rent") &&
+      (!cleanPrice || Number(cleanPrice) <= 0)
+    ) {
       setErrorMessage("Enter a valid price.");
       return;
     }
@@ -116,16 +123,26 @@ export default function CreateResourceScreen() {
     setIsSubmitting(true);
 
     try {
-      await createResourceListing({
-        title: cleanTitle,
-        course: course.trim() || undefined,
-        description: cleanDescription,
-        category,
-        condition,
-        exchange_type: exchangeType,
-        image: selectedImage || undefined,
-        ...(exchangeType === "sell" || exchangeType === "rent" ? { price: cleanPrice } : {}),
-      });
+      if (postMode === "share") {
+        await createResourceListing({
+          title: cleanTitle,
+          course: course.trim() || undefined,
+          description: cleanDescription,
+          category,
+          condition,
+          exchange_type: exchangeType,
+          image: selectedImage || undefined,
+          ...(exchangeType === "sell" || exchangeType === "rent" ? { price: cleanPrice } : {}),
+        });
+      } else {
+        await createPublicResourceRequest({
+          title: cleanTitle,
+          course: course.trim() || undefined,
+          description: cleanDescription,
+          category,
+          desired_exchange_type: exchangeType,
+        });
+      }
       invalidateResourceListings();
       router.replace("/(app)/resources");
     } catch (error) {
@@ -138,14 +155,16 @@ export default function CreateResourceScreen() {
   return (
     <View style={styles.rootContainer}>
       {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={() => router.back()}
         >
           <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
-        <Text style={styles.topNavTitle}>Share a Resource</Text>
+        <Text style={styles.topNavTitle}>
+          {postMode === "share" ? "Share an Item" : "Post a Request"}
+        </Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -156,17 +175,70 @@ export default function CreateResourceScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Post Type Segment Switcher (Share vs Request) */}
+        <View style={styles.segmentContainer}>
+          <Pressable
+            style={[styles.segmentBtn, postMode === "share" && styles.segmentBtnActive]}
+            onPress={() => {
+              setPostMode("share");
+              setErrorMessage("");
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons
+                name="package-variant-plus"
+                size={16}
+                color={postMode === "share" ? "#0D3E02" : "#64748B"}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.segmentBtnText, postMode === "share" && styles.segmentBtnTextActive]}>
+                Share Item (Available)
+              </Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            style={[styles.segmentBtn, postMode === "request" && styles.segmentBtnActive]}
+            onPress={() => {
+              setPostMode("request");
+              setErrorMessage("");
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons
+                name="hand-wave-outline"
+                size={16}
+                color={postMode === "request" ? "#0D3E02" : "#64748B"}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.segmentBtnText, postMode === "request" && styles.segmentBtnTextActive]}>
+                Request Item (Required)
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+
         <View style={styles.header}>
-          <Text style={styles.title}>Post Marketplace Ad</Text>
+          <Text style={styles.title}>
+            {postMode === "share" ? "List an Available Item" : "Post What You Need"}
+          </Text>
           <Text style={styles.subtitle}>
-            List items, books, hostel essentials, or student supplies with fellow LGU students.
+            {postMode === "share"
+              ? "Share textbooks, notes, lab gear, or hostel items with peers."
+              : "Let campus peers know what textbooks, notes, or lab gear you're looking for."}
           </Text>
         </View>
 
-        <Text style={styles.label}>Title *</Text>
+        <Text style={styles.label}>
+          {postMode === "share" ? "Item Title *" : "What do you need? *"}
+        </Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Database Systems 6th Edition / Midterm Notes"
+          placeholder={
+            postMode === "share"
+              ? "e.g. Database Systems 6th Edition / Midterm Notes"
+              : "e.g. Data Structures & Algorithms (Robert Lafore)"
+          }
           placeholderTextColor="#94a3b8"
           value={title}
           onChangeText={setTitle}
@@ -182,60 +254,143 @@ export default function CreateResourceScreen() {
         />
 
         <Text style={styles.label}>Category</Text>
-        <OptionGroup options={categoryOptions} selectedValue={category} onSelect={setCategory} />
+        <View style={styles.optionsWrap}>
+          {categoryOptions.map((cat) => {
+            const isSelected = category === cat.value;
+            return (
+              <Pressable
+                key={cat.value}
+                style={[styles.optionPill, isSelected && styles.optionPillSelected]}
+                onPress={() => setCategory(cat.value)}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons
+                    name={cat.icon}
+                    size={14}
+                    color={isSelected ? "#0D3E02" : "#64748b"}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                    {cat.label}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
 
-        <Text style={styles.label}>Condition</Text>
-        <OptionGroup options={conditionOptions} selectedValue={condition} onSelect={setCondition} />
-
-        <Text style={styles.label}>Sharing Type</Text>
-        <OptionGroup options={exchangeOptions} selectedValue={exchangeType} onSelect={setExchangeType} />
-
-        {(exchangeType === "sell" || exchangeType === "rent") && (
+        {postMode === "share" ? (
           <>
-            <Text style={styles.label}>
-              {exchangeType === "rent" ? "Rental Price in PKR *" : "Price in PKR *"}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 500"
-              placeholderTextColor="#94a3b8"
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="decimal-pad"
-            />
+            <Text style={styles.label}>Condition</Text>
+            <View style={styles.optionsWrap}>
+              {conditionOptions.map((cond) => {
+                const isSelected = condition === cond.value;
+                return (
+                  <Pressable
+                    key={cond.value}
+                    style={[styles.optionPill, isSelected && styles.optionPillSelected]}
+                    onPress={() => setCondition(cond.value)}
+                  >
+                    <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                      {isSelected ? `✓ ${cond.label}` : cond.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.label}>Sharing Type</Text>
+            <View style={styles.optionsWrap}>
+              {shareExchangeOptions.map((opt) => {
+                const isSelected = exchangeType === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    style={[styles.optionPill, isSelected && styles.optionPillSelected]}
+                    onPress={() => setExchangeType(opt.value)}
+                  >
+                    <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                      {isSelected ? `✓ ${opt.label}` : opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {(exchangeType === "sell" || exchangeType === "rent") && (
+              <>
+                <Text style={styles.label}>
+                  {exchangeType === "rent" ? "Rental Price in PKR *" : "Price in PKR *"}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 500"
+                  placeholderTextColor="#94a3b8"
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="decimal-pad"
+                />
+              </>
+            )}
+
+            <Text style={styles.label}>Photo (optional)</Text>
+            {selectedImage ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
+                <Pressable style={styles.removeImageButton} onPress={() => setSelectedImage(null)}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <MaterialCommunityIcons name="close" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+                    <Text style={styles.removeImageText}>Remove Photo</Text>
+                  </View>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable style={styles.imagePickerButton} onPress={() => setIsImagePickerOpen(true)}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                  <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <Text style={styles.imagePickerButtonText}>Add Photo (Camera or Gallery)</Text>
+                </View>
+              </Pressable>
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>I want to</Text>
+            <View style={styles.optionsWrap}>
+              {requestExchangeOptions.map((opt) => {
+                const isSelected = exchangeType === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    style={[styles.optionPill, isSelected && styles.optionPillSelected]}
+                    onPress={() => setExchangeType(opt.value)}
+                  >
+                    <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                      {isSelected ? `✓ ${opt.label}` : opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </>
         )}
 
-        <Text style={styles.label}>Item Description *</Text>
+        <Text style={styles.label}>
+          {postMode === "share" ? "Item Description *" : "Details / Notes *"}
+        </Text>
         <TextInput
           style={[styles.input, styles.descriptionInput]}
-          placeholder="Describe edition, chapters covered, condition, or meetup location..."
+          placeholder={
+            postMode === "share"
+              ? "Describe edition, chapters covered, condition, or meetup location..."
+              : "Specify any required author, edition, deadline, or meetup preference..."
+          }
           placeholderTextColor="#94a3b8"
           value={description}
           onChangeText={setDescription}
           multiline
           numberOfLines={4}
         />
-
-        <Text style={styles.label}>Photo (optional)</Text>
-        {selectedImage ? (
-          <View style={styles.imagePreviewContainer}>
-            <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
-            <Pressable style={styles.removeImageButton} onPress={() => setSelectedImage(null)}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="close" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
-                <Text style={styles.removeImageText}>Remove Photo</Text>
-              </View>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable style={styles.imagePickerButton} onPress={() => void pickImage()}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
-              <Text style={styles.imagePickerButtonText}>Add Item Photo</Text>
-            </View>
-          </Pressable>
-        )}
 
         {errorMessage ? (
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
@@ -250,38 +405,21 @@ export default function CreateResourceScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#000000" />
+            <ActivityIndicator color="#0D3E02" />
           ) : (
-            <Text style={styles.submitButtonText}>Publish Resource</Text>
+            <Text style={styles.submitButtonText}>
+              {postMode === "share" ? "Publish Shared Item" : "Publish Request"}
+            </Text>
           )}
         </Pressable>
       </ScrollView>
-    </View>
-  );
-}
 
-function OptionGroup<T extends string>({
-  options,
-  selectedValue,
-  onSelect,
-}: {
-  options: { value: T; label: string }[];
-  selectedValue: T;
-  onSelect: (value: T) => void;
-}) {
-  return (
-    <View style={styles.optionGroup}>
-      {options.map((option) => (
-        <Pressable
-          key={option.value}
-          style={[styles.option, selectedValue === option.value && styles.optionSelected]}
-          onPress={() => onSelect(option.value)}
-        >
-          <Text style={[styles.optionText, selectedValue === option.value && styles.optionTextSelected]}>
-            {selectedValue === option.value ? `✓ ${option.label}` : option.label}
-          </Text>
-        </Pressable>
-      ))}
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedImage({ uri: img.uri })}
+        title="Add Item Photo"
+      />
     </View>
   );
 }
@@ -292,45 +430,70 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   container: {
     padding: 16,
     gap: 10,
   },
+  segmentContainer: {
+    flexDirection: "row",
+    backgroundColor: "#E2E8F0",
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 4,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+  },
+  segmentBtnActive: {
+    backgroundColor: "#ffffff",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  segmentBtnText: {
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+  segmentBtnTextActive: {
+    color: "#0D3E02",
+    fontWeight: "800",
+  },
   header: {
-    marginBottom: 8,
+    marginTop: 4,
+    marginBottom: 4,
     gap: 4,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
     color: "#070D1F",
   },
@@ -343,7 +506,7 @@ const styles = StyleSheet.create({
     color: "#070D1F",
     fontWeight: "700",
     fontSize: 13,
-    marginTop: 8,
+    marginTop: 6,
   },
   input: {
     backgroundColor: "#ffffff",
@@ -355,7 +518,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   descriptionInput: {
-    minHeight: 100,
+    minHeight: 90,
     textAlignVertical: "top",
   },
   imagePickerButton: {
@@ -364,14 +527,14 @@ const styles = StyleSheet.create({
     borderColor: "#0D3E02",
     borderStyle: "dashed",
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   imagePickerButtonText: {
     color: "#0D3E02",
     fontWeight: "700",
-    fontSize: 14,
+    fontSize: 13.5,
   },
   imagePreviewContainer: {
     alignItems: "center",
@@ -379,7 +542,7 @@ const styles = StyleSheet.create({
   },
   imagePreview: {
     width: "100%",
-    height: 200,
+    height: 180,
     borderRadius: 12,
     resizeMode: "cover",
   },
@@ -392,29 +555,29 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13,
   },
-  optionGroup: {
+  optionsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
-  option: {
+  optionPill: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#CBD5E1",
     borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
   },
-  optionSelected: {
+  optionPillSelected: {
     backgroundColor: "#E8F5E9",
     borderColor: "#0D3E02",
   },
-  optionText: {
+  optionPillText: {
     color: "#475569",
     fontSize: 12,
     fontWeight: "600",
   },
-  optionTextSelected: {
+  optionPillTextSelected: {
     color: "#0D3E02",
     fontWeight: "800",
   },
@@ -441,8 +604,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#000000",
-    fontWeight: "800",
+    color: "#0D3E02",
+    fontWeight: "900",
     fontSize: 15,
   },
 });

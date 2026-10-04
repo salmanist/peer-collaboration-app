@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -14,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { fetchPublicResourceRequest, updatePublicResourceRequest } from "../data/resourcesApi";
+import { deletePublicResourceRequest, fetchPublicResourceRequest, updatePublicResourceRequest } from "../data/resourcesApi";
 import type { ResourceCategory, ResourceExchangeType } from "../resources";
 
 const categories: { value: ResourceCategory; label: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
@@ -44,9 +45,10 @@ export default function EditPublicResourceRequestScreen() {
   const [exchangeType, setExchangeType] = useState<ResourceExchangeType>("lend");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   useEffect(() => {
     async function loadRequest() {
@@ -70,6 +72,36 @@ export default function EditPublicResourceRequestScreen() {
     }
     void loadRequest();
   }, [requestId]);
+
+  const confirmDelete = () => {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("Are you sure you want to delete this request? This action cannot be undone.");
+      if (confirmed) {
+        void handleDelete();
+      }
+    } else {
+      Alert.alert(
+        "Delete Request",
+        "Are you sure you want to delete this request? This action cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: () => void handleDelete() },
+        ]
+      );
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setErrorMessage("");
+    try {
+      await deletePublicResourceRequest(requestId);
+      router.replace("/resources/wanted/mine");
+    } catch {
+      setErrorMessage("Could not delete this request. Please try again.");
+      setIsDeleting(false);
+    }
+  };
 
   const save = async () => {
     if (!title.trim() || !description.trim()) {
@@ -104,8 +136,8 @@ export default function EditPublicResourceRequestScreen() {
 
   return (
     <View style={styles.rootContainer}>
-      {/* Top Navigation Bar with Back Button */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      {/* Top Navigation Bar with Back Button and Delete Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={() => router.back()}
@@ -113,7 +145,14 @@ export default function EditPublicResourceRequestScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Request</Text>
-        <View style={{ width: 36 }} />
+        <Pressable
+          style={styles.navDeleteBtn}
+          onPress={confirmDelete}
+          disabled={isDeleting || isSaving}
+          accessibilityLabel="Delete Request"
+        >
+          <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -203,14 +242,29 @@ export default function EditPublicResourceRequestScreen() {
         ) : null}
 
         <Pressable
-          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+          style={[styles.saveButton, (isSaving || isDeleting) && styles.saveButtonDisabled]}
           onPress={() => void save()}
-          disabled={isSaving}
+          disabled={isSaving || isDeleting}
         >
           {isSaving ? (
             <ActivityIndicator color="#000000" />
           ) : (
             <Text style={styles.saveText}>Save Changes</Text>
+          )}
+        </Pressable>
+
+        <Pressable
+          style={[styles.deleteButton, (isSaving || isDeleting) && styles.deleteButtonDisabled]}
+          onPress={confirmDelete}
+          disabled={isSaving || isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color="#DC2626" />
+          ) : (
+            <View style={styles.deleteButtonContent}>
+              <MaterialCommunityIcons name="trash-can-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.deleteButtonText}>Delete Request</Text>
+            </View>
           )}
         </Pressable>
       </ScrollView>
@@ -224,34 +278,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9FAFC",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: "#0D3E02",
   },
   centered: {
     flex: 1,
@@ -334,6 +381,39 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "800",
     fontSize: 14,
+  },
+  navDeleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(220, 38, 38, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: {
+    marginTop: 12,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1.5,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
+  },
+  deleteButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButtonText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "800",
   },
   errorText: {
     color: "#dc2626",

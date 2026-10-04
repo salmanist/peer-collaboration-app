@@ -52,6 +52,8 @@ class LostAndFoundItemSerializer(serializers.ModelSerializer):
         return obj.claims.count()
 
     def get_has_user_claimed(self, obj) -> bool:
+        if "user_claimed_item_ids" in self.context:
+            return obj.id in self.context["user_claimed_item_ids"]
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False

@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
 import { useSessionStore } from "../../../core/auth/session";
 import { ChatHistorySkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
@@ -52,6 +53,7 @@ export default function ClaimChatScreen() {
   const [messages, setMessages] = useState<ItemClaimChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
@@ -63,22 +65,6 @@ export default function ClaimChatScreen() {
       if (current.some((item) => item.id === message.id)) return current;
       return [...current, message].sort((first, second) => first.id - second.id);
     });
-  };
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage({ uri: result.assets[0].uri });
-      }
-    } catch {
-      setErrorMessage("Could not select image.");
-    }
   };
 
   const syncMessages = useCallback(async () => {
@@ -310,7 +296,7 @@ export default function ClaimChatScreen() {
       ) : null}
 
       <View style={styles.composer}>
-        <Pressable style={styles.attachButton} onPress={() => void pickImage()}>
+        <Pressable style={styles.attachButton} onPress={() => setIsImagePickerOpen(true)}>
           <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
         </Pressable>
         <TextInput
@@ -347,6 +333,13 @@ export default function ClaimChatScreen() {
           ) : null}
         </View>
       </Modal>
+
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedImage({ uri: img.uri })}
+        title="Send a Photo"
+      />
     </KeyboardAvoidingView>
   );
 }

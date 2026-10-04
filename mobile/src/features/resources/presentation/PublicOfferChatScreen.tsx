@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
+import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
 import { useSessionStore } from "../../../core/auth/session";
 import { ChatHistorySkeleton } from "../../../core/components/Skeleton";
 import { API_BASE_URL } from "../../../core/network/apiClient";
@@ -53,13 +54,14 @@ export default function PublicOfferChatScreen() {
   const [messages, setMessages] = useState<PublicResourceOfferChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [selectedImage, setSelectedImage] = useState<{ uri: string } | null>(null);
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
 
-  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+  const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
   const addMessage = (message: PublicResourceOfferChatMessage) => {
     setMessages((current) =>
@@ -67,22 +69,6 @@ export default function PublicOfferChatScreen() {
         ? current
         : [...current, message].sort((first, second) => first.id - second.id),
     );
-  };
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage({ uri: result.assets[0].uri });
-      }
-    } catch {
-      setErrorMessage("Could not select image.");
-    }
   };
 
   const syncMessages = useCallback(async () => {
@@ -240,7 +226,7 @@ export default function PublicOfferChatScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Top Navigation Bar */}
-      <View style={[styles.topNavBar, { paddingTop: topOffset + 8 }]}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
           onPress={() => router.back()}
@@ -299,7 +285,7 @@ export default function PublicOfferChatScreen() {
 
       {/* Composer */}
       <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom + 8, 14) }]}>
-        <Pressable style={styles.attachButton} onPress={() => void pickImage()}>
+        <Pressable style={styles.attachButton} onPress={() => setIsImagePickerOpen(true)}>
           <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
         </Pressable>
         <TextInput
@@ -337,6 +323,13 @@ export default function PublicOfferChatScreen() {
           ) : null}
         </View>
       </Modal>
+
+      <ImageSourceModal
+        visible={isImagePickerOpen}
+        onClose={() => setIsImagePickerOpen(false)}
+        onImageSelected={(img) => setSelectedImage({ uri: img.uri })}
+        title="Send a Photo"
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -347,27 +340,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "transparent",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 2,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: "rgba(13, 62, 2, 0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -377,7 +363,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   topNavTitle: {
-    color: "#070D1F",
+    color: "#0D3E02",
     fontSize: 15,
     fontWeight: "800",
   },

@@ -10,7 +10,7 @@ import {
   Inter_900Black,
 } from "@expo-google-fonts/inter";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -18,11 +18,13 @@ import { useSessionStore } from "../src/core/auth/session";
 import { DataStoreProvider } from "../src/core/store/DataStoreContext";
 import { useModuleUsageStore } from "../src/core/store/useModuleUsageStore";
 import { applyGlobalFontFamily } from "../src/core/theme/typography";
+import { AppSplashScreen } from "../src/core/components/AppSplashScreen";
 import { fetchMe } from "../src/features/auth/data/authApi";
 
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
+  const [showSplash, setShowSplash] = useState(true);
   const isHydrated = useSessionStore((state) => state.isHydrated);
   const accessToken = useSessionStore((state) => state.accessToken);
   const updateUser = useSessionStore((state) => state.updateUser);
@@ -71,8 +73,8 @@ export default function RootLayout() {
 
   if (!isHydrated || (!fontsLoaded && Platform.OS !== "web")) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F9FAFC" }}>
-        <ActivityIndicator color="#0D3E02" size="large" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0D3E02" }}>
+        <ActivityIndicator color="#FDBF1E" size="large" />
       </View>
     );
   }
@@ -81,6 +83,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <DataStoreProvider>
         <Stack screenOptions={{ headerShown: false, animation: "none" }} />
+        {showSplash && (
+          <AppSplashScreen onFinish={() => setShowSplash(false)} />
+        )}
       </DataStoreProvider>
     </SafeAreaProvider>
   );

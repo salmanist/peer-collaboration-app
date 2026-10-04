@@ -23,20 +23,20 @@ class StudentNotificationListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        notifications = CampusNotification.objects.filter(
-            Q(target_user__isnull=True) | Q(target_user=request.user),
-            is_active=True,
-        ).prefetch_related("user_states")
-        serializer = CampusNotificationSerializer(
-            notifications, many=True, context={"request": request}
-        )
-
         user_states = {
             s.notification_id: s
             for s in UserNotificationState.objects.filter(
                 user=request.user, notification__is_active=True
             )
         }
+
+        notifications = CampusNotification.objects.select_related("created_by").filter(
+            Q(target_user__isnull=True) | Q(target_user=request.user),
+            is_active=True,
+        )
+        serializer = CampusNotificationSerializer(
+            notifications, many=True, context={"request": request, "user_states": user_states}
+        )
 
         unseen_count = 0
         has_unseen_popup = False
