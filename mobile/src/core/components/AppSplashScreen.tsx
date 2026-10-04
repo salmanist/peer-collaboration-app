@@ -71,7 +71,6 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
         </View>
 
         <View style={styles.titleRow}>
-          <Text style={styles.titleLGU}>LGU </Text>
           <Text style={styles.titleFellOo}>FellOo</Text>
         </View>
 

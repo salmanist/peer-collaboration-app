@@ -720,7 +720,7 @@ export function AdminCenterScreen() {
                     <Text style={styles.welcomeTitle}>Welcome, {user?.full_name || "Admin"}</Text>
                   </View>
                   <Text style={styles.welcomeSub}>
-                    Platform control center for LGU FellOo. Manage all listings, notices, sessions, and students.
+                    Platform control center for FellOo. Manage all listings, notices, sessions, and students.
                   </Text>
                 </View>
               </View>

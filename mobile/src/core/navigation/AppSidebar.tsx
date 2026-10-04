@@ -84,7 +84,7 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
         <View style={styles.headerRow}>
           <View>
             <View style={styles.brandRow}>
-              <Text style={styles.brand}>LGU <Text style={styles.brandAccent}>FellOo</Text></Text>
+              <Text style={styles.brand}>FellOo</Text>
               <View style={styles.brandDot} />
             </View>
             <Text style={styles.caption}>Lahore Garrison University</Text>

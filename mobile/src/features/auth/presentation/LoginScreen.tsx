@@ -76,9 +76,7 @@ export default function LoginScreen() {
       >
         {/* Brand Banner */}
         <View style={styles.brandBox}>
-          <Text style={styles.brandTitle}>
-            LGU <Text style={styles.brandGold}>FellOo</Text>
-          </Text>
+          <Text style={styles.brandTitle}>FellOo</Text>
           <Text style={styles.brandSub}>Lahore Garrison University Student Portal</Text>
         </View>
 

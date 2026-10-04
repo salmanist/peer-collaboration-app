@@ -225,9 +225,7 @@ export default function HomeScreen() {
         ]}
       >
         <View style={styles.topNavLeft}>
-          <Text style={styles.topNavBrand}>
-            LGU <Text style={styles.topNavBrandAccent}>FellOo</Text>
-          </Text>
+          <Text style={styles.topNavBrand}>FellOo</Text>
         </View>
 
         <View style={styles.topRightActions}>
