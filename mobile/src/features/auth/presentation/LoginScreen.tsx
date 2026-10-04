@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   brandGold: {
-    color: "#FDBF1E",
+    color: "#0D3E02",
   },
   brandSub: {
     fontSize: 13,

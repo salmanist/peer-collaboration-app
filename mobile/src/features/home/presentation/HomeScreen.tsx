@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   topNavBrandAccent: {
-    color: "#166534",
+    color: "#0D3E02",
   },
   topRightActions: {
     flexDirection: "row",

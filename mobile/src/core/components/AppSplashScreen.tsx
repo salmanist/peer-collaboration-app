@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   titleFellOo: {
     fontSize: 38,
     fontWeight: "900",
-    color: "#FDBF1E",
+    color: "#ffffff",
     letterSpacing: -0.5,
   },
   tagline: {

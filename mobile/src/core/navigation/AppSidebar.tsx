@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   brandAccent: {
-    color: "#FDBF1E",
+    color: "#0D3E02",
   },
   brandDot: {
     width: 7,
