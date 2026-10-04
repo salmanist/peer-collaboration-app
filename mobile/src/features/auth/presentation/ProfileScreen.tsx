@@ -97,20 +97,6 @@ export default function ProfileScreen() {
     );
   }
 
-  const getInitials = (name?: any, email?: any) => {
-    const nameStr = String(name || "").trim();
-    if (nameStr.length > 0) {
-      const parts = nameStr.split(" ").filter(Boolean);
-      if (parts.length >= 2) {
-        return (parts[0][0] + parts[1][0]).toUpperCase();
-      }
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-    const emailStr = String(email || "").trim();
-    return emailStr ? emailStr.slice(0, 2).toUpperCase() : "S";
-  };
-
-  const initials = getInitials(user.full_name || user.display_name || "", user.email);
   const rollNo = user.roll_no || user.roll_number || user.email.split("@")[0].toUpperCase();
   const sessionText = formatEnrollmentSession(user.enrollment_year);
   const departmentText = formatDepartmentCode(user.department);
@@ -162,7 +148,7 @@ export default function ProfileScreen() {
         <View style={styles.bannerCard}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
+              <MaterialCommunityIcons name="account" size={42} color="#FDBF1E" />
             </View>
           </View>
 

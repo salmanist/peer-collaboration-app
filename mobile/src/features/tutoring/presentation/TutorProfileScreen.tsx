@@ -76,8 +76,6 @@ export function TutorProfileScreen() {
     );
   }
 
-  const initial = (tutor.tutor_name?.trim() || tutor.tutor_email || "T").charAt(0).toUpperCase();
-
   return (
     <View style={styles.container}>
       {/* Top Navigation Bar with Back Button */}
@@ -102,7 +100,7 @@ export function TutorProfileScreen() {
         {/* Header Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initial}</Text>
+            <MaterialCommunityIcons name="account" size={44} color="#FDBF1E" />
           </View>
 
           <Text style={styles.tutorName}>{tutor.tutor_name}</Text>

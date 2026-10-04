@@ -238,8 +238,6 @@ export function TutorDiscoveryFeedScreen() {
           renderItem={({ item }) => {
             const isTutor = item.profile_type === "tutor" || item.profile_type === "both";
             const isMentor = item.profile_type === "mentor" || item.profile_type === "both";
-            const tutorInit = (item.tutor_name?.trim() || item.tutor_email || "T").charAt(0).toUpperCase();
-
             return (
               <Pressable
                 style={styles.card}
@@ -247,7 +245,7 @@ export function TutorDiscoveryFeedScreen() {
               >
                 <View style={styles.cardHeader}>
                   <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{tutorInit}</Text>
+                    <MaterialCommunityIcons name="account" size={24} color="#FDBF1E" />
                   </View>
                   <View style={styles.tutorHeaderInfo}>
                     <View style={styles.nameRow}>

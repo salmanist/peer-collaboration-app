@@ -302,9 +302,7 @@ export default function LostAndFoundDetailScreen() {
           <Text style={styles.sectionHeading}>Reported By</Text>
           <View style={styles.posterCard}>
             <View style={styles.posterAvatar}>
-              <Text style={styles.posterAvatarText}>
-                {(item.poster_name?.trim() || item.poster_email || "S").charAt(0).toUpperCase()}
-              </Text>
+              <MaterialCommunityIcons name="account" size={24} color="#0D3E02" />
             </View>
             <View style={styles.posterInfo}>
               <Text style={styles.posterName}>
