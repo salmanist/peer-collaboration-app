@@ -388,8 +388,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D3E02",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#FDBF1E",
   },
   avatarText: {
     fontSize: 32,
@@ -408,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#FDBF1E",
+    borderColor: "#ffffff",
   },
   verifiedDotText: {
     color: "#FDBF1E",

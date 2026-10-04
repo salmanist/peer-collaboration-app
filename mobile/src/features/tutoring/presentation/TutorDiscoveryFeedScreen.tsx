@@ -371,9 +371,6 @@ const styles = StyleSheet.create({
   },
   avatarBtn: {
     borderRadius: 20,
-    padding: 2,
-    borderWidth: 1.5,
-    borderColor: "#FDBF1E",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -520,8 +517,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D3E02",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#FDBF1E",
   },
   avatarText: {
     fontSize: 19,

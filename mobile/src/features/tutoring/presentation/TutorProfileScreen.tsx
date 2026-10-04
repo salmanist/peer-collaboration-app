@@ -353,8 +353,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "#FDBF1E",
   },
   avatarText: {
     fontSize: 28,
