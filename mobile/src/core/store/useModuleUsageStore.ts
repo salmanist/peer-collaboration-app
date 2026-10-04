@@ -85,37 +85,70 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
   },
 ];
 
-const STORAGE_KEY = "lgu_module_visit_counts_v3";
+const STORAGE_KEY = "felloo_module_usage_v4";
+const LEGACY_STORAGE_KEY = "lgu_module_visit_counts_v3";
 
 function getBrowserStorage() {
   if (typeof window === "undefined") return null;
   return window.localStorage;
 }
 
-async function readPersistedCounts(): Promise<Record<ModuleKey, number>> {
+export interface StoredUsageState {
+  visitCounts: Record<ModuleKey, number>;
+  lastVisited: Record<ModuleKey, number>;
+}
+
+const INITIAL_VISIT_COUNTS: Record<ModuleKey, number> = {
+  tutoring: 0,
+  marketplace: 0,
+  lost_and_found: 0,
+  library: 0,
+  ride_sharing: 0,
+  print_center: 0,
+};
+
+const INITIAL_LAST_VISITED: Record<ModuleKey, number> = {
+  tutoring: 0,
+  marketplace: 0,
+  lost_and_found: 0,
+  library: 0,
+  ride_sharing: 0,
+  print_center: 0,
+};
+
+async function readPersistedUsage(): Promise<StoredUsageState> {
   try {
+    let raw: string | null = null;
     if (Platform.OS === "web") {
       const storage = getBrowserStorage();
-      const raw = storage?.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      raw = storage?.getItem(STORAGE_KEY) || storage?.getItem(LEGACY_STORAGE_KEY) || null;
     } else {
-      const raw = await SecureStore.getItemAsync(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      raw = (await SecureStore.getItemAsync(STORAGE_KEY)) || (await SecureStore.getItemAsync(LEGACY_STORAGE_KEY)) || null;
+    }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.visitCounts && typeof parsed.visitCounts === "object") {
+        return {
+          visitCounts: { ...INITIAL_VISIT_COUNTS, ...parsed.visitCounts },
+          lastVisited: { ...INITIAL_LAST_VISITED, ...(parsed.lastVisited || {}) },
+        };
+      } else {
+        return {
+          visitCounts: { ...INITIAL_VISIT_COUNTS, ...parsed },
+          lastVisited: { ...INITIAL_LAST_VISITED },
+        };
+      }
     }
   } catch {}
   return {
-    tutoring: 0,
-    marketplace: 0,
-    lost_and_found: 0,
-    library: 0,
-    ride_sharing: 0,
-    print_center: 0,
+    visitCounts: { ...INITIAL_VISIT_COUNTS },
+    lastVisited: { ...INITIAL_LAST_VISITED },
   };
 }
 
-async function writePersistedCounts(counts: Record<ModuleKey, number>) {
+async function writePersistedUsage(state: StoredUsageState) {
   try {
-    const serialized = JSON.stringify(counts);
+    const serialized = JSON.stringify(state);
     if (Platform.OS === "web") {
       getBrowserStorage()?.setItem(STORAGE_KEY, serialized);
     } else {
@@ -124,8 +157,27 @@ async function writePersistedCounts(counts: Record<ModuleKey, number>) {
   } catch {}
 }
 
+/**
+ * Calculates a composite ranking score for a module based on:
+ * 1. Mostly used (frequency of visits - 20 pts per visit)
+ * 2. Recently used (recency bonus of up to 60 pts decaying with time)
+ */
+export function calculateModuleScore(count: number, lastVisitedMs: number, nowMs: number = Date.now()): number {
+  if (!count || count <= 0) return 0;
+
+  // Frequency component: 20 points per visit
+  const frequencyScore = count * 20;
+
+  // Recency bonus: up to 60 bonus points, decaying smoothly with half-life ~8 hours
+  const elapsedHours = lastVisitedMs > 0 ? Math.max(0, (nowMs - lastVisitedMs) / (1000 * 60 * 60)) : 999;
+  const recencyBonus = Math.max(0, 60 * Math.exp(-elapsedHours / 12));
+
+  return frequencyScore + recencyBonus;
+}
+
 interface ModuleUsageStoreState {
   visitCounts: Record<ModuleKey, number>;
+  lastVisited: Record<ModuleKey, number>;
   isHydrated: boolean;
   hydrate: () => Promise<void>;
   recordVisit: (id: ModuleKey) => void;
@@ -133,36 +185,53 @@ interface ModuleUsageStoreState {
 }
 
 export const useModuleUsageStore = create<ModuleUsageStoreState>((set, get) => ({
-  visitCounts: {
-    tutoring: 0,
-    marketplace: 0,
-    lost_and_found: 0,
-    library: 0,
-    ride_sharing: 0,
-    print_center: 0,
-  },
+  visitCounts: { ...INITIAL_VISIT_COUNTS },
+  lastVisited: { ...INITIAL_LAST_VISITED },
   isHydrated: false,
 
   hydrate: async () => {
-    const persisted = await readPersistedCounts();
-    set({ visitCounts: persisted, isHydrated: true });
+    const persisted = await readPersistedUsage();
+    set({
+      visitCounts: persisted.visitCounts,
+      lastVisited: persisted.lastVisited,
+      isHydrated: true,
+    });
   },
 
   recordVisit: (id: ModuleKey) => {
-    const current = get().visitCounts;
-    const updated = {
-      ...current,
-      [id]: (current[id] || 0) + 1,
+    const now = Date.now();
+    const currentCounts = get().visitCounts;
+    const currentLastVisited = get().lastVisited;
+
+    const updatedCounts = {
+      ...currentCounts,
+      [id]: (currentCounts[id] || 0) + 1,
     };
-    set({ visitCounts: updated });
-    void writePersistedCounts(updated);
+    const updatedLastVisited = {
+      ...currentLastVisited,
+      [id]: now,
+    };
+
+    set({
+      visitCounts: updatedCounts,
+      lastVisited: updatedLastVisited,
+    });
+
+    void writePersistedUsage({
+      visitCounts: updatedCounts,
+      lastVisited: updatedLastVisited,
+    });
   },
 
   getSortedModules: () => {
     const counts = get().visitCounts;
+    const lastVisited = get().lastVisited;
+    const now = Date.now();
+
     return [...DEFAULT_CAMPUS_MODULES].sort((a, b) => {
-      const scoreA = counts[a.id] || 0;
-      const scoreB = counts[b.id] || 0;
+      const scoreA = calculateModuleScore(counts[a.id] || 0, lastVisited[a.id] || 0, now);
+      const scoreB = calculateModuleScore(counts[b.id] || 0, lastVisited[b.id] || 0, now);
+
       if (scoreB !== scoreA) {
         return scoreB - scoreA;
       }
@@ -174,7 +243,11 @@ export const useModuleUsageStore = create<ModuleUsageStoreState>((set, get) => (
 // Auto-hydrate on startup
 void (async () => {
   try {
-    const persisted = await readPersistedCounts();
-    useModuleUsageStore.setState({ visitCounts: persisted, isHydrated: true });
+    const persisted = await readPersistedUsage();
+    useModuleUsageStore.setState({
+      visitCounts: persisted.visitCounts,
+      lastVisited: persisted.lastVisited,
+      isHydrated: true,
+    });
   } catch {}
 })();

@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../auth/session";
+import { useModuleUsageStore } from "../store/useModuleUsageStore";
 import { useResourceNotificationStore } from "../../features/resources/resourceNotifications";
 import { useLostAndFoundNotificationStore } from "../../features/lost_and_found/lostAndFoundNotifications";
 import { useTutoringNotificationStore } from "../../features/tutoring/tutoringNotifications";
@@ -39,6 +40,13 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
   const [isTutoringOpen, setIsTutoringOpen] = useState(true);
 
   const navigate = (path: string) => {
+    if (path.startsWith("/tutoring")) {
+      useModuleUsageStore.getState().recordVisit("tutoring");
+    } else if (path.startsWith("/resources")) {
+      useModuleUsageStore.getState().recordVisit("marketplace");
+    } else if (path.startsWith("/lost-and-found")) {
+      useModuleUsageStore.getState().recordVisit("lost_and_found");
+    }
     router.push(path as any);
     onNavigate?.();
   };

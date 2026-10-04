@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useResourceNotificationStore } from "../../features/resources/resourceNotifications";
 import { useLostAndFoundNotificationStore } from "../../features/lost_and_found/lostAndFoundNotifications";
 import { useTutoringNotificationStore } from "../../features/tutoring/tutoringNotifications";
+import { useModuleUsageStore } from "../store/useModuleUsageStore";
 
 export default function AppBottomBar() {
   const router = useRouter();
@@ -97,6 +98,15 @@ export default function AppBottomBar() {
       }
       return;
     }
+
+    if (tab.id === "resources") {
+      useModuleUsageStore.getState().recordVisit("marketplace");
+    } else if (tab.id === "lost-and-found") {
+      useModuleUsageStore.getState().recordVisit("lost_and_found");
+    } else if (tab.id === "tutoring") {
+      useModuleUsageStore.getState().recordVisit("tutoring");
+    }
+
     if (!tab.isActive) {
       router.push(tab.route as any);
     }

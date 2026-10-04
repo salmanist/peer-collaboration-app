@@ -169,20 +169,14 @@ export default function HomeScreen() {
   const getSortedModules = useModuleUsageStore((state) => state.getSortedModules);
   const recordVisit = useModuleUsageStore((state) => state.recordVisit);
   const visitCounts = useModuleUsageStore((state) => state.visitCounts);
+  const lastVisited = useModuleUsageStore((state) => state.lastVisited);
   const hydrateUsage = useModuleUsageStore((state) => state.hydrate);
 
   useEffect(() => {
     void hydrateUsage();
   }, [hydrateUsage]);
 
-  const sortedModules = useMemo(() => getSortedModules(), [getSortedModules, visitCounts]);
-  const maxVisitCount = useMemo(() => {
-    const counts = Object.values(visitCounts || {});
-    return counts.length ? Math.max(...counts) : 0;
-  }, [visitCounts]);
-  const topUsedModules = useMemo(() => {
-    return sortedModules.filter((m) => !m.isDummy).slice(0, 3);
-  }, [sortedModules]);
+  const sortedModules = useMemo(() => getSortedModules(), [getSortedModules, visitCounts, lastVisited]);
 
   const unseenCount = useCampusNotificationStore((state) => state.unseenCount);
   const fetchNotifications = useCampusNotificationStore((state) => state.fetchNotifications);
@@ -287,40 +281,6 @@ export default function HomeScreen() {
               {hasNewLostClaims ? "New claim updates on lost notices. " : ""}
               {hasNewResources ? "Fresh student ads posted." : ""}
             </Text>
-          </View>
-        )}
-
-        {/* My Top Visitings Card (Top 2 Modules Only) */}
-        {maxVisitCount > 0 && (
-          <View style={styles.topVisitingsCard}>
-            <View style={styles.topVisitingsHeader}>
-              <MaterialCommunityIcons name="trending-up" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
-              <Text style={styles.topVisitingsTitle}>MY TOP VISITINGS</Text>
-            </View>
-            <View style={styles.topVisitingsChipsRow}>
-              {topUsedModules.slice(0, 2).map((item) => (
-                <Pressable
-                  key={`top-visit-${item.id}`}
-                  style={({ pressed }) => [
-                    styles.topVisitChip,
-                    pressed && styles.topVisitChipPressed,
-                  ]}
-                  onPress={() => {
-                    if (item.isDummy || !item.route) return;
-                    router.push(item.route as any);
-                    setTimeout(() => recordVisit(item.id), 500);
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={item.icon as any}
-                    size={16}
-                    color="#0D3E02"
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text style={styles.topVisitChipText}>{item.title}</Text>
-                </Pressable>
-              ))}
-            </View>
           </View>
         )}
 
@@ -700,56 +660,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // My Top Visitings Card
-  topVisitingsCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    padding: 14,
-    marginBottom: 20,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  topVisitingsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  topVisitingsTitle: {
-    fontSize: 11.5,
-    fontWeight: "800",
-    color: "#0D3E02",
-    letterSpacing: 0.6,
-  },
-  topVisitingsChipsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  topVisitChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8FAFC",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  topVisitChipPressed: {
-    backgroundColor: "#E2E8F0",
-    transform: [{ scale: 0.98 }],
-  },
-  topVisitChipText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#0F172A",
-  },
+
   serviceBoxArrowCircle: {
     width: 24,
     height: 24,
