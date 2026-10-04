@@ -71,7 +71,7 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
         </View>
 
         <View style={styles.titleRow}>
-          <Text style={styles.titleFellOo}>FellOo</Text>
+          <Text style={styles.titleFellOo}>FELLOo</Text>
         </View>
 
         <Animated.View style={{ opacity: subtitleFade, alignItems: "center" }}>
@@ -120,13 +120,15 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   titleFellOo: {
-    fontSize: 42,
+    fontSize: 46,
     fontWeight: "900",
     color: "#ffffff",
-    letterSpacing: -0.5,
+    letterSpacing: 0.2,
+    textAlign: "center",
   },
   tagline: {
     fontSize: 12,
