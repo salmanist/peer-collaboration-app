@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   titleFellOo: {
-    fontSize: 44,
+    fontSize: 42,
     fontWeight: "900",
     color: "#ffffff",
     letterSpacing: -0.5,
