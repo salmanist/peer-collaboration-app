@@ -122,14 +122,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  titleLGU: {
-    fontSize: 38,
-    fontWeight: "900",
-    color: "#ffffff",
-    letterSpacing: -0.5,
-  },
   titleFellOo: {
-    fontSize: 38,
+    fontSize: 44,
     fontWeight: "900",
     color: "#ffffff",
     letterSpacing: -0.5,

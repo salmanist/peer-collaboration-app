@@ -125,19 +125,22 @@ export default function AppBottomBar() {
         <View style={styles.tabsRow}>
           {tabs.map((tab) => {
             const iconName = tab.isActive ? tab.activeIcon : tab.inactiveIcon;
-            const iconColor = tab.isActive ? "#0F172A" : "#334155";
+            const iconColor = tab.isActive ? "#0D3E02" : "#64748B";
 
             return (
               <Pressable
                 key={tab.id}
-                style={styles.tabButton}
+                style={[
+                  styles.tabButton,
+                  tab.isActive && styles.tabButtonActive,
+                ]}
                 onPress={() => handleTabPress(tab)}
                 hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
               >
-                <View style={[styles.iconPill, tab.isActive && styles.iconPillActive]}>
+                <View style={styles.iconContainer}>
                   <MaterialCommunityIcons
                     name={iconName}
-                    size={22}
+                    size={23}
                     color={iconColor}
                   />
                   {tab.badge ? (
@@ -182,81 +185,82 @@ const styles = StyleSheet.create({
   },
   bottomBarContainer: {
     width: "92%",
-    maxWidth: 420,
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
-    borderRadius: 36,
+    maxWidth: 400,
+    backgroundColor: "rgba(255, 255, 255, 0.88)",
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: "rgba(0, 0, 0, 0.08)",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.09,
-    shadowRadius: 18,
+    borderColor: "rgba(226, 232, 240, 0.85)",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
     elevation: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
   },
   tabsRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
   },
   tabButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 2,
+    paddingVertical: 3,
+    paddingHorizontal: 1,
+    borderRadius: 18,
   },
-  iconPill: {
-    width: 54,
-    height: 30,
-    borderRadius: 15,
+  tabButtonActive: {
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+  },
+  iconContainer: {
+    position: "relative",
+    width: 22,
+    height: 22,
     alignItems: "center",
     justifyContent: "center",
-    position: "relative",
-  },
-  iconPillActive: {
-    backgroundColor: "#E8ECEF",
   },
   tabLabel: {
-    fontSize: 10.5,
+    fontSize: 9.5,
     fontWeight: "600",
-    color: "#475569",
-    marginTop: 2,
+    color: "#64748B",
+    marginTop: 1,
     letterSpacing: -0.2,
   },
   tabLabelActive: {
-    color: "#0F172A",
+    color: "#0D3E02",
     fontWeight: "800",
   },
   dotBadge: {
     position: "absolute",
-    top: 2,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#22C55E",
-    borderWidth: 1.5,
+    top: -1,
+    right: -2,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#16A34A",
+    borderWidth: 1,
     borderColor: "#ffffff",
   },
   countBadge: {
     position: "absolute",
-    top: -2,
-    right: 4,
-    minWidth: 17,
-    height: 17,
-    borderRadius: 8.5,
-    backgroundColor: "#22C55E",
+    top: -3,
+    right: -6,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "#0D3E02",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
+    paddingHorizontal: 2,
+    borderWidth: 1,
     borderColor: "#ffffff",
   },
   countBadgeText: {
-    color: "#ffffff",
-    fontSize: 9,
+    color: "#FDBF1E",
+    fontSize: 8,
     fontWeight: "900",
-    lineHeight: 11,
+    lineHeight: 10,
   },
 });
