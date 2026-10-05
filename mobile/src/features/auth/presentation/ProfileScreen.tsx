@@ -88,7 +88,9 @@ export default function ProfileScreen() {
     return (
       <View style={styles.rootContainer}>
         <View style={[styles.collapsibleTopBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-          <Text style={styles.topNavTitle}>My Profile</Text>
+          <View style={styles.topNavLeft}>
+            <Text style={styles.topNavBrand}>My Profile</Text>
+          </View>
         </View>
         <View style={{ marginTop: topOffset + 50 }}>
           <ProfileSkeleton />
@@ -122,14 +124,9 @@ export default function ProfileScreen() {
           },
         ]}
       >
-        <Text style={styles.topNavTitle}>My Profile</Text>
-
-        <Pressable
-          style={styles.logoutHeaderBtn}
-          onPress={handleLogout}
-        >
-          <MaterialCommunityIcons name="logout" size={18} color="#DC2626" />
-        </Pressable>
+        <View style={styles.topNavLeft}>
+          <Text style={styles.topNavBrand}>My Profile</Text>
+        </View>
       </Animated.View>
 
       <ScrollView
@@ -338,8 +335,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#0D3E02",
     borderRadius: 2,
   },
-  topNavTitle: {
-    fontSize: 18,
+  topNavLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    height: 36,
+  },
+  topNavBrand: {
+    fontSize: 19,
     fontWeight: "900",
     color: "#0D3E02",
     letterSpacing: -0.3,
@@ -590,16 +592,6 @@ const styles = StyleSheet.create({
     color: "#DC2626",
     fontSize: 14,
     fontWeight: "800",
-  },
-  logoutHeaderBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#FEE2E2",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
   },
   adminCard: {
     backgroundColor: "#ffffff",

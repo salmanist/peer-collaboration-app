@@ -19,6 +19,28 @@ import { useDataStore } from "../../../core/store/DataStoreContext";
 import { BookSessionModal } from "./BookSessionModal";
 import type { TutorProfile } from "../tutoring";
 
+// Department code formatter (e.g. BSCS, BSSE, BSIT)
+const formatDepartmentCode = (dept?: any) => {
+  if (dept === null || dept === undefined) return "BSCS";
+  const str = String(dept).trim();
+  if (!str) return "BSCS";
+  const clean = str.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  if (clean === "cs" || clean === "bscs" || clean.includes("computerscience")) return "BSCS";
+  if (clean === "se" || clean === "bsse" || clean.includes("softwareengineering")) return "BSSE";
+  if (clean === "it" || clean === "bsit" || clean.includes("informationtechnology")) return "BSIT";
+  if (clean === "ai" || clean === "bsai" || clean.includes("artificialintelligence")) return "BSAI";
+  if (clean === "ds" || clean === "bsds" || clean.includes("datascience")) return "BSDS";
+  if (clean === "ee" || clean === "bsee" || clean.includes("electricalengineering")) return "BSEE";
+  if (clean === "bba" || clean.includes("businessadmin")) return "BBA";
+
+  const upper = str.toUpperCase().replace(/\s+/g, "");
+  if (upper.startsWith("BS") || upper.startsWith("MS") || upper.startsWith("BBA") || upper.startsWith("MBA")) {
+    return upper;
+  }
+  return `BS${upper}`;
+};
+
 export function TutorProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -105,7 +127,7 @@ export function TutorProfileScreen() {
 
           <Text style={styles.tutorName}>{tutor.tutor_name}</Text>
           <Text style={styles.tutorDept}>
-            {tutor.tutor_department || "LGU Student"}
+            {formatDepartmentCode(tutor.tutor_department)}
             {tutor.tutor_enrollment_year ? ` • ${tutor.tutor_enrollment_year}` : ""}
           </Text>
 
@@ -119,25 +141,25 @@ export function TutorProfileScreen() {
               ) : (
                 <Text style={styles.statVal}>NEW</Text>
               )}
-              <Text style={styles.statLabel}>{tutor.total_reviews} Reviews</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>{tutor.total_reviews} Reviews</Text>
             </View>
 
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
               <Text style={styles.statVal} numberOfLines={1}>
-                {tutor.tutor_department || "LGU"}
+                {formatDepartmentCode(tutor.tutor_department)}
               </Text>
-              <Text style={styles.statLabel}>Department</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>Department</Text>
             </View>
 
             <View style={styles.statDivider} />
 
             <View style={styles.statItem}>
-              <Text style={styles.statVal}>
+              <Text style={styles.statVal} numberOfLines={1}>
                 {tutor.profile_type === "tutor" ? "Tutor" : tutor.profile_type === "mentor" ? "Mentor" : "Both"}
               </Text>
-              <Text style={styles.statLabel}>Role</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>Role</Text>
             </View>
           </View>
         </View>
@@ -376,24 +398,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAF8",
     borderRadius: 12,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     width: "100%",
-    justifyContent: "space-around",
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
   statItem: {
+    flex: 1,
     alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
   },
   statVal: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "800",
     color: "#070D1F",
+    textAlign: "center",
   },
   statLabel: {
     fontSize: 11,
     color: "#64748b",
     marginTop: 2,
+    textAlign: "center",
   },
   statDivider: {
     width: 1,

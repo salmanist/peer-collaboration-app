@@ -20,7 +20,7 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
   const exitFade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Sequence of animations: Entrance -> Subtitle -> Extended Hold -> Exit
+    // Sequence of animations: Entrance -> Subtitle -> 10s Hold -> Exit
     Animated.sequence([
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -40,10 +40,10 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
         duration: 450,
         useNativeDriver: true,
       }),
-      Animated.delay(2200), // Extended display duration
+      Animated.delay(20000), // Stay for 20 seconds
       Animated.timing(exitFade, {
         toValue: 0,
-        duration: 450,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -93,7 +93,11 @@ export function AppSplashScreen({ onFinish }: AppSplashScreenProps) {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     zIndex: 99999,
     backgroundColor: "#ffffff",
     justifyContent: "center",
@@ -129,10 +133,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   subtitleLGU: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#475569",
-    letterSpacing: 0.6,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#D99000",
+    letterSpacing: 0.8,
     textAlign: "center",
     marginBottom: 14,
   },

@@ -192,7 +192,7 @@ export default function CreateResourceScreen() {
                 style={{ marginRight: 6 }}
               />
               <Text style={[styles.segmentBtnText, postMode === "share" && styles.segmentBtnTextActive]}>
-                Share Item (Available)
+                Share Item
               </Text>
             </View>
           </Pressable>
@@ -212,7 +212,7 @@ export default function CreateResourceScreen() {
                 style={{ marginRight: 6 }}
               />
               <Text style={[styles.segmentBtnText, postMode === "request" && styles.segmentBtnTextActive]}>
-                Request Item (Required)
+                Request Item
               </Text>
             </View>
           </Pressable>

@@ -19,22 +19,31 @@ export default function AppBottomBar() {
   const hasNewClaims = useLostAndFoundNotificationStore((state) => state.hasNewClaims);
   const pendingTutoringRequests = useTutoringNotificationStore((state) => state.pendingRequestsCount);
 
-  // Hide bottom bar on full-screen detail, chat, or form creation screens for clean UX
-  const isSubScreen =
-    pathname.includes("/chat/") ||
-    pathname.includes("/create") ||
-    pathname.includes("/edit") ||
-    pathname.includes("/setup") ||
-    pathname.includes("/admin");
+  // Normalize pathname by stripping group prefixes and trailing slashes
+  const cleanPath = pathname.replace(/^\/\(app\)/, "").replace(/\/$/, "");
 
-  if (isSubScreen) {
+  // Only show the bottom navigation bar on primary root tab screens
+  // All sub-screens with back arrows (e.g. My Listings, Create, Details, Chat) will hide the bottom bar
+  const isMainTabScreen =
+    cleanPath === "" ||
+    cleanPath === "/" ||
+    cleanPath === "/index" ||
+    cleanPath === "/resources" ||
+    cleanPath === "/resources/index" ||
+    cleanPath === "/lost-and-found" ||
+    cleanPath === "/lost-and-found/index" ||
+    cleanPath === "/tutoring" ||
+    cleanPath === "/tutoring/index" ||
+    cleanPath === "/profile";
+
+  if (!isMainTabScreen) {
     return null;
   }
 
-  const isHome = pathname === "/" || pathname === "/index" || pathname === "";
-  const isResources = pathname.startsWith("/resources");
-  const isLostAndFound = pathname.startsWith("/lost-and-found");
-  const isTutoring = pathname.startsWith("/tutoring");
+  const isHome = cleanPath === "" || cleanPath === "/" || cleanPath === "/index";
+  const isResources = cleanPath.startsWith("/resources");
+  const isLostAndFound = cleanPath.startsWith("/lost-and-found");
+  const isTutoring = cleanPath.startsWith("/tutoring");
 
   const tabs = [
     {
