@@ -10,9 +10,25 @@
 - Mobile shell: Salman's floating bottom bar (Home, Rides, Library, Marketplace, Tutoring) + hamburger (all modules, Admin for admins). Brand name FellOo.
 - Open follow-ups: unify the two palettes in one theme.ts; merge the two DataStore caches; dedupe redundant routes (resources/listings|my-listings|mine, lost-and-found/mine|my-notices); extend Admin Center to library/printing/rides; FCM push; real SMTP.
 
-=== SALMAN'S MODULES (auth base, rides, on-demand, library, printing) ===
-SYSTEM DOCUMENTATION
-====================
+=== FELLOO SYSTEM DOCUMENTATION (salman + zahra) ===
+Living reference for how each piece of this app works. Part 1 is organised by module (salman); Part 2 is a dated log of zahra's modules, newest topics last.
+
+TABLE OF CONTENTS - PART 1 (search the heading to jump):
+  - ACCOUNTS / AUTH (base module, salman)
+  - RIDE SHARING (salman)
+  - DIGITAL LIBRARY (salman)
+  - MOBILE: PERSISTENT CACHE (core/data, salman)
+  - MOBILE: SHARED IN-MEMORY CACHE (core/data, salman)
+  - MOBILE: SHARED UI (core/ui, salman)
+  - MOBILE: HOME DASHBOARD (features/home, salman)
+  - PRINT CENTRE (salman)
+  - BOTTOM NAVIGATION BAR (salman)
+  - ON-DEMAND RIDE (salman) - Phase 1: roles and drivers
+  - RESOURCE SHARING / LOST & FOUND (zahra)
+
+PART 2: zahra's modules - resources, lost & found, tutoring, notifications, admin (50 dated sections below).
+
+=== PART 1: SALMAN'S MODULES (auth base, rides, on-demand, library, printing) ===
 Living reference for how each piece of this app actually works. Updated as modules are built/changed.
 
 --------------------------------------------------------------------
@@ -369,7 +385,7 @@ RESOURCE SHARING / LOST & FOUND (zahra)
 Not yet built - owned by zahra per the project rules module split.
 
 
-=== ZAHRA'S MODULES (resources, lost & found, tutoring, notifications, admin) ===
+=== PART 2: ZAHRA'S MODULES (resources, lost & found, tutoring, notifications, admin) ===
 2026-08-06 — Created system_design.md at repo root.
 
 Documents the full system architecture ahead of writing any module code:
