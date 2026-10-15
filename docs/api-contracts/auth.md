@@ -2,7 +2,7 @@
 
 Base path: `/api/auth/`
 Auth scheme: JWT bearer token (`Authorization: Bearer <access>`), issued by `djangorestframework-simplejwt`.
-Only `@lgu.edu.pk` email addresses that also appear on the official student roster (`accounts.StudentRoster`, loaded via `manage.py import_roster <csv>`) may register — the domain suffix alone isn't enough.
+Only `@lgu.edu.pk` email addresses that also appear on the official student roster (`accounts.StudentRoster`, loaded via `manage.py import_roster <csv>`) may register — the domain suffix alone isn't enough. The roster stands in for a real university records API: it carries `full_name`/`department`/`enrollment_year`/`gender`, and all four are resolved live from the matched `StudentRoster` row on every read, never stored on the account — so there's no stale/tamperable copy on `accounts.User`. Registration only ever collects `email` + `password`.
 
 Once the backend is running, the live, always-current version of this is at `/api/docs/` (Swagger UI) — treat this file as the pre-build reference, Swagger as the source of truth afterwards.
 
@@ -14,12 +14,11 @@ Request:
 ```json
 {
   "email": "ali.raza@lgu.edu.pk",
-  "password": "SuperSecure123!",
-  "full_name": "Ali Raza",
-  "department": "CS",
-  "enrollment_year": 2023
+  "password": "SuperSecure123!"
 }
 ```
+
+`full_name`, `department`, `enrollment_year`, `gender` are not part of the request — they're resolved from the matched `StudentRoster` row at read time, not stored on the account.
 
 Response `201`:
 ```json
@@ -75,6 +74,7 @@ Response `200`:
     "full_name": "Ali Raza",
     "department": "CS",
     "enrollment_year": 2023,
+    "gender": "male",
     "role": "student",
     "is_email_verified": true,
     "created_at": "2026-08-07T07:03:41.939998Z"
@@ -109,16 +109,7 @@ Auth: required.
 
 Response `200`: same `user` object shape as in `login/`.
 
-## PATCH `me/`
-
-Auth: required. Editable fields: `full_name`, `department`, `enrollment_year`. `email`, `role`, `is_email_verified` are read-only.
-
-Request:
-```json
-{ "department": "Software Engineering" }
-```
-
-Response `200`: full updated `user` object.
+Every field on `accounts.User` is now either roster-derived (`full_name`, `department`, `enrollment_year`, `gender`) or otherwise not self-editable (`email`, `role`, `is_email_verified`), so there's nothing left for a student to PATCH — `me/` is read-only (`GET` only; `PATCH`/`PUT` return `405`). If a future module needs an editable profile field, add it here deliberately rather than reopening this endpoint by default.
 
 ## Token lifetimes
 
@@ -127,4 +118,8 @@ Response `200`: full updated `user` object.
 
 ## Fields every other module can rely on (`accounts.User`)
 
-`id`, `email`, `full_name`, `department`, `enrollment_year`, `role` (`student`/`admin`), `is_email_verified`, `is_active`, `created_at`. FK into this via `settings.AUTH_USER_MODEL`, never a hardcoded app label.
+`id`, `email`, `full_name`, `department`, `enrollment_year`, `gender` (`male`/`female`/`""`), `role` (`student`/`admin`), `is_email_verified`, `is_active`, `created_at`. FK into this via `settings.AUTH_USER_MODEL`, never a hardcoded app label. `full_name`/`department`/`enrollment_year`/`gender` are all derived from `StudentRoster` by email match on every read, not stored on `accounts.User` — treat them as read-only wherever you consume this model.
+
+## Dummy dataset (simulated university API)
+
+`backend/accounts/fixtures/dummy_students.csv` — 30 sample students (mixed department/year/gender) standing in for a real university records feed. Load with `python manage.py import_roster backend/accounts/fixtures/dummy_students.csv` before registering test accounts.

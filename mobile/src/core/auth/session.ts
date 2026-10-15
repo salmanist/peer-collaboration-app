@@ -1,14 +1,33 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { create } from "zustand";
 
+// expo-secure-store has no web implementation (its web module is a stub) —
+// fall back to localStorage there, same non-secure tradeoff every Expo app
+// makes on web since browsers have no secure-enclave equivalent.
+const storage = Platform.OS === "web"
+  ? {
+      getItemAsync: async (key: string) => localStorage.getItem(key),
+      setItemAsync: async (key: string, value: string) => localStorage.setItem(key, value),
+      deleteItemAsync: async (key: string) => localStorage.removeItem(key),
+    }
+  : SecureStore;
+
 export type AccountRole = "student" | "admin";
+
+export type Gender = "male" | "female" | "other" | "";
 
 export interface AuthedUser {
   id: number;
   email: string;
   full_name: string;
   department: string;
-  enrollment_year: number | null;
+  enrollment_year: number | string | null;
+  display_name?: string;
+  roll_number?: string;
+  roll_no?: string;
+  phone_number?: string;
+  gender: Gender;
   role: AccountRole;
   is_email_verified: boolean;
   created_at: string;
@@ -21,7 +40,7 @@ interface SessionState {
   isHydrated: boolean;
   hydrate: () => Promise<void>;
   setSession: (tokens: { access: string; refresh: string }, user: AuthedUser) => Promise<void>;
-  setAccessToken: (access: string) => Promise<void>;
+  setAccessToken: (access: string, refresh?: string) => Promise<void>;
   updateUser: (user: AuthedUser) => void;
   clearSession: () => Promise<void>;
 }
@@ -38,9 +57,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   hydrate: async () => {
     const [access, refresh, rawUser] = await Promise.all([
-      SecureStore.getItemAsync(ACCESS_KEY),
-      SecureStore.getItemAsync(REFRESH_KEY),
-      SecureStore.getItemAsync(USER_KEY),
+      storage.getItemAsync(ACCESS_KEY),
+      storage.getItemAsync(REFRESH_KEY),
+      storage.getItemAsync(USER_KEY),
     ]);
     set({
       accessToken: access,
@@ -52,28 +71,30 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   setSession: async (tokens, user) => {
     await Promise.all([
-      SecureStore.setItemAsync(ACCESS_KEY, tokens.access),
-      SecureStore.setItemAsync(REFRESH_KEY, tokens.refresh),
-      SecureStore.setItemAsync(USER_KEY, JSON.stringify(user)),
+      storage.setItemAsync(ACCESS_KEY, tokens.access),
+      storage.setItemAsync(REFRESH_KEY, tokens.refresh),
+      storage.setItemAsync(USER_KEY, JSON.stringify(user)),
     ]);
     set({ accessToken: tokens.access, refreshToken: tokens.refresh, user });
   },
 
-  setAccessToken: async (access) => {
-    await SecureStore.setItemAsync(ACCESS_KEY, access);
-    set({ accessToken: access });
+  // The backend rotates refresh tokens, so a refresh response may carry a new one.
+  setAccessToken: async (access, refresh) => {
+    await storage.setItemAsync(ACCESS_KEY, access);
+    if (refresh) await storage.setItemAsync(REFRESH_KEY, refresh);
+    set(refresh ? { accessToken: access, refreshToken: refresh } : { accessToken: access });
   },
 
   updateUser: (user) => {
-    SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    storage.setItemAsync(USER_KEY, JSON.stringify(user));
     set({ user });
   },
 
   clearSession: async () => {
     await Promise.all([
-      SecureStore.deleteItemAsync(ACCESS_KEY),
-      SecureStore.deleteItemAsync(REFRESH_KEY),
-      SecureStore.deleteItemAsync(USER_KEY),
+      storage.deleteItemAsync(ACCESS_KEY),
+      storage.deleteItemAsync(REFRESH_KEY),
+      storage.deleteItemAsync(USER_KEY),
     ]);
     set({ user: null, accessToken: null, refreshToken: null });
   },

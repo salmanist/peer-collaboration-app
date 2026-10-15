@@ -4,9 +4,6 @@ import type { AuthedUser } from "../../../core/auth/session";
 export interface RegisterPayload {
   email: string;
   password: string;
-  full_name: string;
-  department?: string;
-  enrollment_year?: number;
 }
 
 export interface LoginResponse {
@@ -35,7 +32,12 @@ export async function fetchMe() {
   return data;
 }
 
-export async function updateMe(patch: Partial<Pick<AuthedUser, "full_name" | "department" | "enrollment_year">>) {
-  const { data } = await apiClient.patch<AuthedUser>("/auth/me/", patch);
+export async function forgotPassword(email: string) {
+  const { data } = await apiClient.post<{ detail: string; phone_number?: string; debug_otp?: string }>("/auth/forgot-password/", { email });
+  return data;
+}
+
+export async function resetPassword(payload: { email: string; code: string; new_password: string }) {
+  const { data } = await apiClient.post<{ detail: string }>("/auth/reset-password/", payload);
   return data;
 }

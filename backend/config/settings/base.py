@@ -16,6 +16,7 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-change-me")
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -27,8 +28,17 @@ INSTALLED_APPS = [
     "django_filters",
     "drf_spectacular",
     "corsheaders",
+    "channels",
     "accounts",
     "common",
+    "apps.rides",
+    "apps.library",
+    "apps.printing",
+    "apps.ondemand",
+    "apps.resource_sharing",
+    "apps.lost_and_found",
+    "apps.peer_tutoring",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -60,6 +70,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+# ponytail: in-memory layer is single-process only; use channels_redis if deployed with several workers.
+CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 DATABASES = {
     "default": {
@@ -69,6 +83,16 @@ DATABASES = {
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("DB_PORT", "5432"),
+        # Neon (and most managed Postgres) requires TLS; harmless against local Postgres too.
+        "OPTIONS": {"sslmode": os.environ.get("DB_SSLMODE", "prefer")},
+        # Without this, Django opens and tears down a fresh TLS connection to the DB on
+        # every single request (default CONN_MAX_AGE=0) - measured at ~2s of pure handshake
+        # overhead per request against Neon, vs ~0.3s with the connection kept alive and
+        # reused. CONN_HEALTH_CHECKS pings a reused connection before trusting it, so a
+        # connection Neon silently dropped while idle gets transparently reopened instead
+        # of surfacing as a request error.
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
     }
 }
 
@@ -87,6 +111,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+# Local disk during the build (Digital Library document uploads); swap to
+# django-storages/S3 later by only changing DEFAULT_FILE_STORAGE.
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Dev default: prints the OTP to the runserver console instead of sending real
@@ -124,3 +152,6 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 LGU_EMAIL_DOMAIN = "lgu.edu.pk"
 EMAIL_OTP_LIFETIME_MINUTES = 15
+
+# Comma-separated emails that are auto-promoted to platform admin (Admin Center + broadcast notifications).
+ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}

@@ -1,0 +1,1130 @@
+=== MERGED APP NOTES (read first) ===
+- Single app: backend/ (Django, Neon DB) + mobile/ (Expo 57). Base = Salman's code; Zahra's modules ported in.
+- Backend apps live under backend/apps/ (rides, library, printing, ondemand, resource_sharing, lost_and_found, peer_tutoring, notifications) plus accounts/ and common/. App LABELS are unchanged, so existing Neon tables and migration history still match.
+- Announcements module was removed; admin broadcasts (notifications app, CampusNotification) replace it. The old announcements_announcement table is left untouched on Neon.
+- Notifications: common.notifications.notify() writes a targeted CampusNotification; the bell in TopBar opens the campus notification center. Old common_notification rows are copied by common migration 0004.
+- accounts/common migrations were reconciled with state-only migrations (accounts 0003, library 0007, common 0004/0005) because both developers had applied diverging chains to the shared Neon DB.
+- AcademicCourse is owned by peer_tutoring; library Notes point at it.
+- Admins come from the ADMIN_EMAILS env var (comma-separated), not hardcoded.
+- Chat: Zahra's Django Channels WebSockets are kept (daphne in INSTALLED_APPS; run with runserver or daphne). Salman's modules poll.
+- Mobile shell: Salman's floating bottom bar (Home, Rides, Library, Marketplace, Tutoring) + hamburger (all modules, Admin for admins). Brand name FellOo.
+- Open follow-ups: unify the two palettes in one theme.ts; merge the two DataStore caches; dedupe redundant routes (resources/listings|my-listings|mine, lost-and-found/mine|my-notices); extend Admin Center to library/printing/rides; FCM push; real SMTP.
+
+=== SALMAN'S MODULES (auth base, rides, on-demand, library, printing) ===
+SYSTEM DOCUMENTATION
+====================
+Living reference for how each piece of this app actually works. Updated as modules are built/changed.
+
+--------------------------------------------------------------------
+ACCOUNTS / AUTH (base module, salman)
+--------------------------------------------------------------------
+Stack: Django 5.2 + DRF + SimpleJWT, custom email-based User model (AUTH_USER_MODEL = accounts.User).
+
+Flow:
+  1. POST /api/auth/register/  { email, password }
+     - email must end in @lgu.edu.pk AND already exist in StudentRoster (whitelist), else 400.
+     - Creates User with is_active=False, is_email_verified=False.
+     - Sends a 6-digit OTP (EmailVerification row, 15 min expiry) via console email backend in dev.
+     - DEBUG=True responses include debug_otp so no email inbox is needed for local testing.
+  2. POST /api/auth/verify-email/  { email, code }
+     - Flips is_active=True, is_email_verified=True on match.
+  3. POST /api/auth/login/  { email, password }  -> SimpleJWT token pair.
+     - Custom EmailVerifiedTokenObtainPairSerializer re-checks is_active/is_email_verified after
+       the standard SimpleJWT auth step and returns the user object alongside the tokens.
+     - NOTE: SimpleJWT's own auth step fails first (and identically) on either a wrong password
+       OR an inactive account - both produce the generic "No active account found with the given
+       credentials" message. Don't assume that message means "unverified email"; check the DB.
+  4. GET /api/auth/me/ (JWT required) - read-only, no PATCH (nothing user-editable left on User).
+
+User profile fields (full_name, department, enrollment_year, gender) are NOT stored on User.
+They are read-only Python @property lookups onto StudentRoster by email match (single source of
+truth, imported via manage.py import_roster <csv> or, in DEBUG only, POST /api/auth/debug/add-roster/).
+
+Database: shared Neon Postgres (see backend/.env, gitignored). Both salman and zahra's local
+backends point at the same instance - no local Postgres involved.
+
+KNOWN DB SCHEMA CAVEAT (fixed 2026-08-24, keep in mind for future migrations):
+  The live Neon accounts_user/accounts_studentroster tables have drifted from django_migrations
+  history before (migrations recorded as applied without the underlying ALTER TABLE actually
+  landing - happened at least once with full_name in 2026-08-18, and again with 5 columns in
+  2026-08-24). If a fresh INSERT ever throws IntegrityError on a column the current model doesn't
+  define, check live schema directly before assuming the code is wrong:
+    SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name='...';
+  StudentRoster deliberately still carries a nullable, unused phone_number column (kept at
+  salman's request 2026-08-24) - not a bug, don't "clean it up" without asking first.
+  Fixed 2026-08-28: the same drift bit StudentRoster's old free-text "department" column -
+  migration 0007's RemoveField was recorded as applied but the DROP COLUMN never landed on
+  Neon, so it sat there dead (holding stuff like "BSCS") alongside the real department_id FK
+  the model actually uses. Migration 0008 (plain RunSQL) dropped it for real.
+  Also live on accounts_studentroster: a separate dept_id FK column (also -> common_department)
+  that this checkout's code does NOT use at all - confirmed real (not dead: has its own FK
+  constraint) but unexplained, likely from someone else's migration on the shared DB. Left
+  untouched deliberately - don't drop or repurpose it without figuring out who/what it's for.
+
+--------------------------------------------------------------------
+RIDE SHARING (salman)
+--------------------------------------------------------------------
+backend/apps/rides/. See docs/api-contracts/rides.md for the endpoint contract.
+Offer/search/join/accept/decline/cancel rides, optional same_gender_only filter (resolved via
+StudentRoster gender, same pattern as accounts). Proximity search via expo-location client-side
+geocoding + haversine_km() (backend/common/geo.py), text-substring fallback for ungeocoded rides.
+Times are stored/sent as 24-hour "HH:MM:SS" but always displayed 12-hour with AM/PM on mobile -
+formatTime12h() in ridesApi.ts is the one shared conversion, used by every screen that shows
+departure_time (List/Detail/MyRides). OfferRideScreen's time input is separately 12-hour already
+(hour/minute fields + an AM/PM chip picker), converted to 24-hour only when building the API payload.
+
+--------------------------------------------------------------------
+DIGITAL LIBRARY (salman)
+--------------------------------------------------------------------
+backend/apps/library/. See docs/api-contracts/library.md.
+Upload/list/detail/upvote/bookmark student projects, edit/delete own projects (author-only,
+PATCH resets status to pending for re-moderation, DELETE is permanent), moderation via Django
+admin bulk actions. LibraryProject.level (simple/semester/fyp, default simple) tags a project's
+scope - "simple" shows no badge anywhere; semester/fyp show a corner badge (tertiary/secondary
+tone respectively - do NOT use Badge's "primary" tone alongside "tertiary" for two different
+tags, they render as the identical color in this theme) on every project card (LibraryListScreen,
+MyProjectsScreen, LibraryDetailScreen). Picked on submit and editable afterward via the shared
+LevelPicker component (features/library/presentation/).
+LibraryProject.github_link (URLField, optional) holds an optional link to the project's repo,
+shown as a tappable link on the detail screen. Attachments are LibraryProjectFile rows (FK to
+project, no file-type restriction) instead of a single document field - a project can attach any
+mix of files (PDF report, slides, zipped source, images, etc.) via multipart "files" parts;
+upload form's "Add Files" button opens the native multi-file picker with no type filter.
+LibraryListScreen hero layout, top to bottom: "Digital Library" heading, a Projects/Notes tab
+row (segmented pills, translucent-white inactive/primaryFixed active - styled for the dark hero
+background), then a row of 4 icon-only nav pills (roadmap/"My projects" or "My notes"/"Print
+centre"/upload), then the search bar. "My projects" (mobile/app/(app)/library/my-projects.tsx ->
+MyProjectsScreen) is wired to GET /api/library/mine/ - shows the signed-in user's own submissions
+regardless of status (pending/approved/rejected), each with a status badge, mirroring
+MyRidesScreen's pattern. Each row has Edit (-> EditProjectScreen, app/(app)/library/[id]/edit.tsx,
+PATCHes title/department/abstract/github_link only) and Delete (confirm dialog, DELETE) actions.
+"Print centre" is still a reserved nav pill with no screen behind it - planned as its own
+future module.
+Department filter on LibraryListScreen is a dropdown (core/ui/DepartmentPicker with clearable
+prop, full department names shown - not short codes), not chips, sitting in a filterRow wrapper
+left ready for more filters beside it. DepartmentPicker.onChange is (Department | null) => void -
+null means "cleared"/"All Departments", used only by clearable callers; the required-field
+upload/edit forms don't pass clearable and never see null in practice.
+FYP Roadmap (app/(app)/library/roadmap.tsx -> RoadmapScreen, linked from a map-icon pill on
+LibraryListScreen's hero) is a static guidance screen, not backed by any API - a numbered list of
+the 7 stages every FYP goes through (Idea & Proposal, Requirements/SRS, Design, Development,
+Testing & QA, Documentation, Defense & Submission), each with a timeframe, summary, and tips.
+All the copy lives in src/features/library/presentation/roadmapContent.ts (roadmapIntro string +
+roadmapStages array) - edit that file to change the guidance text, RoadmapScreen.tsx only renders
+whatever's in it.
+
+NOTES SHARING - a second content type nested inside this same module (not a separate app, not a
+separate module), reached via the Projects/Notes tab on LibraryListScreen rather than its own
+screen. Note/NoteFile (backend/apps/library/models.py) mirror LibraryProject/LibraryProjectFile's
+shape closely but with NO status/moderation field at all - a note is publicly visible the instant
+it's created. Fields: title (heading), a required course FK (see below), optional semester
+free-text tag, optional description, files (same multi-file attachment pattern as Projects).
+Endpoints under the same /api/library/ prefix: notes/, notes/mine/, notes/<pk>/,
+notes/<pk>/upvote/, notes/<pk>/bookmark/ - same author-only-edit/delete, upvote/bookmark-toggle
+patterns as Projects, just without the moderation branch.
+Course dropdown (mobile: core/ui/CoursePicker.tsx, a DepartmentPicker sibling with a search box
+since it's 143 rows deep) is backed by common.AcademicCourse - a READ-ONLY, Meta.managed=False
+Django model pointed at peer_tutoring_academiccourse, a real table already live on the shared
+Neon DB from a Peer Tutoring build with no matching app in this checkout (not in INSTALLED_APPS).
+This app never migrates, alters, or writes to that table - common/admin.py's AcademicCourseAdmin
+explicitly disables add/change/delete. Exposed at GET /api/courses/ (config/urls.py, alongside
+/api/departments/), with pagination_class=None since 143 rows exceeds DRF's default PAGE_SIZE=20
+and CoursePicker caches+filters the whole list client-side (same usePersistentCache pattern as
+DepartmentPicker). Remove common.AcademicCourse once a real Peer Tutoring app owns this table
+directly instead.
+Because Notes have no moderation lag masking staleness (unlike Projects, where a submission
+sitting in "pending" already means it won't show in the public list yet), LibraryListScreen's
+notes feed intentionally has NO cache-first read on focus (Projects' feed still does, via
+DataStore) - a just-uploaded note needs to appear immediately, not after a stale cached "empty"
+result expires.
+
+--------------------------------------------------------------------
+MOBILE: PERSISTENT CACHE (core/data, salman)
+--------------------------------------------------------------------
+mobile/src/core/data/PersistentCache.ts - a second, longer-lived cache tier alongside the
+in-memory DataStore below, for reference data that barely ever changes (departments today).
+Backed by @react-native-async-storage/async-storage (installed this pass - genuinely wasn't
+present before; on web it resolves to a plain localStorage-backed shim, not IndexedDB). Exposes
+usePersistentCache<T>(key, fetcher, maxAgeMs=24h): shows whatever's on disk immediately
+regardless of age, then silently refetches in the background if it's older than maxAgeMs and
+updates both state and storage; nothing cached yet fetches normally. Needs no Context/Provider
+(unlike DataStore) since AsyncStorage is already one shared module app-wide. Used by
+LibraryListScreen's department filter chips, DepartmentPicker (core/ui/), and
+EditProjectScreen's department pre-fill - all three share the same "departments" cache key.
+
+--------------------------------------------------------------------
+MOBILE: SHARED IN-MEMORY CACHE (core/data, salman)
+--------------------------------------------------------------------
+mobile/src/core/data/DataStore.tsx - a React Context holding one in-memory Map (via useRef, so
+writes don't force re-renders), exposed as getCache/setCache/clearCache through useDataStore().
+Wrapped once at the app root (app/_layout.tsx) so every screen shares the same cache instance for
+the app's session lifetime - memory only, not persisted to disk, cleared on a full reload.
+LibraryListScreen and RideListScreen both use it for their default (unfiltered) list: on focus,
+check the cache first and show it instantly if present (skip the network call entirely); only
+fetch when empty, and save the result back right after a successful unfiltered fetch. A real
+search/destination search always bypasses the cache. Both screens have a refresh button that
+force-bypasses the cache for a genuine fresh fetch. Not used for anything auth-related (session
+already has its own Zustand-backed persistent store, see ACCOUNTS/AUTH above) or for any
+single-item detail screen (RideDetailScreen/LibraryDetailScreen) - only the two list screens.
+
+--------------------------------------------------------------------
+MOBILE: SHARED UI (core/ui, salman)
+--------------------------------------------------------------------
+Skeleton.tsx - one pulsing gray block (Animated opacity loop, no new dependency), composed by
+each screen into card-shaped loading placeholders. Used by RideListScreen/MyRidesScreen/
+LibraryListScreen/MyProjectsScreen's list-loading states - shows only on a genuine first fetch
+with nothing to display yet, never replaces an already-populated list during a refresh.
+Card no longer has a visible border (SoftBlock's borderColor overridden to "transparent" at the
+Card level specifically, not SoftBlock's own default - BackButton/icon-chip badges/other direct
+SoftBlock consumers still get their border). Matches theme.ts's own stated intent ("shadow, not
+heavy borders, to separate surfaces"). theme.ts's shadow{} is 20% deeper than its original values
+(opacity/radius/offsetY all *1.2) to compensate now that shadow is the only surface separator;
+SoftBlock's Android elevation was bumped to match (3 -> 3.6).
+DepartmentPicker's dropdown list is wrapped in a ScrollView - previously just a plain View inside
+a maxHeight:"50%"/overflow:"hidden" sheet, so anything past what fit on screen was unreachable
+once the department list grew past ~10 entries. One shared component, fixes every dropdown at once.
+
+--------------------------------------------------------------------
+MOBILE: HOME DASHBOARD (features/home, salman)
+--------------------------------------------------------------------
+HomeScreen.tsx (mobile/src/features/home/presentation/) is the app's landing tab and acts as a
+hub across whichever modules are actually built, not just a static menu. Layout top to bottom:
+hero greeting, "Quick Actions" grid (all 8 planned modules - built ones (Rides, Digital Library)
+navigate on tap, unbuilt ones show a "Soon" Badge and an alert instead of navigating), then "Your
+Activity" - two live cards pulling real data on every focus (useFocusEffect, same pattern as
+MyRidesScreen/MyProjectsScreen): "Next ride" (soonest open/in_progress ride from listMyRides(),
+sorted client-side by departure_date+departure_time) and "Latest submission" (first result of
+listMyLibraryProjects(), already newest-first from the backend). Each card taps through to the
+real detail screen when data exists, or to the module's create screen (offer/upload) when empty.
+Adding a new built module here later means: give it an href in MODULES, and optionally add an
+ActivityCard block using that module's own list-mine endpoint - no other Home code needs to change.
+
+--------------------------------------------------------------------
+PRINT CENTRE (salman)
+--------------------------------------------------------------------
+Peer-to-peer printing: students ask, other students who registered as printers fulfil it. No
+printer hardware integration and no pricing/payments (SRS 4.7, system_design.md scope cut).
+
+Roles: every student is a requester. A student becomes a printer by registering from the
+top-right "Register as printer" button on the Print Centre home (location note + colour and
+double-sided switches); a PrinterProfile row is what marks them as a printer. They can stop being
+one from the same screen (refused while they hold accepted jobs). Printers appear as cards (name,
+department, location, capabilities, average star rating) on the Print Centre home.
+
+Flow: requester uploads a document + settings (page range, copies, colour or B/W, single or
+double-sided) and either taps a printer card (request is directed to that printer, hidden from the
+open pool, printer notified) or posts it to the open pool. A printer accepts (requester notified).
+A directed request can also be rejected by its target printer: it drops back into the open pool
+and the requester is notified. After accepting, the printer prints and presses "Submit document"
+with an optional collection note (status done, requester notified). The printer can release an
+accepted job (reopens to everyone). The requester can cancel only while open. Once done, the
+requester can rate the printer 1-5 stars with an optional comment, once per job. Only registered
+printers can accept; nobody can accept their own request.
+
+Views: plain students get "My requests" (past and current). Printers also get "My print jobs",
+grouped as Sent to me, Open requests, In progress, Completed; a badge on that button counts
+requests sent to them that are still waiting.
+
+Backend (apps/printing/, mounted at /api/printing/): models PrinterProfile, PrintRequest (adds
+nullable target_printer), PrintRating. Endpoints: GET / (open pool, undirected only), POST /
+(multipart create, optional target_printer_id), GET mine/?role=requester|printer|incoming,
+GET <id>/, POST <id>/accept|reject|release|complete|cancel|rate/, GET printers/ (annotated with
+average rating + count in one query), GET/PUT/DELETE printers/me/. The state-changing actions
+share one base view that row-locks the request (select_for_update) so two printers can't both
+accept it. Documents: pdf/doc/docx/png/jpg only, max 20 MB; page_range must look like "1-5,8" or
+be empty. Notifications reuse common.notify() and the existing /api/notifications/ list.
+
+Mobile (features/printing/): PrintCentreScreen (home: register/settings pill, New request, My
+requests, My print jobs, printers list), NewPrintRequestScreen (optional target printer),
+MyRequestsScreen, MyPrintJobsScreen, PrinterRegisterScreen, PrintRequestDetailScreen (accept,
+reject, submit, release, cancel, rate by role + status), shared bits in printUi.tsx. Routes under
+app/(app)/printing/. Entry points: "Print Centre" in NAV_ITEMS (hamburger + bottom bar), the Home
+tile, and the printer icon in Digital Library's hero. The bell opens the shared notifications
+screen (rides/notifications).
+
+--------------------------------------------------------------------
+BOTTOM NAVIGATION BAR (salman)
+--------------------------------------------------------------------
+Floating glass tab bar (WhatsApp/Instagram style): Home, Rides, Library, Print (the NAV_ITEMS
+list in core/ui/HamburgerMenu.tsx, shared with the hamburger menu). Icons only; the active tab shows
+the filled glyph (icon name without "-outline") in forest green, inactive tabs the outline glyph in
+muted grey.
+
+Look: a rounded pill (fully rounded ends) detached from the bottom - absolutely positioned 16px
+from each side and lifted off the bottom by the safe-area inset + 12px - with a real backdrop blur
+(expo-blur BlurView, intensity 50, light tint; CSS backdrop-filter on web) under a 20% white wash, a
+translucent white hairline border and a soft shadow. The shadow sits on an outer view because the
+glass view clips (overflow hidden) for the rounded corners.
+
+It lives in app/(app)/_layout.tsx (the Stack fills the screen, BottomNavBar floats over it), so it
+stays on every signed-in screen including sub-screens and is absent on login/register. The active
+tab is read from the URL via useSegments() (segments[1] = home|rides|library|printing);
+profile/announcements show no active tab. Switching tabs: dismissAll() then replace(), so the back
+stack doesn't pile up; tapping the active tab calls dismissTo(href). Hidden while the keyboard is
+open.
+
+Content scrolls underneath the glass, so nothing reserves space for the bar. useNavClearance()
+(BottomNavBar.tsx) returns bar height + gap + safe-area inset + 16px; ScreenContainer adds it as
+bottom padding on scrolling screens inside (app), and every FlatList/SectionList screen passes
+ListFooterComponent={NavClearance} (a spacer of the same height) so the last item can clear the
+bar. New list screens need that footer too.
+
+--------------------------------------------------------------------
+ON-DEMAND RIDE (salman) - Phase 1: roles and drivers
+--------------------------------------------------------------------
+Separate module (apps/ondemand) next to the trip board; the trip board (apps/rides) is untouched.
+Depends only on the user module. API under /api/ondemand/.
+
+Models: RideProfile (one per student: role driver|rider, vehicle make/model/colour/plate/seats for
+drivers, is_approved flag). The role is picked once and is fixed - only an admin deleting the row lets
+the student pick again. FareSetting is a single-row table holding rate_per_km (default Rs 30); read it
+with get_rate_per_km().
+
+Endpoints: GET /api/ondemand/profile/ (404 = no role picked yet), POST /api/ondemand/profile/ (creates
+it once; drivers must supply all vehicle fields, plate is upper-cased; riders' vehicle fields ignored).
+
+Admin centre (Django admin at /admin/): "Ride profiles" has role/approval filters and the actions
+"Approve selected drivers" / "Remove approval"; "Fare settings" holds the editable rate per km (one row,
+cannot add a second or delete it).
+
+Mobile: Home card "On-demand Ride" -> app/(app)/ondemand -> OnDemandHomeScreen: choose Rider/Driver,
+drivers fill the vehicle form, afterwards the screen shows role + approval status. Map and rides come
+in later phases.
+
+ON-DEMAND RIDE - Phase 2: map and fuel share
+Place model (popular pick-up/drop-off spots, editable in admin) seeded by `manage.py reset_ondemand_demo`
+(wipes and reseeds the places; later phases add demo drivers/riders to the same command).
+GET /api/ondemand/places/ lists them. POST /api/ondemand/fare/ takes pickup/drop lat+lng and returns
+distance_km, rate_per_km, fare (= distance x admin rate, rounded to the rupee), distance_source and the
+route path. Distance comes from the free public OSRM server (road distance); if it fails or times out (5s)
+it falls back to a straight line and says so. Plain http is used because this PC's Python rejects OSRM's
+https certificate. Nothing is stored; money is paid outside the app.
+Mobile: react-native-webview added (the map). RideMap.tsx draws OpenStreetMap with Leaflet inside a
+WebView (needs internet; Android/iOS only, not the web build). BookRideScreen (riders only, via the
+"Book a ride" button on the On-demand screen): pick pickup/drop-off from popular-place chips or by tapping
+the map; the fare card appears automatically once both are set.
+
+ON-DEMAND RIDE - Phase 3: requests, accept, status flow
+Models: OnDemandRide (rider, driver, pickup/drop labels + coordinates, distance_km, fare, saved route
+path, status, cancelled_by). RideProfile gained is_online, last_lat, last_lng, last_seen. A driver counts
+as live only while is_online and last_seen is within 30 seconds (the phone sends its position every 5 s).
+Statuses: requested -> accepted -> arrived -> in_progress -> completed, or cancelled / no_driver.
+Endpoints (/api/ondemand/): driver/status/ (online/offline + position, approved drivers only),
+driver/requests/ (open requests within 5 km of the driver, oldest first), rides/ (rider requests; fare and
+route are recalculated on the server), rides/current/ (caller's active ride as rider or driver, polled every
+5 s), rides/<id>/ (shows how a finished ride ended), rides/<id>/accept|arrived|start|complete|cancel/.
+Rules: a user can have one active ride at a time; only riders request, only approved + live drivers accept.
+First driver wins: accept locks the ride row, so a second driver gets 409 "already taken". Rider can cancel
+until the trip starts; driver can cancel after accepting until it starts; a driver can't go offline mid-ride.
+A request nobody accepts within 120 s becomes no_driver (checked lazily whenever someone asks).
+Notifications (existing notify()) go to the rider on accept/arrived/start/complete and to the other side
+on cancel.
+Mobile: BookRideScreen got a Confirm ride button; ActiveRideScreen (both roles, polls every 5 s, shows
+status, map, driver or rider card and the buttons that fit the role/status); DriverScreen (online switch,
+GPS heartbeat every 5 s via expo-location, nearby requests with Accept); OnDemandHomeScreen links to them.
+On the web build the map shows a note instead of the WebView.
+
+RIDES HUB - Ride Sharing + On-demand Ride shown as one section (salman)
+UI/navigation only: backend apps (apps/rides, apps/ondemand), databases and the trip board's own screens
+are unchanged. Home and the menu/bottom bar have one "Rides" entry (route /(app)/rides). A shared
+SegmentedSwitch (core/ui) sits at the top of both home screens ("Scheduled trips | On-demand") and moves
+between /(app)/rides and /(app)/ondemand with router.replace. The Rides tab in the bottom bar stays lit on
+on-demand screens. Home's "Next ride" card shows an active on-demand ride first (via getCurrentRide);
+the trip board shows a banner "You have an on-demand ride in progress" when one exists.
+
+ON-DEMAND RIDE - role change (replaces the Phase 1 "pick a role once" flow)
+Nobody picks a role any more: everyone starts as a rider (the profile is created automatically the first
+time GET /api/ondemand/profile/ is called). The On-demand home shows the pickup/drop-off fields, map, fuel
+share and Confirm ride directly (the separate Book a ride screen is gone). A gear button on that screen
+opens On-demand settings:
+- Rider: "Become a driver" form (make, model, colour, plate, seats) -> POST profile/apply/. The profile
+  becomes role=driver with is_approved=false = a pending application. While pending the student can still
+  request rides as a rider. In the admin centre (Ride profiles) the admin ticks "Approve selected drivers",
+  or "Reject selected driver applications" (back to rider, vehicle details cleared).
+- Pending applicant: can withdraw (POST profile/stop-driving/).
+- Approved driver: sees Driver mode on the home screen; settings has "Stop being a driver" (two-step
+  confirm; refused while on an active ride) -> back to rider, vehicle details cleared, offline.
+Approved drivers can't request rides (403). POST /api/ondemand/profile/ (old role picker) no longer exists.
+The home hero shares the Scheduled trips layout; the first card is pulled up over the hero so both tabs line up.
+
+ON-DEMAND RIDE - no driver found: the rider sees "Try again" (POST /api/ondemand/rides/<id>/retry/ sets the ride back to requested and restarts the 120 s wait; only the rider, only from no_driver) and "Cancel ride" (rider cancel is also allowed from no_driver).
+
+DIGITAL LIBRARY - demo data: `python manage.py seed_library_demo` adds 10 dummy projects (approved/pending/rejected mix) and 12 dummy notes written by the existing test students, with dummy upvotes/bookmarks and no file attachments. Idempotent (matches on author + title); `--reset` deletes those dummy rows first.
+
+RIDES HUB - one screen for on-demand + scheduled trips (replaces the Scheduled/On-demand tab switch)
+Route /(app)/rides is now RidesHubScreen (features/rideshub, the only code that knows both modules; the
+trip board and on-demand backends/modules stay independent, no backend change). Top to bottom: green hero
+with round buttons (Offer a trip, My trips, On-demand settings, Notifications); then a first card by state -
+active on-demand ride (Open), approved driver (Driver mode), otherwise the booking form (Pickup / Drop-off
+fields with type-ahead + pin map, fuel share, Confirm ride) plus a "driver application pending" notice;
+then "Scheduled trips" (all open trips; once a drop-off is chosen it becomes "Scheduled trips going your
+way": destination-only matching via GET /api/rides/ destination_lat/lng, same rule as the old trip board).
+TripCard/TripSkeletonList (rides/presentation) are the shared trip list pieces. /(app)/ondemand now just
+redirects to /(app)/rides; ride/drive/settings screens still live under /ondemand and the Rides tab stays
+lit there. SegmentedSwitch, RideListScreen and OnDemandHomeScreen were removed.
+
+--------------------------------------------------------------------
+RESOURCE SHARING / LOST & FOUND (zahra)
+--------------------------------------------------------------------
+Not yet built - owned by zahra per the project rules module split.
+
+
+=== ZAHRA'S MODULES (resources, lost & found, tutoring, notifications, admin) ===
+2026-08-06 — Created system_design.md at repo root.
+
+Documents the full system architecture ahead of writing any module code:
+stack (React Native/Expo + Django REST + PostgreSQL/pgvector + Zustand + JWT + FCM),
+monorepo layout (/mobile, /backend, /docs/api-contracts, /docs/decisions),
+mobile structure (Expo Router as thin routing layer, feature-first src/ with
+barrel-file-only cross-feature imports), backend structure (Django app-per-module,
+accounts+common shared base, cross-app reads via services.py), the API
+contract-first workflow, shared conventions (JWT auth routes, pagination,
+filtering, uploads, generic Thread/Message messaging, centralized notify(),
+admin-only moderation), the AI chatbot's RAG design (pgvector, anti-hallucination
+similarity gate), corrections applied to bugs/gaps found in SRS.md (ratings ERD FK,
+missing admin app, unnamed real-time mechanism, vague storage, account
+deactivation, unvalidated concurrency NFR), named scope cuts (printing, ride
+matching, sale listings, moderation, chatbot KB, offline support), and the
+build order (User Profiles base module first, then SRS High-priority modules,
+then Medium-priority modules).
+
+Next: build the User Profiles base module (custom Django User model with LGU
+email verification, JWT endpoints, Expo Router auth screens, Zustand session
+store) per system_design.md.
+
+2026-08-07 — Built the User Profiles + Auth base module (backend + mobile).
+
+Backend (/backend, Django 5.2 + DRF, Postgres db "fyp_dev"):
+- accounts.User: custom AbstractBaseUser keyed on email (no username field).
+  Fields: email, full_name, department, enrollment_year, role
+  (student/admin), is_email_verified, is_active (starts False), timestamps.
+- accounts.EmailVerification: one-time 6-digit code + 15-minute expiry, tied
+  to a user. Registration only accepts @lgu.edu.pk addresses (checked in the
+  serializer, not the model, so admin-created accounts aren't blocked by it).
+- Five endpoints under /api/auth/: register, verify-email, login (custom
+  simplejwt serializer that rejects unverified/inactive accounts), refresh,
+  me (GET/PATCH own profile). Full request/response shapes documented in
+  docs/api-contracts/auth.md.
+- Email delivery uses Django's console backend for now (OTP prints to the
+  runserver log) — real SMTP deferred until the project has a provider
+  picked, matching the other deferred-infra decisions in system_design.md.
+- Settings split into config/settings/{base,dev,prod}.py; DB creds and
+  secret key read from backend/.env (gitignored, never committed).
+- Moderation/account deactivation stays manual via Django admin
+  (accounts.User is registered there with role/status filters) — no
+  automation source exists for syncing against university enrollment data.
+- Swagger/OpenAPI docs live at /api/docs/ once the server is running
+  (drf-spectacular) — that becomes the source of truth over the markdown
+  contract from here on.
+
+Mobile (/mobile, Expo SDK 57 + Expo Router + TypeScript):
+- Feature-first layout: src/core/network/apiClient.ts (axios instance,
+  attaches the JWT access token, auto-refreshes once on a 401 and retries
+  the original request), src/core/auth/session.ts (Zustand store for
+  user/tokens, persisted through expo-secure-store, not AsyncStorage, since
+  tokens are secrets).
+- src/features/auth/: data/authApi.ts wraps the five endpoints;
+  presentation/ has Register, VerifyEmail, Login, and Profile screens;
+  auth.ts barrel file is the only import surface other features may use.
+- app/ is routing only: (auth)/{login,register,verify-email} and
+  (app)/profile route files just re-export the screen components.
+  app/_layout.tsx hydrates the session on launch and redirects based on
+  whether an access token is present.
+- Verified end-to-end: backend flow tested directly against the live
+  Postgres db (register -> read OTP from console -> verify -> login ->
+  authenticated /me, plus rejection cases for bad domain, wrong code, and
+  unverified login). Mobile side type-checked clean and bundled successfully
+  through Metro (expo export -p android, 1206 modules, no errors).
+
+Known limitations carried forward from system_design.md: OTP email is
+console-only in dev, moderation/deactivation is a manual admin toggle, and
+this module runs on PostgreSQL locally (already installed on this machine,
+so no SQLite fallback was needed).
+
+2026-08-07 (later) — Added an official-student roster gate to registration.
+
+Registering with an @lgu.edu.pk address is no longer sufficient on its own —
+the email must also appear in a new accounts.StudentRoster whitelist table
+(email only, unique). Loaded via a management command:
+  manage.py import_roster <path-to-csv> [--dry-run]
+The command looks for a column named "email" (case-insensitive) in the CSV
+and ignores every other column, so the university's export can carry
+whatever extra fields (student ID, name, etc.) it already has without a
+custom importer. Re-running against an updated CSV is safe — existing
+entries are left alone (get_or_create), only new emails are added.
+
+RegisterSerializer.validate_email now checks the roster after the domain
+suffix check and before the "already registered" check, with its own error
+message ("This email isn't on the official LGU student roster..."). Nothing
+else in the registration/verification/login flow changed — a roster hit
+still requires setting a password and completing OTP verification, same as
+before. StudentRoster is also registered in Django admin for manual
+spot-checks, even though CSV import is the primary way it gets populated.
+
+Verified: imported a 2-row test CSV (with extra ignored columns), confirmed
+a roster email can register (201) and a same-domain but non-roster email is
+rejected (400) with the new message. Test data cleaned from fyp_dev after.
+
+2026-08-08 — Added a browser-based auth test console (dev only, no build).
+
+Salman found curl/Swagger testing confusing to drive by hand, so added a
+single-page HTML+vanilla-JS console at /test/ that exercises the whole auth
+flow by clicking buttons instead of typing requests: add an email to the
+roster, register, verify, log in, then GET/PATCH the profile, with every
+raw request/response logged on the page as it happens. Lives at
+backend/accounts/templates/accounts/test_console.html, served by a
+TemplateView. Same-origin fetch calls, so no CORS setup needed beyond what
+already exists.
+
+Two small backend additions to support it, both dev-only:
+- RegisterView now includes a "debug_otp" field in its response when
+  settings.DEBUG is True, so the console can auto-fill the verification
+  code instead of needing the runserver console open in another window.
+  Leaks nothing new since the OTP already prints to that console in dev.
+- New DebugAddRosterView (POST /api/auth/debug/add-roster/) lets the
+  console add a one-off test email to StudentRoster without running the
+  CSV import command for every throwaway address.
+
+Both the page and the debug endpoint are only wired up inside an
+`if settings.DEBUG:` block in config/urls.py, and DebugAddRosterView
+double-checks settings.DEBUG itself and 404s otherwise — neither exists
+when DEBUG=False (i.e. never in prod).
+
+Verified the full click-through path end-to-end via curl standing in for
+the button clicks: add-roster -> register (got debug_otp back) -> verify
+-> login -> GET /me -> PATCH /me, all against a freshly started server.
+Test data cleaned from fyp_dev after.
+
+Side note: hit a real gotcha while testing this — a previous background
+runserver process wasn't fully killed (the tracked shell died but the
+child python.exe survived as an orphan on Windows), so a new runserver
+invocation silently lost the port race and stale process kept answering
+requests. Symptom was a confusing TemplateDoesNotExist on the new template
+even though the file existed on disk. Fix was checking `netstat -ano` for
+port 8000 and force-killing the orphaned PID before restarting. Worth
+remembering if a future change to this backend "isn't taking effect" after
+a restart — check for a leftover process on the port first.
+
+Resource Sharing Module
+Backend Django app: `resource_sharing`.
+This module will manage resource listings, interest requests, real-time chat, and post-exchange ratings.
+
+Mobile Resource Sharing currently includes typed API helpers and an authenticated Resource Feed screen. The route is `/resources` within the authenticated Expo Router group and displays active listings with pull-to-refresh, loading, empty, and error states.
+Authenticated users can open the Resource Feed from the Profile screen through the Browse Resources button.
+
+For testing with Expo Go on a physical device, `mobile/.env.local` sets `EXPO_PUBLIC_API_URL` to the development computer's current local-network address. The phone and computer must be on the same Wi-Fi network.
+
+The mobile project currently uses Expo SDK 54 so that it is compatible with Expo Go 54 on Zahra's phone. Its Expo, Expo Router, React Native, React, and supporting package versions were aligned using Expo's compatibility checker. Run `npx expo start` from `mobile` and scan the displayed QR code with Expo Go; do not use `--android` unless testing with an Android emulator.
+
+The computer's Wi-Fi IP can change when it reconnects to a network. If the browser or Expo Go reports that it cannot reach Django, update `EXPO_PUBLIC_API_URL` in the ignored `mobile/.env.local` file to the current Wi-Fi IPv4 address, then restart Expo with a cleared cache.
+
+For this local setup, `EXPO_PUBLIC_WEB_API_URL` points to localhost for the browser, while `EXPO_PUBLIC_API_URL` points to the computer's Wi-Fi IPv4 address for Expo Go on the phone. Restart Expo after changing either value.
+
+WiFi Configuration & Resilience (2026-08-18)
+Created src/core/network/wifiDetection.ts to centralize WiFi IP handling. The utility:
+- Parses EXPO_PUBLIC_API_URL from .env.local and extracts the IPv4 address.
+- Exports resolveApiBaseUrl(): async function that returns the correct API URL per platform (localhost for web, configured WiFi IP for Expo Go).
+- Exports logWiFiConfig(): debug helper that prints current config and env vars if connection fails.
+- No external dependencies beyond React Native / Expo (SDK 54 compatible).
+
+Updated src/core/network/apiClient.ts:
+- initializeApiClient() now calls resolveApiBaseUrl() at app startup to set API_BASE_URL dynamically.
+- Added debugApiConnection() helper for troubleshooting connectivity.
+- JWT token attach and auto-refresh logic unchanged.
+
+Updated app/_layout.tsx:
+- Calls initializeApiClient() during session hydration so the API URL is resolved early (before auth or feature screens load).
+
+2026-08-22 — Student Mobile Phone Roster Integration, SMS Verification & Home Landing Page
+- Student Roster & User Mobile Numbers:
+  - Added `phone_number` field (`CharField(max_length=20, blank=True)`) to `StudentRoster` and `User` models via migration `accounts.0005_studentroster_phone_number_user_phone_number`.
+  - Updated `import_roster` management command to recognize phone / mobile columns in student CSVs.
+  - Updated `DebugAddRosterView` to accept `phone_number` for quick local development testing.
+- SMS OTP Verification:
+  - Registration automatically synchronizes the student's official phone number from `StudentRoster`.
+  - Sends the 6-digit confirmation code via SMS simulation / console dispatch with masked phone details.
+  - `VerifyEmailScreen` renders the target mobile number (e.g. `+92300****567`) and prompts for the 6-digit SMS confirmation code.
+- Home / Landing Page:
+  - Created `HomeScreen` at `app/(app)/index.tsx` featuring time-aware greetings, BS degree program badge ("BS Computer Science"), quick student roll number summary, and 2x2 interactive campus service tiles for Peer Tutoring, Lost & Found, Share Point, and FYP Teammate matching.
+  - Configured top header with 3-lines hamburger menu on the upper-left and user profile avatar on the upper-right.
+
+Workflow when WiFi IP changes:
+1. If browser or Expo Go can't reach Django, check your computer's current IPv4 (Windows: `ipconfig`, Mac/Linux: `ifconfig`).
+2. Update EXPO_PUBLIC_API_URL in mobile/.env.local (e.g., `http://192.168.0.120:8000/api`).
+3. Restart Expo: press 'r' in the terminal or reload the app in Expo Go menu.
+4. If still stuck, run debugApiConnection() from the browser console (web) or Expo Go logs to see the resolved URL and env config.
+
+Future enhancement: implement automatic IP detection using device APIs if Expo SDK adds platform-specific WiFi discovery (would eliminate manual .env.local updates).
+
+The mobile login form reports a clear connection message when it cannot reach Django. Server-supplied authentication messages, such as an unverified email or invalid credentials, are displayed directly to the student.
+
+Students can add a resource from the Resource Feed. The authenticated `/resources/create` screen collects its title, optional course, category, condition, sharing type, optional sale price, and description. It validates required fields locally, sends the listing to `POST /api/resources/`, and returns to the feed after a successful publish.
+
+The Resource Sharing route group has its own stack navigator. It explicitly registers the feed (`/resources`) and create-listing (`/resources/create`) screens so they work consistently in Expo Go.
+
+The authenticated app group also has a stack navigator. It registers the profile and Resource Sharing navigator, allowing Expo Router to resolve the nested Resource Sharing routes on a physical device.
+
+The Resource Detail screen lives at `/resources/[id]`. It requests one listing from `GET /api/resources/<id>/` and displays its exchange terms, metadata, owner, and description. The interest button is visual at this stage; request creation is the next Resource Sharing feature.
+
+Resource Interest Requests are now functional. From a listing owned by another student, a requester can submit an optional message through `POST /api/resources/<resource_id>/requests/`. The Resource Requests screen shows incoming and sent requests. Owners can accept, decline, and complete a request, while requesters can cancel a pending or accepted request. `PATCH /api/resources/requests/<request_id>/status/` applies those permissions and transitions the related listing between active, reserved, and unavailable where appropriate.
+
+The same Expo app can be run in a browser. On Android and iOS, session tokens remain in Expo SecureStore. On web, the session store uses browser localStorage because the SecureStore native implementation is not available there. Web storage is suitable for local development; the native app remains the preferred place for mobile-session testing.
+
+The My Resources dashboard at `/resources/mine` shows only the authenticated owner's listings through `GET /api/resources/mine/`. Owners can set a listing to active, reserved, or unavailable using the existing protected status API. The Profile screen provides direct links to Browse Resources, My Resources, and Resource Requests.
+
+Resource Sharing now has three clear areas. Browse Resources (`/resources`) shows offers to sell, lend, exchange, give free, or rent. Request Resources (`/resources/wanted`) shows public posts from students looking for an item. My Resources (`/resources/mine`) is a hub with My Listings and My Requests. Students create public wanted posts at `/resources/wanted/create` and manage their own posts at `/resources/wanted/mine`, including marking a request fulfilled or cancelled. These posts are backed by `PublicResourceRequest`, with migration `resource_sharing.0002_alter_resourcelisting_exchange_type_and_more` applied to the local database. Private responses to a particular offer remain available separately as Interest Requests.
+
+Browse Resources is intentionally read-only. Students add offers through My Resources > My Listings, and create public wanted-resource posts through My Resources > My Requests.
+
+My Listings supports editing and deleting a listing. The edit screen uses the existing owner-protected `PATCH /api/resources/<id>/` endpoint, while deletion uses `DELETE /api/resources/<id>/`. A confirmation prompt appears before deletion. Only the listing owner can perform either action.
+
+Live chat is available only after an interest request is accepted. The listing owner and accepted requester can open the chat from Interest Requests. Previous messages are retrieved through `GET /api/resources/requests/<request_id>/messages/`; new messages are sent and received live using `ws://<backend-host>/ws/resources/requests/<request_id>/chat/?token=<access-token>`. Messages are stored in Neon as `ResourceChatMessage` (migration `resource_sharing.0003_resourcechatmessage`). Daphne is first in `INSTALLED_APPS`, so `manage.py runserver` is WebSocket-capable in development. The current development setup uses Channels' in-memory layer, which supports real-time chat while one Django server process is running. A deployed multi-process backend needs a Redis channel layer.
+
+The connected Neon database already contained legacy `gender` and roster-profile columns. Accounts migrations `0003_align_existing_neon_profile_columns` and `0004_align_gender_with_existing_neon_schema` align Django's models with that schema without deleting existing data. The default gender value is `other` because Neon stores that legacy field as `varchar(6)`. Registration still requires a roster entry, then creates the user and a six-digit OTP verification record normally.
+
+The development-only browser authentication test console and `/test/` route have been removed. The actual authenticated API remains under `/api/auth/`; the DEBUG-only roster helper is retained for local development.
+
+In My Resources > My Requests, a student can edit an open public resource request or delete any request they own after a confirmation prompt. Editing uses `PATCH /api/resources/wanted/<id>/`; deletion uses `DELETE /api/resources/wanted/<id>/`. Both endpoints remain owner-protected by the backend.
+
+Every authenticated screen now shares the same project navigation. On wider web layouts it is a permanent left sidebar; on Expo Go and narrow screens, the Menu button opens the same sidebar. Logout is deliberately positioned at the top of this navigation and clears the stored session before returning to Login.
+
+Public Resource Requests now support offers of help. A student browsing another student's open request can select Send Offer and add an optional message. This creates a `PublicResourceOffer` through `POST /api/resources/wanted/<request_id>/offers/`. The original requester sees these under My Resources > My Requests and can accept or decline each offer. Accepting an offer sets the public request to fulfilled and automatically declines any competing pending offers. The helper's sent-offer status is visible in Request Resources. The feature is stored in Neon through migration `resource_sharing.0004_publicresourceoffer`.
+
+My Resources > My Requests also contains Offers I Sent. It shows each public request a student responded to, the offer message, and its pending, accepted, declined, or cancelled status. A student can cancel only their own pending offer.
+
+To keep this area easy to scan, My Resources > My Requests uses three tabs: My Requests, Received Offers, and Sent Offers. Each tab shows only its relevant list while retaining the same creation, management, acceptance, decline, and cancellation actions.
+
+The authenticated sidebar checks every 30 seconds for new active Browse Resources listings and new incoming Interest Requests. A green dot appears beside the relevant sidebar item when something was created after that user last opened its list. Opening Browse Resources or Interest Requests marks that list as read and removes its dot. These per-user read times are stored securely on a mobile device and in browser local storage for web development. Live chat now includes a one-line header summary naming the resource being discussed.
+
+The sidebar groups all Resource Sharing navigation beneath an expandable Share Point section: Browse Resources, My Resources, Request Resources, and Interest Requests. This keeps the project navigation shorter while retaining direct access to each feature.
+
+Both Resource Sharing agreement flows now have real-time chat. An accepted Browse Resources interest request uses `ResourceChatMessage`; an accepted public resource offer uses `PublicResourceOfferChatMessage` (migration `resource_sharing.0005_publicresourceofferchatmessage`). In both cases, only the two participants can read the history or connect to the WebSocket. Public-offer history is available at `GET /api/resources/wanted/offers/<offer_id>/messages/` and its live WebSocket is `ws://<backend-host>/ws/resources/offers/<offer_id>/chat/?token=<access-token>`. The requester and helper receive an Open Chat button after acceptance.
+
+2026-08-19 — Resource Sharing Efficiency Optimizations & Optional Image Attachments
+
+1. Optional Photo Uploads for Resource Listings:
+   - Configured MEDIA_URL ("/media/") and MEDIA_ROOT in backend/config/settings/base.py, served via static() in development.
+   - Added centralized upload helper in backend/common/storage.py (`save_upload`).
+   - Added `image` (models.ImageField) to `ResourceListing` model (migration `resource_sharing.0006_resourcelisting_image_and_more`).
+   - Integrated `expo-image-picker` on mobile. Students can optionally attach, preview, and remove photos when creating or editing listings in CreateResourceScreen and EditResourceScreen.
+   - ResourceDetailScreen renders the listing photo banner with graceful aspect ratio. ResourceFeedScreen and MyListingsScreen render image thumbnails.
+
+2. PostgreSQL Database Indexing:
+   - Added composite database indexes across ResourceListing (`status, -created_at`, `category, status`, `exchange_type, status`), ResourceInterestRequest (`status, -created_at`, `resource, status`), PublicResourceRequest (`status, -created_at`, `category, status`), PublicResourceOffer (`status, -created_at`, `public_request, status`), and chat messages (`created_at`).
+   - All applied via migration `resource_sharing.0006_resourcelisting_image_and_more`.
+
+3. Lightweight Notification Polling & AppState Awareness:
+   - Replaced heavy 30-second full payload list downloads with a dedicated lightweight endpoint `GET /api/resources/summary/` (`ResourceNotificationSummaryView`), using fast database `.exists()` and `.count()` queries.
+   - Added React Native `AppState` listener in app layout so background polling pauses automatically when the app is backgrounded or minimized, saving network data and battery.
+
+4. List Virtualization & Infinite Scrolling:
+   - Replaced ScrollView mappings with FlatList across PublicResourceRequestsScreen and MyListingsScreen.
+   - Added page-based infinite scroll (`onEndReached` with `page` parameter) and performance props (`initialNumToRender={8}`, `maxToRenderPerBatch={10}`, `windowSize={5}`, `removeClippedSubviews`) to ResourceFeedScreen and PublicResourceRequestsScreen.
+
+5. Live Chat Photo Sending & Receiving:
+   - Added optional `image` (models.ImageField) and made `body` blankable in both `ResourceChatMessage` and `PublicResourceOfferChatMessage` models (migration `resource_sharing.0007_publicresourceofferchatmessage_image_and_more`).
+2026-08-19 — Built the Lost & Found Module (Backend + Mobile)
+
+The Lost & Found module enables Lahore Garrison University students to post lost and found items, search by category and campus location, submit proof-of-ownership claims, and coordinate physical handover via real-time chat with photo sharing.
+
+Backend (/backend/lost_and_found):
+- Models (PostgreSQL):
+  - LostAndFoundItem: poster (FK accounts.User), post_type (lost/found), title, category (electronics, cards_documents, stationery, clothing, accessories, keys, other), location, date_lost_or_found, description, image (optional ImageField), status (open, claimed, resolved, cancelled), timestamps, and composite performance indexes.
+  - ItemClaim: item (FK LostAndFoundItem), claimant (FK accounts.User), message, status (pending, accepted, declined, withdrawn), timestamps.
+  - ItemClaimChatMessage: claim (FK ItemClaim), sender (FK accounts.User), body, image (optional ImageField), created_at.
+- REST API Endpoints (/api/lost-and-found/):
+  - GET/POST /api/lost-and-found/: Filterable feed (post_type, category, status, search, location) and notice creation with optional photo upload.
+  - GET/PATCH/DELETE /api/lost-and-found/<id>/: Item detail, owner updates, and owner deletion.
+  - PATCH /api/lost-and-found/<id>/status/: Quick status transition (open <-> resolved).
+  - GET /api/lost-and-found/mine/: User's own posted notices.
+  - POST /api/lost-and-found/<item_id>/claims/: Submit claim/inquiry with ownership proof.
+  - GET /api/lost-and-found/claims/incoming/: Claims received on user's posted notices.
+  - GET /api/lost-and-found/claims/mine/: Claims submitted by user on others' notices.
+  - PATCH /api/lost-and-found/claims/<claim_id>/status/: Accept/decline (by poster) or withdraw (by claimant). Accepting automatically marks item as claimed.
+  - GET/POST /api/lost-and-found/claims/<claim_id>/messages/: Accepted claim chat history and photo messages with automatic WebSocket broadcast.
+  - GET /api/lost-and-found/summary/: Lightweight notification counter for sidebar badge updates.
+- Real-time WebSocket:
+  - ws://<backend-host>/ws/lost-and-found/claims/<claim_id>/chat/?token=<jwt-token> served by ItemClaimChatConsumer for live handover coordination.
+
+Mobile (/mobile/src/features/lost_and_found):
+- Types & API: `lostAndFound.ts`, `data/lostAndFoundApi.ts` with cross-platform photo upload (`Blob` support on web, native multipart descriptors on iOS/Android).
+- Notification Store: `lostAndFoundNotifications.ts` with Zustand store and AppState-aware background polling.
+- Presentation Screens:
+  - LostAndFoundFeedScreen: Tabbed feed (All, Lost Items, Found Items), category filter chips, campus location tags, search bar, and infinite scroll virtualization.
+  - CreateLostAndFoundScreen: Post creation with type toggle (I Lost vs I Found), category, campus location, date, description, and optional photo attachment.
+  - EditLostAndFoundScreen: Notice editing and photo replacement.
+  - LostAndFoundDetailScreen: Full photo banner with full-screen zoom modal, poster profile card, claim modal for finders/owners, and post management actions.
+  - MyLostAndFoundScreen: 3 tabs (My Notices, Incoming Claims with Accept/Decline, Sent Claims).
+  - ClaimChatScreen: Real-time handover chat with photo attachments and modal zoom viewer.
+- Navigation:
+  - Expandable "Lost & Found" section integrated in AppSidebar with real-time green notification dots.
+
+2026-08-21 — Built the Peer Tutoring and Mentorship Module (Backend + Mobile)
+
+The Peer Tutoring & Mentorship module connects students seeking academic assistance, practical skills mentorship (coding, design, public speaking), and career guidance with peers, seniors, and alumni at Lahore Garrison University (SRS Section 4.3).
+
+Backend (/backend/peer_tutoring):
+- Models (PostgreSQL):
+  - TutorProfile: user (OneToOne accounts.User), profile_type (tutor, mentor, both), headline, bio, subjects (JSONField), skills (JSONField), availability, is_free, hourly_fee, average_rating, total_reviews, is_active, timestamps, and composite performance indexes.
+  - TutoringSession: tutor (FK accounts.User), learner (FK accounts.User), subject_or_skill, session_type (academic, skill_mentorship, career_guidance), meeting_mode (on_campus, online), location_or_link, scheduled_at, duration_minutes, notes, status (pending, accepted, declined, cancelled, completed), timestamps, and status indexes.
+  - SessionReview: session (OneToOne TutoringSession), reviewer (FK accounts.User), tutor (FK accounts.User), rating (1-5), comment, created_at. Automatically updates tutor's average_rating and total_reviews upon creation.
+  - CollaborationRequest: creator (FK accounts.User), title, category (FYP, Semester Project, Hackathon, Research), required_skills (JSONField), description, contact_info, status (open, closed), timestamps.
+  - TutoringChatMessage: session (FK TutoringSession), sender (FK accounts.User), body, image (optional ImageField), created_at.
+- REST API Endpoints (/api/tutoring/):
+  - GET/POST /api/tutoring/tutors/: Filterable discovery feed (profile_type, is_free, is_active, subject, skill, search) and profile creation.
+  - GET/PATCH /api/tutoring/tutors/me/: Get/update logged-in user's tutor profile.
+  - GET/PATCH /api/tutoring/tutors/<id>/: Tutor detail and profile update.
+  - GET/POST /api/tutoring/sessions/: List user's sessions (tutor or learner role) and book new sessions.
+  - GET /api/tutoring/sessions/<id>/: Session detail view.
+  - PATCH /api/tutoring/sessions/<id>/status/: Status transitions (accept, decline, complete, cancel).
+  - GET/POST /api/tutoring/sessions/<session_id>/messages/: Session chat messages with photo upload & WebSocket broadcast.
+  - POST /api/tutoring/reviews/: Submit 5-star review and comment for completed sessions.
+  - GET/POST /api/tutoring/collaborations/: Teammate collaboration notice board.
+  - GET/PATCH/DELETE /api/tutoring/collaborations/<id>/: Collaboration detail, status toggle, and deletion.
+  - GET /api/tutoring/summary/: Lightweight notification counters for pending requests and confirmed sessions.
+- Real-time WebSocket:
+  - ws://<backend-host>/ws/tutoring/sessions/<session_id>/chat/?token=<jwt-token> served by TutoringSessionChatConsumer.
+
+Mobile (/mobile/src/features/tutoring):
+- Types & API: `tutoring.ts`, `data/tutoringApi.ts` with cross-platform photo upload and error handling.
+- Notification Store: `tutoringNotifications.ts` with Zustand store and background polling.
+- Presentation Screens:
+  - TutorDiscoveryFeedScreen: Multi-tab discovery feed (All, Course Tutors, Skills & Mentors, Collaborations), search input, subject/skill carousel tags, and pricing badges.
+  - TutorProfileScreen: Complete tutor bio, subjects/skills pills, rating breakdown, recent reviews, and "Book Session" modal launcher.
+  - SetupTutorProfileScreen: Profile setup/edit form with role selector, headline, bio, custom subjects/skills tag adder, availability schedule, and free/fee rate toggle.
+  - BookSessionModal: Interactive session scheduler (on-campus vs online, date & time, duration, location/link, and learning goals).
+  - MyTutoringSessionsScreen: 3-tab dashboard (My Bookings, Tutor Requests with Accept/Decline, Completed History with Rate Tutor action).
+  - RateTutorModal: Interactive 5-star rating selector and feedback comment submission.
+  - SessionChatScreen: Real-time coordination chat with WebSocket connection and photo sharing.
+  - CollaborationBoardScreen & CreateCollaborationScreen: Project teammate board and posting form for FYPs and class projects.
+remembering if a future change to this backend "isn't taking effect" after
+a restart — check for a leftover process on the port first.
+
+2026-08-23 — Alphanumeric Enrollment Session Representation
+- Converted `enrollment_year` from integer to `CharField(max_length=50, blank=True)` across `accounts.models.User` and `accounts.models.StudentRoster` via migration `accounts.0006_alter_studentroster_enrollment_year_and_more`.
+- Supports flexible university semester session formats such as `SP2023`, `Fall 23`, `FA22`, `Spring 2024`, and standard years (`2023`).
+- Updated `import_roster` CSV loader, `UserSerializer`, `RegisterSerializer`, `ProfileScreen`, `HomeScreen`, and `TutorDiscoveryFeedScreen`.
+
+2026-08-23 — Stitch Fello Design System Implementation Across Core Modules
+- Applied the official `stitch_fello_app_design` Material 3 & Tailwind tokens:
+  - Primary brand theme: Deep Navy (`#001e40`), crisp white surface cards with subtle elevation (`#e2e8f0` borders), verified green chips (`#e6f4ea`), and amber orange action accents (`#fd8b00`).
+- HomeScreen (Landing Page):
+  - Integrated Fello top banner with student session & verified badges, 4-grid circular quick action launchers (Tutoring, Share Point, Lost & Found, FYP Partners), and the 'Happening Now' collaborative study circle Bento card alongside the live campus activity hub.
+- Resource Marketplace (Share Point):
+  - Deep navy header with search bar, horizontal scrollable category filter pills (All, Textbooks, Lab Gear, Notes, Stationery, Other), price badges, and condition tags.
+- Lost & Found Hub:
+  - Deep navy header, search input, segment tabs (All, Lost, Found), category chips, and modern card styling.
+- Peer Tutoring & Mentorship:
+  - Deep navy header, search bar, segment tabs (Course Tutors, Skills & Career, Teammates), Free Only filter, and tutor cards with star ratings and session booking actions.
+
+2026-08-23 — Lahore Garrison University (LGU) Garrison Green Theme Alignment
+- Aligned the mobile interface accents with Lahore Garrison University's signature Garrison Green (`#15803d` / `#dcfce7` / `#86efac`):
+  - Top-right header profile button (`_layout.tsx`): green circular avatar container with student initial ('S').
+  - Home Landing screen (`HomeScreen.tsx`): updated student name highlight ("Syeda Zahra Ijaz") to LGU green.
+  - Profile screen (`ProfileScreen.tsx`): updated student avatar background and text to LGU green.
+
+2026-08-23 — Official LGU Portal Theme Architecture (admissions.lgu.edu.pk)
+- Extracted and implemented the exact design system & color tokens from Lahore Garrison University's official admissions portal (`https://admissions.lgu.edu.pk/Content/assests/css/MainStyleFile.css`):
+  - `--green: #0D3E02` (Official LGU Deep Garrison Dark Green) for all brand headers, active tabs, buttons, and identity badges.
+  - `--yellow: #FDBF1E` (Official LGU Mustard Gold) for primary action buttons (`+ Share`, `+ Post Notice`, `+ Become Tutor`), highlight tags, notification indicators, and avatar borders.
+  - `--surface-tint: #E8F5E9` / `#FFF8E1` for soft pill containers and verified student badges.
+- Applied consistently across AppSidebar, Navigation Header, HomeScreen, ResourceFeedScreen, LostAndFoundFeedScreen, TutorDiscoveryFeedScreen, and ProfileScreen.
+
+2026-08-23 — Android Status Bar, Taskbar Layout Alignment & Degree Program Formatting
+- Integrated `SafeAreaProvider` and `useSafeAreaInsets()` from `react-native-safe-area-context` across root and stack layouts:
+  - Dynamically offset floating top header action buttons (`hamburgerButton` and `profileHeaderButton`) with `Math.max(insets.top, Platform.OS === "android" ? StatusBar.currentHeight : 20) + 10` to avoid Android status bar overlap.
+  - Added safe bottom padding across all scrolling feed containers and sidebar drawers to clear the Android bottom taskbar/gesture navigation bar.
+- Renamed application brand identity to 'LGU FellOo' across sidebar and screen headers.
+- Standardized degree program badge logic in `HomeScreen.tsx` to automatically normalize inputs (`cs`, `computer science`, `bs cs`) to uppercase (e.g. `BSCS`, `BSSE`, `BSIT`, `BBA`).
+
+2026-08-23 — Brand Typography Update to 'LGU FellOo'
+- Updated brand name typography styling to 'LGU FellOo' across:
+  - AppSidebar: `LGU FellOo` with Gold (`#FDBF1E`) accent.
+  - HomeScreen: `Lahore Garrison University • LGU FellOo Student Portal`.
+  - ResourceFeedScreen: `LGU FellOo • Share Point`.
+  - LostAndFoundFeedScreen: `LGU FellOo • Lost & Found`.
+  - TutorDiscoveryFeedScreen: `LGU FellOo • Peer Tutoring`.
+
+2026-08-23 — Drawer Modal Translucency, Read-Only Academic Profile & Session Formatting
+- Mobile Navigation Drawer:
+  - Set `statusBarTranslucent={true}` on `Modal` and set container to full 100% viewport height to eliminate background exposure gaps.
+  - Structured top action row with `[Log out]` aligned on left and `[✕ Close]` on right with safe area top inset.
+- Home Quick Launch Bottom Strip:
+  - Re-architected 3 bottom boxes (`Post Lost Notice`, `Request Resource`, `Tutor Setup`) with centered vertical icon + label layout, generous margins (`marginTop: 22`, `marginBottom: 12`), and subtle drop shadow to prevent text truncation and overlapping.
+- Profile Screen Read-Only Mode:
+  - Removed client-side edit forms/inputs as student academic records are verified directly from university roster database.
+  - Replaced 'Academic Credentials' card header with clean 'Student Details' section title.
+- Academic Formatting Helpers:
+  - `formatEnrollmentSession`: standardizes semester badges into `SP 2023` or `FA 2023`.
+  - `formatDepartmentCode`: standardizes department codes to uppercase without spaces (`BSCS`, `BSSE`, `BSIT`, `BBA`).
+
+2026-08-23 — In-Screen Scrolling Top Navigation Bar & Dedicated Quick Actions Card
+- Top App Bar Architecture:
+  - Replaced root-level `position: absolute` floating buttons with natural in-screen Top Navigation Bars across all screens.
+  - As the user scrolls down, the Hamburger button, Brand Title, and Profile Avatar scroll up naturally with the content, completely preventing floating button collisions with study hub and activity cards.
+  - Connected drawer visibility to global `useDrawerStore`.
+- Home Screen Quick Actions Card:
+  - Encapsulated the 3 bottom quick service launchers (`Post Lost Notice`, `Request Resource`, `Tutor Setup`) in a separate elevated card with title, generous vertical margins, and circular icon badges to permanently prevent visual collision with upper activity tiles.
+- Type-Safe Helper Formatting:
+  - Ensured `formatEnrollmentSession` and `formatDepartmentCode` use `String(val).trim()` to safely handle numeric enrollment years (e.g. `2023`) from backend API payloads without runtime `trim is not a function` render errors.
+- Expo Router Stack Route Names:
+  - Synchronized `(app)/_layout.tsx` Stack.Screen declarations to explicitly reference `lost-and-found/index` and `tutoring/index` folder routes, resolving children route name warnings.
+
+2026-08-23 — Peer Tutoring Streamlining & Realistic Campus Demo Seeding
+- FYP / Teammates Removal:
+  - Removed project teammate/collaboration tabs and action buttons from `TutorDiscoveryFeedScreen`, `HomeScreen`, and `AppSidebar` to focus the interface exclusively on 1-on-1 peer tutoring and skill mentorship.
+- Realistic Peer Tutoring Test Seed Data:
+  - Created & configured student profiles:
+    - **Syeda Zahra Ijaz** (`zahra@lgu.edu.pk`): BSCS Mobile App & AI Tutor.
+    - **Salman Tariq** (`salman@lgu.edu.pk`): BSCS FA 2022 Senior DSA/OOP Tutor (Free, 4.9★ rating).
+    - **Zunaira Khan** (`zunaira@lgu.edu.pk`): BSSE SP 2023 Web & Database Mentor (500 PKR/hr, 5.0★ rating).
+  - Seeded Active Test Scenarios:
+    - **Incoming Request for Zahra**: Zunaira requested a React Native Navigation session at LGU CS Lab 3 (`PENDING` - ready for Zahra to accept/decline).
+    - **Active Session with Live Chat**: Zahra booked Salman for Dijkstra Graph Algorithms at LGU Library Study Pod 4 (`ACCEPTED` - live chat history seeded).
+    - **Completed Session with Review**: Salman completed Database Normalization with Zunaira (`COMPLETED` - 5-Star review).
+    - **Skill Mentorship Request**: Zahra requested Figma UI/UX Mentorship from Zunaira (`PENDING`).
+
+2026-08-23 — Instagram-Style Collapsible Dynamic Top Navigation Bar
+- `useCollapsibleHeader` Hook:
+  - Tracks scroll delta (`diff = currentScrollY - prevScrollY`) with spring & timing animations.
+  - When scrolling down (browsing feed/reading cards), header translates upwards out of view, maximizing vertical reading space.
+  - The moment the user scrolls up (dragging downward even 8px), header instantly glides back into view with sticky white background and elevation, providing instantaneous access to Hamburger Drawer and Profile.
+
+2026-08-23 — Top Back Navigation & Android Bottom Insets Alignment
+- Top `← Back` Navigation:
+  - Added dedicated Top Navigation Bar with `← Back` button to `TutorProfileScreen`, `SetupTutorProfileScreen`, `MyTutoringSessionsScreen`, and `SessionChatScreen`, allowing students to easily exit or return to the previous screen without getting stuck.
+- Bottom Action Bar Taskbar Overlap Resolution:
+  - Added dynamic `paddingBottom: Math.max(insets.bottom + 12, 18)` and `insets.bottom + 95` content scroll padding to `TutorProfileScreen` and `BookSessionModal`.
+  - Prevents the Android 3-button navigation bar (Back/Home buttons) from physically overlapping the "Book Session" button, allowing seamless tap interaction.
+
+2026-08-23 — Resource Share Navigation & Screen Alignment
+- Fixed Resource Creation Route:
+  - Changed `ResourceFeedScreen.tsx` `+ Share` button target from invalid `/(app)/resources/new` to valid Expo Router screen `/(app)/resources/create`.
+- Enhanced `CreateResourceScreen.tsx`:
+  - Added top `← Back` navigation bar, safe top/bottom insets, and applied official LGU green/gold styling.
+
+2026-08-23 — DateField Datatype & Strict Validation Reversion
+- Database Model:
+  - Reverted `LostAndFoundItem.date_lost_or_found` from CharField to native `models.DateField(null=True, blank=True)`.
+  - Applied migration `lost_and_found.0003_alter_lostandfounditem_date_lost_or_found`.
+- Mobile Validation:
+  - In `CreateLostAndFoundScreen.tsx` and `EditLostAndFoundScreen.tsx`, enforced strict `YYYY-MM-DD` ISO date formatting (e.g. `2026-08-23`).
+  - Added format validation error alert if an invalid date string is entered.
+
+2026-08-23 — User Profile Session Auto-Sync & Hydration Fix
+- Proactive Profile Refresh:
+  - Integrated `fetchMe` in `RootLayout` (`mobile/app/_layout.tsx`), `HomeScreen.tsx`, and `ProfileScreen.tsx`.
+  - Resolved session hydration race condition by listening directly to `isHydrated` and `accessToken` state updates.
+  - Automatically fetches the full verified name (`Syeda Zahra Ijaz`), department, and enrollment year as soon as authentication tokens are loaded, ensuring consistent display across all tabs, windows, and devices.
+2026-08-23 — UserSerializer String-Enrollment Support & Daphne Refresh
+- Serialization Alignment:
+  - Updated `UserSerializer` (`backend/accounts/serializers.py`) with explicit `enrollment_year = serializers.CharField(required=False, allow_blank=True, allow_null=True)` to prevent DRF from attempting `int()` parsing on string session tokens (e.g. `'SP 2023'`).
+- ASGI Server Re-initialization:
+  - Cleared old background Daphne process and restarted Daphne on `0.0.0.0:8000`.
+  - Confirmed 200 OK authentication flow for student credentials.
+2026-08-23 — Official StudentRoster Synchronization & Simple Password Standard
+- Student Name Alignment:
+  - Synchronized `accounts_user` records with official `accounts_studentroster` records in Neon PostgreSQL:
+    - `salman@lgu.edu.pk` -> **Salman Saeed** (BSCS, SP2023)
+    - `zunaira@lgu.edu.pk` -> **Zunaira Akram** (BSCS, SP2023)
+    - `zahra@lgu.edu.pk` -> **Syeda Zahra Ijaz** (BSCS, SP2023)
+- Simplified Passwords:
+  - Standardized password across all student test accounts to `12345678` for quick, hassle-free login without mandatory uppercase or special characters.
+2026-08-23 — Forgot Password & Password Reset OTP System
+- Backend Endpoints:
+  - Added `ForgotPasswordView` (`/api/auth/forgot-password/`) to issue 6-digit OTP verification codes to user mobile/email.
+  - Added `ResetPasswordView` (`/api/auth/reset-password/`) to validate OTP and update user password safely with min 6 characters.
+- Mobile UI:
+  - Added "Forgot password?" link to [LoginScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/auth/presentation/LoginScreen.tsx).
+  - Created [ForgotPasswordScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/auth/presentation/ForgotPasswordScreen.tsx) with a 2-step OTP verification and password reset flow.
+2026-08-23 — Peer Tutoring Feed & Session Card Alignment
+- Tutor & Learner Distinction in Session Cards:
+  - Updated [MyTutoringSessionsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/MyTutoringSessionsScreen.tsx) to explicitly display both `🎓 Tutor: [name] ([dept])` and `👤 Learner: [name] ([dept])` across all tabs (Bookings, Requests, History) to eliminate ambiguity in past session history.
+- Immediate Disabled Tutor Profile Isolation:
+  - Implemented automatic zeroing out of incoming tutor requests in both `TutoringSummaryView` and `TutoringSessionListCreateView` whenever a user disables their tutor profile (`is_active=False`).
+  - Added empty state feedback informing the user when their tutor profile is disabled.
+- Flexible Course Tutor Matching (OOP & DSA):
+  - Updated `TutorProfileListCreateView` to match `profile_type="tutor"` against both `tutor` and `both` (Tutor & Mentor).
+  - Expanded search aliases so filtering by `"Object Oriented Programming (OOP)"` or `"OOP"` properly retrieves profiles offering `"Object Oriented Programming"`.
+- Navigation Cleanup:
+  - Removed redundant "Tutor Profile Setup" from the sidebar navigation menu ([AppSidebar.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/navigation/AppSidebar.tsx)), since the header `+ Become Tutor` / `Edit Profile` button directly handles profile configuration.
+2026-08-23 — Lost & Found My Notices Header & Sidebar Simplification
+- Top Navigation Bar in My Notices:
+  - Added a dedicated top navigation bar with a `← Back` button and safe insets to [MyLostAndFoundScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/lost_and_found/presentation/MyLostAndFoundScreen.tsx) for seamless navigation back to previous screens.
+  - Removed the redundant `+ Post Notice` button from the notices header.
+- Sidebar Simplification:
+  - Removed the duplicate "Post Notice" item from the sidebar under Lost & Found ([AppSidebar.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/navigation/AppSidebar.tsx)), relying on the prominent header button on the Lost & Found Feed screen.
+2026-08-23 — Header Title & Action Button Diagonal Alignment
+- Balanced Header Action Layout:
+  - Positioned primary module action buttons directly opposite to their respective section titles:
+    - **Peer Tutoring**: `+ Become Tutor` / `Edit Profile` placed on the right side directly opposite to `Peer Tutoring` ([TutorDiscoveryFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/TutorDiscoveryFeedScreen.tsx)).
+    - **Lost & Found**: `+ Post Notice` placed on the right side directly opposite to `Lost & Found` ([LostAndFoundFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/lost_and_found/presentation/LostAndFoundFeedScreen.tsx)).
+  - Cleaned top navigation rows to contain solely the Hamburger icon on the left and the User Profile Avatar on the right.
+2026-08-23 — Marketplace Modern Card Design & Segmented Toggles
+- Enhanced Card UI:
+  - Redesigned feed cards in [ResourceFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceFeedScreen.tsx) to match the Lost & Found / Tutoring standard.
+  - Prominent Price & Deal Badges: `✨ 100% FREE` (Emerald Green `#059669` / `#DCFCE7`), `🏷️ PKR 450` (Gold `#B45309` / `#FEF3C7`), and `🔄 EXCHANGE/RENT` (Indigo).
+  - Student Verified Attribution: `👤 [Student Name] ([Dept] • [Session])` with `✓ Verified LGU` badge.
+  - Item Condition Indicator: `✨ NEW`, `📖 PRE-OWNED`, `💻 DIGITAL`.
+  - Cover Thumbnail & Category Watermark: Rounded thumbnail with dynamic category background fallback (`📚`, `📝`, `🧪`, `📐`, `📦`).
+2026-08-23 — Marketplace Feed Simplification
+- Layout Cleanup:
+  - Removed stacked deal tabs and condition filter rows in [ResourceFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceFeedScreen.tsx) to restore a clean, spacious single category pills strip.
+  - Eliminated the word "Gift" across all UI elements, using clear "Free" / price tags on listing cards.
+  - Formatted price/deal tags on cards to display `Free` (emerald badge) or `Rs. [amount]` (gold badge) alongside condition tags.
+
+- Backend Alignment:
+  - Added `owner_department` and `owner_enrollment_year` to `ResourceListingSerializer`.
+  - Added multi-exchange type filtering (`exchange_type__in`) in `ResourceListingListCreateView`.
+2026-08-23 — Green Header Downward Extension Across All Modules
+- Enhanced Header Visual Presence:
+  - Extended the solid LGU Green (`#0D3E02`) header downward across all primary module feeds:
+    - **Marketplace** ([ResourceFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceFeedScreen.tsx))
+    - **Lost & Found** ([LostAndFoundFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/lost_and_found/presentation/LostAndFoundFeedScreen.tsx))
+    - **Peer Tutoring** ([TutorDiscoveryFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/TutorDiscoveryFeedScreen.tsx))
+  - Increased bottom padding (`paddingBottom: 28`) and softened curved bottom corners (`borderBottomRadius: 30`) with enhanced depth shadows (`shadowOpacity: 0.2`, `shadowRadius: 8`).
+  - Spaced out top navigation row, module titles (`fontSize: 22`), and search bar for a balanced upper-screen aesthetic.
+2026-08-24 — Unified Marketplace Feed (Browse & Request Merge)
+- Merged Marketplace Navigation:
+  - Combined Browse Items and Request Items into a unified feed screen ([ResourceFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceFeedScreen.tsx)) with two prominent segmented tabs:
+    - **📦 Available Items**: Browse books, notes, and equipment posted by peers.
+    - **🙋 Student Requests**: View open requests and needs from campus students with one-tap offer submission.
+  - Contextual Header Action Button:
+    - Automatically displays **`+ Share Item`** when viewing Available Items.
+    - Automatically displays **`+ Request Item`** when viewing Student Requests.
+  - Streamlined Sidebar Navigation:
+    - Cleaned up [AppSidebar.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/navigation/AppSidebar.tsx) by removing the standalone "Request Items" link since both browsing and requesting are merged into the central Marketplace feed.
+  - Backend Attribution:
+2026-08-24 — Full Marketplace Theme & Navigation Synchronization
+- Comprehensive LGU FellOo Theme Across All Resource Screens:
+  - Synchronized the complete Marketplace flow with official Lahore Garrison University colors (`#0D3E02` Green, `#FDBF1E` Gold, `#E8F5E9` Emerald accents, `#070D1F` Charcoal typography):
+    - **Share Resource Page** ([CreateResourceScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/CreateResourceScreen.tsx)): Top back navbar, safe insets, category/condition/exchange pills in LGU theme, dashed green photo upload, and gold submit button.
+    - **Request Resource Page** ([CreatePublicResourceRequestScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/CreatePublicResourceRequestScreen.tsx)): Top back navbar, safe insets, category icon pills, desired exchange types, and gold publish button.
+    - **My Listings Page** ([MyListingsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyListingsScreen.tsx)): Top back navbar with quick `+ Share` shortcut, modern thumbnail cards, quick edit/delete buttons, and availability status pills (`Active`, `Reserved`, `Unavailable`).
+    - **My Requests & Offers Page** ([MyPublicResourceRequestsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyPublicResourceRequestsScreen.tsx)): Top back navbar, segmented tabs (`My Requests`, `Received Offers`, `Sent Offers`), status badges, and action buttons.
+    - **Interest Requests Page** ([ResourceRequestsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceRequestsScreen.tsx)): Top back navbar, sectioned incoming and sent requests, status badges (`Accepted`, `Pending`, `Declined`), and one-tap accept/decline/chat buttons.
+    - **Resource Details Page** ([ResourceDetailScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceDetailScreen.tsx)): Top back navbar, banner image/category fallback, price/free tags, verified owner info, and interest message composer with gold send button.
+    - **Send Offer Page** ([SendPublicResourceOfferScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/SendPublicResourceOfferScreen.tsx)): Top back navbar, styled message input, and gold send button.
+    - **Edit Pages** ([EditResourceScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/EditResourceScreen.tsx) & [EditPublicResourceRequestScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/EditPublicResourceRequestScreen.tsx)): Styled edit forms with LGU pill selections and gold save actions.
+    - **Chat Pages** ([ResourceChatScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceChatScreen.tsx) & [PublicOfferChatScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/PublicOfferChatScreen.tsx)): Top back navbar with live/offline connection pill, LGU green sender bubbles with gold timestamps, receiver bubbles with clean borders, photo attachments, and full-screen viewer.
+    - **My Resources Hub** ([MyResourcesScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyResourcesScreen.tsx)): Top back navbar, activity overview, and styled navigation cards for Listings, Requests, and Direct Interest.
+2026-08-24 — Top Navigation Bar Standardization Across All Secondary Pages
+- Consistent Clean Header Aesthetic:
+  - Standardized the `topNavBar` across all secondary/creation screens to match `CreateResourceScreen` (`Share a Resource`):
+    - Clean white background (`#ffffff`) with subtle bottom border (`#E2E8F0`) and light drop shadow.
+    - Emerald `← Back` badge (`backgroundColor: "#E8F5E9"`, `borderColor: "#A5D6A7"`, `color: "#0D3E02"`).
+    - Prominent Charcoal title (`color: "#070D1F"`, `fontSize: 17`, `fontWeight: "800"`).
+  - Applied uniformly to `CreatePublicResourceRequestScreen`, `MyListingsScreen`, `MyPublicResourceRequestsScreen`, `ResourceRequestsScreen`, `ResourceDetailScreen`, `SendPublicResourceOfferScreen`, `EditResourceScreen`, `EditPublicResourceRequestScreen`, `ResourceChatScreen`, `PublicOfferChatScreen`, and `MyResourcesScreen`.
+
+2026-08-24 — My Requests Screen Simplification & Route Fixes
+- Simplified My Requests Screen:
+  - Updated [MyPublicResourceRequestsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyPublicResourceRequestsScreen.tsx) to remove "Received Offers" and "Sent Offers" tabs completely.
+  - The screen now strictly and cleanly displays **"My Requests"** (the list of resource requests the user posted), with status badges (`OPEN`, `FULFILLED`, `CANCELLED`), `✓ Mark Fulfilled`, `✏️ Edit`, and `🗑️ Delete` actions.
+- Direct Navigation for My Listings:
+  - Updated [mobile/app/(app)/resources/mine.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/app/%28app%29/resources/mine.tsx) to export [MyListingsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyListingsScreen.tsx) directly, resolving the recursive opening issue and ensuring tapping "My Listings" loads the user's shared listings instantly.
+- Bulletproof Back Navigation:
+  - Enhanced back navigation in [MyListingsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyListingsScreen.tsx), [MyPublicResourceRequestsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyPublicResourceRequestsScreen.tsx), and [MyResourcesScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyResourcesScreen.tsx) with a fallback to `/resources` if `router.canGoBack()` is false.
+- Sidebar Updates:
+  - Added **"My Requests"** link directly into [AppSidebar.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/navigation/AppSidebar.tsx) alongside "My Listings".
+
+2026-08-24 — Merged My Listings & My Requests & Marketplace Feed Clean Up
+- Unified My Listings & Requests Screen:
+  - Merged "My Listings" and "My Requests" into [MyListingsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyListingsScreen.tsx).
+  - Features two segmented tabs:
+    - **📦 My Listings ({count})**: View and manage shared listings, live status toggles (`Active`, `Reserved`, `Unavailable`), edit, and delete.
+    - **🙋 My Requests ({count})**: View and manage posted requests, status badges (`OPEN`, `FULFILLED`, `CANCELLED`), 1-tap `✓ Mark Fulfilled`, edit, and delete.
+  - Contextual header action button:
+    - Displays **`+ Share`** when in My Listings.
+    - Displays **`+ Request`** when in My Requests.
+  - Accessible directly via `/resources/mine` and sidebar item **`My Listings & Requests`**.
+- Cleaned Marketplace Feed Header:
+  - Removed the `+ Share Item` and `+ Request Item` action buttons from the top green header in [ResourceFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceFeedScreen.tsx), keeping the header clean and uncluttered.
+
+2026-08-24 — Floating Action Button (FAB) for My Listings & Requests
+- Clean Top Header:
+  - Removed the cramped `+ Share` / `+ Request` button from the top navbar in [MyListingsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyListingsScreen.tsx).
+  - The top bar is now balanced with `← Back` on the left, centered title, and a balanced right spacer.
+- Modern LGU Floating Action Button:
+  - Added a floating action pill button anchored at the bottom-right:
+    - Displays **`＋ Share Item`** when viewing My Listings.
+    - Displays **`＋ Post Request`** when viewing My Requests.
+    - Styled with deep green background (`#0D3E02`), gold border/icon (`#FDBF1E`), white bold text, and elevation shadow.
+
+2026-08-24 — Registration Screen Streamlining (Email & Password Only)
+- Streamlined Registration Form:
+  - Updated [RegisterScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/auth/presentation/RegisterScreen.tsx) to request only **LGU Student Email** (`@lgu.edu.pk`) and **Password** (removed the Full Name input field).
+  - The backend `RegisterSerializer` automatically assigns student name from the official roster `StudentRoster` or formatted email username.
+  - Made `full_name` optional in `RegisterPayload` in [authApi.ts](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/auth/data/authApi.ts).
+  - Upgraded the screen layout to match the official **LGU FellOo Brand Theme** with dark green background (`#0D3E02`), gold button (`#FDBF1E`), and safe area insets.
+
+2026-08-24 — Authentication Database Column & Profile Synchronization Resolution
+- PostgreSQL Schema Fix:
+  - Added missing `full_name`, `department`, `enrollment_year`, `gender`, and `phone_number` columns to PostgreSQL `accounts_user` table.
+  - The missing columns previously caused Django ORM queries to fail during authentication queries with a `ProgrammingError (column accounts_user.full_name does not exist)`.
+- Student Profile Population:
+  - Populated `full_name`, `department`, and `enrollment_year` for all existing registered users (including `salman@lgu.edu.pk`) directly from `StudentRoster`.
+- Server Restart:
+  - Gracefully restarted Daphne ASGI server on `0.0.0.0:8000`.
+
+2026-08-24 — Dynamic Profile Fetching from Student Roster (Single Source of Truth)
+- Architecture Refactor:
+  - Updated [models.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/accounts/models.py) so `User` only stores core authentication credentials (`email`, `password`, `role`, `is_email_verified`, `is_active`, `is_staff`).
+  - Added dynamic model properties to `User` that fetch student information directly from [StudentRoster](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/accounts/models.py) matching the user's `email`:
+    - `roster_entry`: `StudentRoster.objects.filter(email__iexact=self.email).first()`
+    - `full_name`: Official name from `StudentRoster` (fallback: formatted email prefix).
+    - `department`: Official department from `StudentRoster`.
+    - `enrollment_year`: Official session year from `StudentRoster`.
+    - `gender`: Gender from `StudentRoster`.
+    - `phone_number`: Phone number from `StudentRoster`.
+    - `display_name`: Returns `self.full_name`.
+    - `roll_number`: Uppercased email username prefix (e.g. `SALMAN` or `SP20-BCS-001`).
+- Simplified Serializers & Views:
+  - Updated [RegisterSerializer](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/accounts/serializers.py) to purely accept `email` and `password`.
+  - Updated [UserSerializer](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/accounts/serializers.py) to expose student profile fields as read-only attributes dynamically resolved from `User`.
+  - Streamlined `RegisterView` and `MeView` in [views.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/accounts/views.py) to eliminate duplicate write queries.
+
+2026-08-24 — Removed Redundant Columns from PostgreSQL `accounts_user`
+- Database Schema Clean Up:
+  - Dropped `full_name`, `department`, `enrollment_year`, `gender`, and `phone_number` columns from `accounts_user` in PostgreSQL.
+  - The `accounts_user` table now strictly holds pure authentication columns (`id`, `email`, `password`, `is_active`, `is_email_verified`, `is_staff`, `is_superuser`, `role`, `created_at`, `updated_at`).
+  - All profile queries are dynamically resolved on the fly from [StudentRoster](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/accounts/models.py).
+
+2026-08-24 — Register Screen Styling Alignment & Tutor Registration Wording
+- Register Screen Visual Alignment:
+  - Updated [RegisterScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/auth/presentation/RegisterScreen.tsx) background to `#F9FAFC` and aligned the card layout, max-width (420px), centered styling, and input aesthetics to match [LoginScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/auth/presentation/LoginScreen.tsx) seamlessly.
+- Tutor Registration Wording:
+  - Updated [SetupTutorProfileScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/SetupTutorProfileScreen.tsx) and [TutorDiscoveryFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/TutorDiscoveryFeedScreen.tsx) so when a student is setting up their profile for the first time:
+    - Top nav bar title displays **`Register as Tutor`**.
+    - Page heading displays **`Register as a Tutor / Mentor`**.
+    - Subtitle explains registration: **`Register your subject expertise, skills, and schedule to mentor and tutor fellow LGU students.`**
+    - Action button displays **`Register as Tutor`** (instead of "Edit Profile").
+    - Alert notifies: **`Registration Complete! You are now registered as an active campus tutor.`**
+    - When editing an existing tutor profile, it continues to show **`Edit Tutor Profile`** and **`Update Tutor Profile`**.
+
+2026-08-24 — Concise Tutoring Action Buttons & Feed Query Fix
+- Streamlined Button and Screen Labels:
+  - Feed Top Right Action: Displays **`+ Register`** when the student does not have a tutor profile, and **`Edit`** when they already have one.
+  - Setup Screen Top Navbar: Displays **`Register`** when creating a new tutor profile, and **`Edit`** when editing.
+  - Setup Screen Heading: Displays **`Create Tutor Profile`** when creating a new tutor profile, and **`Edit Tutor Profile`** when editing.
+  - Setup Screen Button: Displays **`Register`** when creating, and **`Save Changes`** when editing.
+- Backend Query & 500 Fix:
+  - Fixed `TutorProfileListCreateView` in [peer_tutoring/views.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/peer_tutoring/views.py) by removing `user__full_name` and `user__department` from database SQL filterset/search_fields, resolving the 500 internal server error on `GET /api/tutoring/tutors/`.
+
+2026-08-24 — Unified "Register" vs "Edit Profile" Tutoring Experience
+- First-Time Registration Flow:
+  - When a student doesn't have a tutor profile:
+    - Feed Action Button: **`+ Register`**
+    - Inner Page Top Nav Bar: **`Register`**
+    - Inner Page Main Heading: **`Register`**
+    - Subtitle: *"Register your subjects, skills, and schedule to offer tutoring and mentorship at LGU."*
+    - Submit Button: **`Register`**
+- Existing Profile Edit Flow:
+  - When a student already has a registered tutor profile:
+    - Feed Action Button: **`Edit`**
+    - Inner Page Top Nav Bar: **`Edit Profile`**
+    - Inner Page Main Heading: **`Edit Profile`**
+    - Subtitle: *"Update your tutoring profile, subjects, skills, availability, and rates."*
+    - Submit Button: **`Save Changes`**
+- State Synchronization:
+  - Added `useFocusEffect` to [TutorDiscoveryFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/TutorDiscoveryFeedScreen.tsx) to automatically refresh tutor existence status upon returning from setup.
+  - Updated [peer_tutoring/views.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/peer_tutoring/views.py) to check `TutorProfile.objects.filter(user=user).exists()`.
+
+2026-08-24 — Test Tutor Profile Cleanup & API 404 Handling
+- Database Cleanup:
+  - Deleted the leftover test `TutorProfile` record associated with `zahra@lgu.edu.pk` from the database. Syeda Zahra is now completely un-registered as a tutor.
+  - Now, reloading the app for `zahra@lgu.edu.pk` stays on **`+ Register`** consistently.
+- 404 Error Handling:
+  - Updated `MyTutorProfileView` in [views.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/peer_tutoring/views.py) and `fetchMyTutorProfile()` in [tutoringApi.ts](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/data/tutoringApi.ts) to return `null` without throwing unhandled exceptions when a user has no profile.
+
+2026-08-24 — Tutor Setup Heading Update
+- Updated page heading in [SetupTutorProfileScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/SetupTutorProfileScreen.tsx) to **`Create your profile`** when registering for the first time, and **`Edit your profile`** when editing an existing profile.
+
+2026-08-24 — Dynamic Multi-Department Course & Skill Catalog System (Option B)
+- Database Architecture:
+  - Added `AcademicCourse` model with `code`, `title`, `department`, `description`, and `is_active` in [peer_tutoring/models.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/peer_tutoring/models.py).
+  - Added `SkillTopic` model with `name`, `category`, and `is_active` in [peer_tutoring/models.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/peer_tutoring/models.py).
+  - Registered `AcademicCourse` and `SkillTopic` in Django Admin [peer_tutoring/admin.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/peer_tutoring/admin.py) with filters, search, and department categorization.
+- Seeded University Catalog:
+  - Seeded 153 comprehensive courses spanning all individual degree programs:
+    * **Accounting & Finance (BS AF)**: 18 courses
+    * **Computer Science (BS CS)**: 16 courses
+    * **Biotechnology & Life Sciences**: 16 courses
+    * **Business Administration (BBA)**: 16 courses
+    * **Islamic Studies**: 15 courses
+    * **Software Engineering (BS SE)**: 14 courses
+    * **Artificial Intelligence (BS AI)**: 13 courses
+    * **Data Science (BS DS)**: 12 courses
+    * **Mathematics & Statistics**: 12 courses
+    * **Information Technology (BS IT)**: 11 courses
+    * **Humanities & Social Sciences**: 10 courses
+  - Seeded 47 categorized skills spanning: Programming & Tech (12), AI & Data Science (7), Accounting & Finance (7), Biotechnology & Sciences (6), Islamic Studies & Arabic (5), Design & Creative (4), and Soft Skills & Career (6).
+- REST API Endpoints:
+  - `GET /api/tutoring/catalog/courses/` (supports `department` filter, `search` by code/title/department, and ordering).
+  - `GET /api/tutoring/catalog/skills/` (supports `category` filter, `search` by name/category, and ordering).
+- Mobile UI Experience:
+  - Integrated dynamic dropdown selector cards in [SetupTutorProfileScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/SetupTutorProfileScreen.tsx) for both Courses and Skills.
+  - Implemented searchable selection modals with individual degree department filter tabs, live search bar, interactive checkboxes, selected item counter, and chip removal chips.
+- Removed the free-text custom course/skill input rows, ensuring tutors select standardized courses and skills from the official catalog.
+- Session Completion, Chat Lock & Rating Workflow:
+  - **Chat Lock on Completed Sessions**: When a tutoring session is marked completed, previous messages and shared photos remain completely accessible in [SessionChatScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/SessionChatScreen.tsx), but the input bar is replaced with a locked session indicator (🔒 *Session Completed*). Backend REST endpoint (`/api/tutoring/sessions/{id}/chat/`) and WebSocket consumer reject any new messages for completed sessions.
+  - **Student-Only Bottom-Sheet Rating & Review Popup**: When either party marks the session completed, or upon auto-completion, a sleek half-screen bottom-sheet modal ([RateTutorModal.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/RateTutorModal.tsx)) automatically slides up from the bottom for the **Student only** with interactive 5-star rating (★) and optional review text. Tutors do not see rating popups.
+  - **Automated Expiry & Auto-Completion (Duration + 30 Mins)**: Implemented `auto_complete_expired_sessions()` across backend queries. If `timezone.now() >= scheduled_at + duration_minutes + 30 minutes`, the session status automatically transitions from `accepted` to `completed` in the database, allowing prompt review collection and locking messaging without requiring manual clicks.
+  - **Manual Session Completion**: Students and tutors can manually click `✓ Mark Completed` at any time from [MyTutoringSessionsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/MyTutoringSessionsScreen.tsx) or directly from the active session quick bar inside [SessionChatScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/SessionChatScreen.tsx), which immediately completes the session and pops up the rating bottom-sheet for the student.
+- Authentication & Database Schema Fix:
+  - Fixed an issue where `accounts_studentroster` table in Neon Postgres was missing the `department` varchar column, causing the login serializer to throw an internal error while fetching roster profile details.
+  - Reset and verified test password `12345678` for `zahra@lgu.edu.pk` (Syeda Zahra Ijaz), `salman@lgu.edu.pk` (Salman Saeed), and `zunaira@lgu.edu.pk` (Zunaira Akram).
+
+2026-08-26 — Neon `common_department` Single Source of Truth & In-Memory React Context Caching Layer
+- Database Single Source of Truth for Departments:
+  - Connected to the pre-existing `common_department` table in Neon PostgreSQL as the single authoritative source of truth for departments across all app features.
+  - Model: [backend/common/models.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/common/models.py) (`Department` model, `db_table = "common_department"`, `managed = False`).
+  - Serializer & API: [backend/common/serializers.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/common/serializers.py) and [backend/common/views.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/common/views.py) (`GET /api/common/departments/`).
+  - Django Admin: Registered in [backend/common/admin.py](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/backend/common/admin.py) with search by `name` and `short_name`.
+  - All 16 departments returned: CS, ENG, AI, CYS, FSS, PSY, MGT, CRIM, MCS, HA, FL, FBS, AHMS, CHEM, MATH, PHY.
+- Reusable Department Dropdown Component:
+  - Created [mobile/src/core/components/DepartmentDropdown.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/components/DepartmentDropdown.tsx).
+  - Features: Searchable bottom-sheet modal, filter mode ("All Departments" / "All Locations"), form mode, automatic caching via DataStore, and official LGU colors.
+- In-Memory Caching Architecture (React Context API):
+  - Created [mobile/src/core/store/DataStoreContext.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/store/DataStoreContext.tsx) using React's built-in `createContext`, `useState`, and `useCallback` (zero external state management libraries).
+  - Wrapped the root navigation hierarchy in [mobile/app/_layout.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/app/_layout.tsx) with `<DataStoreProvider>`.
+  - Caches: `departments`, `resourceListings`, `publicResourceRequests`, `myResourceOffers`, `myResourceListings`, `lostAndFoundItems`, `myLostAndFoundItems`, `tutors`, `tutoringSessions`, `academicCourses`, `skillTopics`.
+  - Mechanism: Screens check the store immediately on mount/focus. If cached data is present, the screen renders instantly (0ms) without showing a loading spinner or refetching from Neon DB.
+  - Manual pull-to-refresh (`RefreshControl`) and quick `🔄 Refresh` buttons force fresh syncs and update the store in place.
+  - Creation and status mutations call invalidation helpers (`invalidateResourceListings()`, `invalidateLostAndFound()`, `invalidateTutors()`, `invalidateTutoringSessions()`) to ensure newly posted items and status updates appear immediately.
+- Integrated Screens:
+  - [ResourceFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/ResourceFeedScreen.tsx): Instant render from cache, `DepartmentDropdown` filter, pull-to-refresh sync.
+  - [LostAndFoundFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/lost_and_found/presentation/LostAndFoundFeedScreen.tsx): Instant render from cache, `DepartmentDropdown` location filter, pull-to-refresh sync.
+  - [TutorDiscoveryFeedScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/TutorDiscoveryFeedScreen.tsx): Instant render from cache on screen focus, `DepartmentDropdown` filter, pull-to-refresh sync.
+  - [CreateResourceScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/CreateResourceScreen.tsx): Department picker and cache invalidation.
+  - [CreateLostAndFoundScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/lost_and_found/presentation/CreateLostAndFoundScreen.tsx): Department/location picker and cache invalidation.
+  - [SetupTutorProfileScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/SetupTutorProfileScreen.tsx): Instant catalog loading for 153 courses and 47 skills via DataStore cache.
+  - [MyListingsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/resources/presentation/MyListingsScreen.tsx): In-memory caching for owned listings and public requests.
+  - [MyLostAndFoundScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/lost_and_found/presentation/MyLostAndFoundScreen.tsx): In-memory caching for owned notices and claims.
+  - [MyTutoringSessionsScreen.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/features/tutoring/presentation/MyTutoringSessionsScreen.tsx): In-memory caching for active tutoring sessions.
+
+2026-08-26 — Skeleton UI Architecture for Lost & Found and Peer Tutoring
+- Component: [mobile/src/core/components/Skeleton.tsx](file:///c:/Users/Syed%20Shayan%20Hussian/Desktop/peer%20collabotration/peer-collaboration-app/mobile/src/core/components/Skeleton.tsx)
+  - Features pulsing opacity animation between 0.35 and 0.85 with `Animated.loop` (750ms cycle).
+  - Specialized presets: `LostAndFoundCardSkeleton`, `LostAndFoundDetailSkeleton`, `TutorCardSkeleton`, `TutorProfileSkeleton`, `TutoringSessionCardSkeleton`, `CollaborationCardSkeleton`, and `SkeletonList`.
+- Integrated Screens:
+  - Lost & Found Feed (`LostAndFoundFeedScreen.tsx`), My Notices & Claims (`MyLostAndFoundScreen.tsx`), and Item Details (`LostAndFoundDetailScreen.tsx`).
+  - Peer Tutoring Discovery Feed (`TutorDiscoveryFeedScreen.tsx`), My Tutoring Sessions (`MyTutoringSessionsScreen.tsx`), Tutor Public Profile (`TutorProfileScreen.tsx`), Collaboration Board (`CollaborationBoardScreen.tsx`), Tutor Setup (`SetupTutorProfileScreen.tsx`), and Session Chat (`SessionChatScreen.tsx`).
+
+2026-08-27 — Dedicated Admin Center for Salman and Zahra
+- Access & Role Architecture:
+  - Configured `accounts.models.User` to auto-assign `role = "admin"` and `is_staff = True` for `salman@lgu.edu.pk` and `zahra@lgu.edu.pk`.
+  - Backend permission class `IsPlatformAdmin` blocks non-admin requests with 403 Forbidden.
+  - Frontend access guard on `/admin` prevents unauthorized student entry and renders an Access Denied card.
+- Backend Admin API Endpoints (`backend/accounts/admin_views.py`):
+  - `GET /api/admin/overview/`: Aggregated platform KPIs (Total Students, Roster, Active Listings, Open Lost & Found, Active Tutors, Completed Sessions, Average Rating, Reviews).
+  - `GET/PATCH/DELETE /api/admin/marketplace/`: Moderate all student listings & public requests across the platform.
+  - `GET/PATCH/DELETE /api/admin/lost-and-found/`: Moderate notices, locations, statuses, and claims.
+  - `GET/PATCH/DELETE /api/admin/tutoring/`: Manage tutor profile activation, oversee tutoring sessions, and delete fraudulent reviews.
+  - `GET/PATCH /api/admin/users/`: Directory of all registered students with roll numbers, departments, and account active/inactive toggles.
+- Frontend Admin Center (`mobile/src/features/admin/presentation/AdminCenterScreen.tsx` & `mobile/app/(app)/admin.tsx`):
+  - 5 Control Tabs: Overview, Marketplace, Lost & Found, Peer Tutoring, and Students & Roster.
+  - Live metric KPI cards, status toggles, review removal with rating recalculation, and student search by roll number.
+- Navigation & Entrypoints:
+  - `AppSidebar.tsx`: Prominent gold-accented `⭐ Admin Center` navigation item with `ADMIN` badge visible strictly to Salman and Zahra.
+  - `HomeScreen.tsx`: Top Admin Control Center quick-access banner visible strictly to Salman and Zahra.
+

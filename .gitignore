@@ -1,11 +1,9 @@
 # Backend (Django/Python)
 backend/.venv/
 backend/venv/
-backend/__pycache__/
 **/__pycache__/
 *.pyc
 backend/.env
-backend/db.sqlite3
 backend/staticfiles/
 backend/media/
 
@@ -14,6 +12,7 @@ mobile/node_modules/
 mobile/.expo/
 mobile/dist/
 mobile/.env
+mobile/.env*.local
 mobile/*.log
 
 # Editor/OS
@@ -21,4 +20,3 @@ mobile/*.log
 .idea/
 .DS_Store
 Thumbs.db
-dear_fyp_partner_read_this_shit_before_anything.md

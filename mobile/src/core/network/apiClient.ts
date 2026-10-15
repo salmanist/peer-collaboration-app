@@ -1,8 +1,23 @@
 import axios, { AxiosError } from "axios";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 import { getSessionSnapshot } from "../auth/session";
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api";
+function resolveApiBaseUrl(): string {
+  if (Platform.OS === "web") {
+    return process.env.EXPO_PUBLIC_WEB_API_URL ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api";
+  }
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+
+  // On Expo Go the Metro host is the dev machine, so reuse its IP for the API.
+  const hostUri = Constants.expoConfig?.hostUri;
+  const ip = hostUri?.split(":")[0];
+  if (ip && ip !== "localhost" && ip !== "127.0.0.1") return `http://${ip}:8000/api`;
+  return "http://localhost:8000/api";
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const apiClient = axios.create({ baseURL: API_BASE_URL });
 
@@ -22,7 +37,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
   try {
     const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh: refreshToken });
-    await setAccessToken(data.access);
+    await setAccessToken(data.access, data.refresh);
     return data.access as string;
   } catch {
     await clearSession();

@@ -1,67 +1,85 @@
-import { router } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
+import { fetchMe } from "../auth";
 import { useSessionStore } from "../../../core/auth/session";
-import { updateMe } from "../data/authApi";
+import { Badge, Button, Card, ScreenContainer, SoftBlock, colors, font, spacing, typography } from "../../../core/ui";
+
+function initials(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+function titleCase(value: string) {
+  return value ? value[0].toUpperCase() + value.slice(1) : value;
+}
 
 export default function ProfileScreen() {
   const user = useSessionStore((state) => state.user);
-  const updateUser = useSessionStore((state) => state.updateUser);
   const clearSession = useSessionStore((state) => state.clearSession);
+  const updateUser = useSessionStore((state) => state.updateUser);
 
-  const [department, setDepartment] = useState(user?.department ?? "");
-  const [isSaving, setIsSaving] = useState(false);
+  // The cached session user can go stale (e.g. roster info added after the
+  // account first logged in) — refresh from the server whenever this screen
+  // is opened instead of only trusting whatever was stored at login.
+  useFocusEffect(
+    useCallback(() => {
+      fetchMe().then(updateUser).catch(() => {});
+    }, [updateUser])
+  );
 
   if (!user) return null;
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const updated = await updateMe({ department: department.trim() });
-      updateUser(updated);
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleLogout = async () => {
     await clearSession();
     router.replace("/(auth)/login");
   };
 
+  const rows = [
+    { label: "Email", value: user.email },
+    { label: "Department", value: user.department || "—" },
+    { label: "Enrollment year", value: user.enrollment_year ? String(user.enrollment_year) : "—" },
+    { label: "Gender", value: user.gender ? titleCase(user.gender) : "—" },
+    { label: "Role", value: titleCase(user.role) },
+    { label: "Email verified", value: user.is_email_verified ? "Yes" : "No" },
+    { label: "Member since", value: new Date(user.created_at).toLocaleDateString() },
+  ];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{user.full_name}</Text>
-      <Text style={styles.email}>{user.email}</Text>
-      <Text style={styles.meta}>{user.role} · {user.enrollment_year ?? "—"}</Text>
+    <ScreenContainer scroll topBar>
+      <View style={styles.header}>
+        <SoftBlock backgroundColor={colors.primaryFixed} pill size={84} style={styles.avatarBlock}>
+          <Text style={styles.avatarText}>{initials(user.full_name)}</Text>
+        </SoftBlock>
+        <Text style={styles.name}>{user.full_name}</Text>
+        <Badge label={titleCase(user.role)} tone="primary" />
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Department"
-        value={department}
-        onChangeText={setDepartment}
-      />
+      <Card contentStyle={styles.infoCard}>
+        {rows.map((row, index) => (
+          <View key={row.label} style={[styles.infoRow, index > 0 && styles.infoRowBorder]}>
+            <Text style={styles.infoLabel}>{row.label}</Text>
+            <Text style={styles.infoValue}>{row.value}</Text>
+          </View>
+        ))}
+      </Card>
 
-      <Pressable style={styles.button} onPress={handleSave} disabled={isSaving}>
-        {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Save</Text>}
-      </Pressable>
-
-      <Pressable style={styles.logout} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Log out</Text>
-      </Pressable>
-    </View>
+      <Button label="Log out" variant="ink" onPress={handleLogout} style={styles.logoutButton} />
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, gap: 12, paddingTop: 64 },
-  title: { fontSize: 24, fontWeight: "700" },
-  email: { color: "#666" },
-  meta: { color: "#666", marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12 },
-  button: { backgroundColor: "#1d4ed8", padding: 14, borderRadius: 8, alignItems: "center", marginTop: 8 },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  logout: { padding: 14, alignItems: "center", marginTop: 24 },
-  logoutText: { color: "#dc2626", fontWeight: "600" },
+  header: { alignItems: "center", gap: spacing.xs, paddingVertical: spacing.lg },
+  avatarBlock: { marginBottom: spacing.sm },
+  avatarText: { textAlign: "center", color: colors.onPrimaryFixed, fontSize: typography.size.xl, fontFamily: font.family },
+  name: { fontSize: typography.size.xl, fontFamily: font.family, color: colors.ink },
+  infoCard: { gap: 0, padding: 0 },
+  infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: spacing.md, paddingHorizontal: spacing.lg, gap: spacing.md },
+  infoRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  infoLabel: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textMuted },
+  infoValue: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.ink, flexShrink: 1, textAlign: "right" },
+  logoutButton: { marginTop: spacing.xl },
 });
