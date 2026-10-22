@@ -87,8 +87,6 @@ export default function LoginScreen() {
 
         {/* Full-Screen Form Container (No floating dialog box) */}
         <View style={styles.formContainer}>
-          <Text style={styles.formHeading}>Log in to Your Account</Text>
-
           {error ? (
             <View style={styles.errorBannerRow}>
               <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" />

@@ -103,11 +103,6 @@ export default function RegisterScreen() {
 
         {/* Full-Screen Form Container (No floating dialog box) */}
         <View style={styles.formContainer}>
-          <Text style={styles.formHeading}>Create Your Account</Text>
-          <Text style={styles.formDesc}>
-            Enter your official university email and choose a password to get started.
-          </Text>
-
           {error ? (
             <View style={styles.errorBannerRow}>
               <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" />
@@ -117,14 +112,13 @@ export default function RegisterScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="LGU Student Email (you@lgu.edu.pk)"
+            placeholder="e.g. zahra@lgu.edu.pk"
             placeholderTextColor={appColors.textMuted}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          <Text style={styles.fieldHint}>Must end with @lgu.edu.pk</Text>
 
           <TextInput
             style={[styles.input, { marginTop: 12 }]}
