@@ -137,10 +137,7 @@ export default function RegisterScreen() {
             {isSubmitting ? (
               <ActivityIndicator color="#000000" size="small" />
             ) : (
-              <View style={styles.submitBtnContent}>
-                <Text style={styles.submitBtnText}>Create Account</Text>
-                <MaterialCommunityIcons name="arrow-right" size={18} color="#000000" />
-              </View>
+              <Text style={styles.submitBtnText}>Create Account</Text>
             )}
           </Pressable>
 

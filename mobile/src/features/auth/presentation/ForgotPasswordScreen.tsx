@@ -165,10 +165,7 @@ export default function ForgotPasswordScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#000000" size="small" />
               ) : (
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={styles.submitButtonText}>Send Reset Code</Text>
-                  <MaterialCommunityIcons name="arrow-right" size={16} color="#000000" style={{ marginLeft: 6 }} />
-                </View>
+                <Text style={styles.submitButtonText}>Send Reset Code</Text>
               )}
             </Pressable>
           </View>
@@ -224,10 +221,7 @@ export default function ForgotPasswordScreen() {
               {isSubmitting ? (
                 <ActivityIndicator color="#000000" size="small" />
               ) : (
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={styles.submitButtonText}>Reset Password & Log In</Text>
-                  <MaterialCommunityIcons name="arrow-right" size={16} color="#000000" style={{ marginLeft: 6 }} />
-                </View>
+                <Text style={styles.submitButtonText}>Reset Password & Log In</Text>
               )}
             </Pressable>
 
@@ -255,10 +249,7 @@ export default function ForgotPasswordScreen() {
               style={styles.submitButton}
               onPress={() => router.replace("/(auth)/login" as any)}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <Text style={styles.submitButtonText}>Go to Log In</Text>
-                <MaterialCommunityIcons name="arrow-right" size={16} color="#000000" style={{ marginLeft: 6 }} />
-              </View>
+              <Text style={styles.submitButtonText}>Go to Log In</Text>
             </Pressable>
           </View>
         )}

@@ -128,10 +128,7 @@ export default function LoginScreen() {
             {isSubmitting ? (
               <ActivityIndicator color="#000000" size="small" />
             ) : (
-              <View style={styles.loginButtonContent}>
-                <Text style={styles.loginButtonText}>Log In</Text>
-                <MaterialCommunityIcons name="arrow-right" size={18} color="#000000" />
-              </View>
+              <Text style={styles.loginButtonText}>Log In</Text>
             )}
           </Pressable>
 
