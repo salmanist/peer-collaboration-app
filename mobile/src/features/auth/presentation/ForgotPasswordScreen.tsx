@@ -241,10 +241,6 @@ export default function ForgotPasswordScreen() {
               <MaterialCommunityIcons name="check-circle" size={54} color={appColors.primary} style={{ marginBottom: 12 }} />
             </View>
             <Text style={styles.cardHeading}>Password Reset Successfully!</Text>
-            <Text style={styles.cardDesc}>
-              Your account password has been updated. You can now log in with your new password.
-            </Text>
-
             <Pressable
               style={styles.submitButton}
               onPress={() => router.replace("/(auth)/login" as any)}
