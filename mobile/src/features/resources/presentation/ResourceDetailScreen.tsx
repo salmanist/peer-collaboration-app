@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -8,8 +11,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,15 +61,15 @@ function getCategoryIconName(category: string): keyof typeof MaterialCommunityIc
 function getCategoryBg(category: string) {
   switch (category) {
     case "books":
-      return "#EFF6FF";
+      return appColors.surfaceMuted;
     case "notes":
       return "#FFFBEB";
     case "lab_equipment":
-      return "#ECFDF5";
+      return appColors.surfaceMuted;
     case "stationery":
       return "#FDF4FF";
     default:
-      return "#F8FAFC";
+      return appColors.background;
   }
 }
 
@@ -136,8 +137,8 @@ export default function ResourceDetailScreen() {
     return (
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/resources")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Resource Details</Text>
           <View style={{ width: 36 }} />
@@ -153,8 +154,8 @@ export default function ResourceDetailScreen() {
     return (
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/resources")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Resource Details</Text>
           <View style={{ width: 36 }} />
@@ -164,7 +165,7 @@ export default function ResourceDetailScreen() {
           <Text style={styles.errorText}>{errorMessage || "Resource not found or may have been removed."}</Text>
           <Pressable
             style={[styles.interestBtn, { paddingHorizontal: 24, marginTop: 16 }]}
-            onPress={() => router.back()}
+            onPress={() => goBack("/(app)/resources")}
           >
             <Text style={styles.interestBtnText}>Back to Marketplace</Text>
           </Pressable>
@@ -183,9 +184,9 @@ export default function ResourceDetailScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Resource Details</Text>
         <View style={{ width: 36 }} />
@@ -202,7 +203,7 @@ export default function ResourceDetailScreen() {
           <Image source={{ uri: imageUrl }} style={styles.bannerImage} />
         ) : (
           <View style={[styles.bannerPlaceholder, { backgroundColor: getCategoryBg(resource.category) }]}>
-            <MaterialCommunityIcons name={getCategoryIconName(resource.category)} size={64} color="#64748b" />
+            <MaterialCommunityIcons name={getCategoryIconName(resource.category)} size={64} color={appColors.textSecondary} />
           </View>
         )}
 
@@ -230,7 +231,7 @@ export default function ResourceDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Category:</Text>
             <View style={styles.infoValueWrap}>
-              <MaterialCommunityIcons name={getCategoryIconName(resource.category)} size={14} color="#64748b" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name={getCategoryIconName(resource.category)} size={14} color={appColors.textSecondary} style={{ marginRight: 4 }} />
               <Text style={styles.infoValue}>
                 {resource.category.replace("_", " ")}
               </Text>
@@ -241,8 +242,8 @@ export default function ResourceDetailScreen() {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Course:</Text>
               <View style={styles.infoValueWrap}>
-                <MaterialCommunityIcons name="target" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
-                <Text style={[styles.infoValue, { color: "#0D3E02", fontWeight: "800" }]}>
+                <MaterialCommunityIcons name="target" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
+                <Text style={[styles.infoValue, { color: appColors.primary, fontWeight: "800" }]}>
                   {resource.course}
                 </Text>
               </View>
@@ -252,7 +253,7 @@ export default function ResourceDetailScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Offered by:</Text>
             <View style={styles.infoValueWrap}>
-              <MaterialCommunityIcons name="account-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="account-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
               <Text style={styles.infoValue} numberOfLines={2}>
                 {resource.owner_name}
                 {resource.owner_department ? ` (${resource.owner_department})` : ""}
@@ -269,7 +270,7 @@ export default function ResourceDetailScreen() {
         {isOwnResource ? (
           <View style={styles.ownNoticeBox}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialCommunityIcons name="pin-outline" size={14} color="#92400E" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="pin-outline" size={14} color={appColors.icon} style={{ marginRight: 4 }} />
               <Text style={styles.ownNoticeText}>This is your listed item.</Text>
             </View>
             <Pressable
@@ -277,7 +278,7 @@ export default function ResourceDetailScreen() {
               onPress={() => router.push(`/resources/edit/${resource.id}` as any)}
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                 <Text style={styles.editListingBtnText}>Edit Listing</Text>
               </View>
             </Pressable>
@@ -285,7 +286,7 @@ export default function ResourceDetailScreen() {
         ) : hasRequested ? (
           <View style={styles.alreadyRequestedCard}>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="check-circle" size={18} color={appColors.primary} style={{ marginRight: 6 }} />
               <Text style={styles.alreadyRequestedTitle}>Request Sent</Text>
             </View>
             <Text style={styles.alreadyRequestedSub}>
@@ -296,7 +297,7 @@ export default function ResourceDetailScreen() {
               onPress={() => router.push("/(app)/resources/requests" as any)}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <MaterialCommunityIcons name="clipboard-list-outline" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="clipboard-list-outline" size={15} color={appColors.primary} style={{ marginRight: 6 }} />
                 <Text style={styles.viewRequestsBtnText}>View Interest Requests</Text>
               </View>
             </Pressable>
@@ -310,7 +311,7 @@ export default function ResourceDetailScreen() {
             <TextInput
               style={styles.interestInput}
               placeholder="Hi! I'm interested in this book for CS-301. Are you on campus today?"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={appColors.textMuted}
               value={interestMessage}
               onChangeText={setInterestMessage}
               multiline
@@ -344,11 +345,11 @@ export default function ResourceDetailScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   container: {
     padding: 16,
@@ -379,14 +380,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
     gap: 16,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   bannerImage: {
     width: "100%",
     height: 220,
     borderRadius: 16,
     resizeMode: "cover",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
   bannerPlaceholder: {
     width: "100%",
@@ -410,12 +411,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   priceTagFree: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#86EFAC",
+    borderColor: appColors.border,
   },
   priceTagPaid: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
     borderColor: "#FDE68A",
   },
@@ -424,13 +425,13 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   priceTagTextFree: {
-    color: "#15803D",
+    color: appColors.icon,
   },
   priceTagTextPaid: {
-    color: "#92400E",
+    color: appColors.icon,
   },
   conditionTag: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -438,10 +439,10 @@ const styles = StyleSheet.create({
   conditionTagText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   title: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 22,
     fontWeight: "800",
     letterSpacing: -0.3,
@@ -449,7 +450,7 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: "#ffffff",
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 14,
     borderWidth: 1,
     padding: 14,
@@ -462,7 +463,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   infoLabel: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 13,
     fontWeight: "600",
     marginTop: 1,
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   infoValue: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
     fontWeight: "700",
     textTransform: "capitalize",
@@ -484,23 +485,23 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   sectionHeader: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 16,
     fontWeight: "800",
     marginTop: 8,
   },
   descriptionText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 14,
     lineHeight: 22,
     backgroundColor: "#ffffff",
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   ownNoticeBox: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
@@ -508,12 +509,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   ownNoticeText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 13,
     fontWeight: "700",
   },
   editListingBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   alreadyRequestedCard: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: appColors.surfaceMuted,
     borderColor: "#BBF7D0",
     borderRadius: 16,
     borderWidth: 1,
@@ -533,18 +534,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   alreadyRequestedTitle: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 15,
     fontWeight: "800",
   },
   alreadyRequestedSub: {
-    color: "#166534",
+    color: appColors.primary,
     fontSize: 13,
     lineHeight: 18,
   },
   viewRequestsBtn: {
     backgroundColor: "#ffffff",
-    borderColor: "#86EFAC",
+    borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 10,
     paddingVertical: 10,
@@ -553,46 +554,46 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   viewRequestsBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
     fontSize: 13,
   },
   interestCard: {
     backgroundColor: "#ffffff",
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     gap: 8,
     marginTop: 8,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
   },
   interestTitle: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 16,
     fontWeight: "800",
   },
   interestSub: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 12,
     lineHeight: 16,
   },
   interestInput: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     padding: 12,
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
     minHeight: 80,
   },
   feedbackMessage: {
-    color: "#15803D",
+    color: appColors.icon,
     fontSize: 12,
     fontWeight: "700",
   },

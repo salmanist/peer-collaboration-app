@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -9,8 +11,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -92,20 +92,20 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
               <Text style={styles.sheetTitle}>Rate & Review Session</Text>
               <Text style={styles.sheetSubtitle}>
                 How was your learning session with{" "}
-                <Text style={{ fontWeight: "700", color: "#0D3E02" }}>
+                <Text style={{ fontWeight: "700", color: appColors.primary }}>
                   {session.tutor_name || "your Tutor"}
                 </Text>
                 ?
               </Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={8}>
-              <MaterialCommunityIcons name="close" size={20} color="#070D1F" />
+              <MaterialCommunityIcons name="close" size={20} color={appColors.text} />
             </Pressable>
           </View>
 
           {/* Session Subject Badge */}
           <View style={styles.subjectBadge}>
-            <MaterialCommunityIcons name="book-open-outline" size={13} color="#0D3E02" style={{ marginRight: 5 }} />
+            <MaterialCommunityIcons name="book-open-outline" size={13} color={appColors.primary} style={{ marginRight: 5 }} />
             <Text style={styles.subjectBadgeText}>
               {session.subject_or_skill}
             </Text>
@@ -140,13 +140,12 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
           </View>
 
           {/* Review Input */}
-          <Text style={styles.inputLabel}>Feedback for Tutor (Optional)</Text>
           <TextInput
-            style={styles.commentInput}
+            style={[styles.commentInput, { marginTop: 14 }]}
             value={comment}
             onChangeText={setComment}
-            placeholder="Share what went well or how the tutor helped you understand the topics..."
-            placeholderTextColor="#94a3b8"
+            placeholder="Feedback for Tutor (Share what went well or how the tutor helped...)"
+            placeholderTextColor={appColors.textMuted}
             multiline
             numberOfLines={3}
             maxLength={1500}
@@ -159,7 +158,7 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#070D1F" size="small" />
+              <ActivityIndicator color={appColors.text} size="small" />
             ) : (
               <Text style={styles.submitBtnText}>Submit Rating & Review ⭐</Text>
             )}
@@ -197,7 +196,7 @@ const styles = StyleSheet.create({
     maxHeight: "85%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.035,
     shadowRadius: 16,
     elevation: 20,
   },
@@ -209,7 +208,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#cbd5e1",
+    backgroundColor: appColors.border,
   },
   headerRow: {
     flexDirection: "row",
@@ -220,40 +219,40 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     letterSpacing: -0.3,
   },
   sheetSubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 3,
     lineHeight: 18,
   },
   closeBtn: {
     padding: 6,
     borderRadius: 16,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: appColors.border,
     marginLeft: 10,
   },
   closeBtnText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   subjectBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#C8E6C9",
+    borderColor: appColors.border,
     marginBottom: 14,
   },
   subjectBadgeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   errorBanner: {
     backgroundColor: "#fef2f2",
@@ -269,12 +268,12 @@ const styles = StyleSheet.create({
   },
   ratingSection: {
     alignItems: "center",
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: appColors.border,
     marginBottom: 14,
   },
   starsRow: {
@@ -293,27 +292,27 @@ const styles = StyleSheet.create({
     color: "#FDBF1E",
   },
   starEmpty: {
-    color: "#e2e8f0",
+    color: appColors.border,
   },
   ratingLabel: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#334155",
+    color: appColors.textSecondary,
     marginBottom: 6,
   },
   commentInput: {
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: appColors.border,
     borderRadius: 12,
     padding: 12,
     fontSize: 13,
-    color: "#070D1F",
+    color: appColors.text,
     height: 72,
     textAlignVertical: "top",
     marginBottom: 16,
@@ -325,7 +324,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#FDBF1E",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.035,
     shadowRadius: 6,
     elevation: 3,
   },
@@ -333,7 +332,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitBtnText: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 15,
     fontWeight: "800",
     letterSpacing: 0.2,
@@ -344,7 +343,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   maybeLaterText: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 13,
     fontWeight: "600",
   },

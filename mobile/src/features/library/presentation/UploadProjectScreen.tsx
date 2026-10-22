@@ -1,17 +1,35 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Badge, Button, Card, DepartmentPicker, ScreenContainer, TextField, colors, font, spacing, typography } from "../../../core/ui";
-import type { Department } from "../../../core/network/departmentsApi";
+import { DepartmentDropdown } from "../../../core/components/DepartmentDropdown";
 import { submitLibraryProject, type LibraryProjectLevel } from "../data/libraryApi";
-import { LevelPicker } from "./LevelPicker";
+
+const LEVELS: { value: LibraryProjectLevel; label: string }[] = [
+  { value: "simple", label: "Simple Project" },
+  { value: "semester", label: "Semester Project" },
+  { value: "fyp", label: "Final Year Project (FYP)" },
+];
 
 export default function UploadProjectScreen() {
+  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState<Department | null>(null);
+  const [departmentName, setDepartmentName] = useState("");
+  const [departmentShort, setDepartmentShort] = useState("");
   const [abstract, setAbstract] = useState("");
   const [githubLink, setGithubLink] = useState("");
   const [level, setLevel] = useState<LibraryProjectLevel>("simple");
@@ -19,6 +37,8 @@ export default function UploadProjectScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
 
   const pickFiles = async () => {
     const result = await DocumentPicker.getDocumentAsync({ multiple: true });
@@ -30,12 +50,12 @@ export default function UploadProjectScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() || !department || !abstract.trim()) {
-      setError("Please fill in every field.");
+    if (!title.trim() || !departmentShort || !abstract.trim()) {
+      setError("Please fill in the title, department, and abstract.");
       return;
     }
     if (!files.length) {
-      setError("Please attach at least one file.");
+      setError("Please attach at least one file or document.");
       return;
     }
     setError(null);
@@ -43,7 +63,7 @@ export default function UploadProjectScreen() {
     try {
       await submitLibraryProject({
         title: title.trim(),
-        department: department.short_name,
+        department: departmentShort,
         abstract: abstract.trim(),
         githubLink: githubLink.trim(),
         level,
@@ -60,81 +80,402 @@ export default function UploadProjectScreen() {
 
   if (submitted) {
     return (
-      <ScreenContainer center back="/(app)/library">
-        <View style={styles.confirmation}>
-          <Badge label="In moderation queue" tone="warning" />
-          <Text style={styles.confirmTitle}>Submitted for review</Text>
-          <Text style={styles.confirmBody}>
-            A department moderator will review your submission before it appears in the Digital Library. You'll get
-            a notification once it's approved.
-          </Text>
-          <Button label="Back to Library" onPress={() => router.replace("/(app)/library")} />
+      <View style={styles.rootContainer}>
+        <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => router.replace("/(app)/library")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          </Pressable>
+          <Text style={styles.topNavTitle}>Submission Received</Text>
+          <View style={{ width: 36 }} />
         </View>
-      </ScreenContainer>
+
+        <View style={styles.centerContainer}>
+          <View style={styles.successIconCircle}>
+            <MaterialCommunityIcons name="check-circle" size={56} color={appColors.primary} />
+          </View>
+          <View style={styles.badgePending}>
+            <Text style={styles.badgePendingText}>In Moderation Queue</Text>
+          </View>
+          <Text style={styles.confirmTitle}>Submitted for Review</Text>
+          <Text style={styles.confirmBody}>
+            A department moderator will review your submission before it appears in the Digital Library.
+            You will receive a notification once it has been approved.
+          </Text>
+          <Pressable
+            style={styles.primaryBtn}
+            onPress={() => router.replace("/(app)/library")}
+          >
+            <Text style={styles.primaryBtnText}>Back to Library</Text>
+          </Pressable>
+        </View>
+      </View>
     );
   }
 
   return (
-    <ScreenContainer scroll back="/(app)/library">
-      <Text style={styles.title}>Submit a Project</Text>
+    <View style={styles.rootContainer}>
+      {/* Top Nav Bar */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+        </Pressable>
+        <Text style={styles.topNavTitle}>Submit a Project</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-      <Card contentStyle={styles.card}>
-        <TextField label="Title" placeholder="Project title" value={title} onChangeText={setTitle} />
-        <DepartmentPicker label="Department" value={department} onChange={setDepartment} />
-        <TextField
-          label="Abstract"
-          placeholder="Summarize the project in a few sentences"
-          value={abstract}
-          onChangeText={setAbstract}
-          multiline
-          numberOfLines={4}
-          style={styles.abstractInput}
-        />
-        <TextField
-          label="GitHub Repo Link (optional)"
-          placeholder="https://github.com/your-username/your-project"
-          value={githubLink}
-          onChangeText={setGithubLink}
-          autoCapitalize="none"
-          keyboardType="url"
-        />
-        <LevelPicker label="Project Level" value={level} onChange={setLevel} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+      >
+        <View style={styles.formContainer}>
+          {/* Project Title */}
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={styles.input}
+              placeholder="Project Title (e.g. AI-Powered Smart Campus Navigation)"
+              placeholderTextColor={appColors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+            />
+          </View>
 
-        <View>
-          <Text style={styles.fieldLabel}>Files</Text>
-          <Button label="Add Files" variant="ghost" onPress={pickFiles} />
-          {files.length > 0 && (
-            <View style={styles.fileList}>
-              {files.map((f, index) => (
-                <View key={`${f.name}-${index}`} style={styles.fileRow}>
-                  <Text style={styles.fileName} numberOfLines={1}>{f.name}</Text>
-                  <Pressable onPress={() => removeFile(index)} hitSlop={8}>
-                    <MaterialCommunityIcons name="close" size={16} color={colors.textMuted} />
+          {/* Department Dropdown */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Department *</Text>
+            <DepartmentDropdown
+              selectedDepartment={departmentName}
+              onSelectDepartment={(deptName, deptObj) => {
+                setDepartmentName(deptName);
+                setDepartmentShort(deptObj?.short_name || deptName);
+              }}
+              placeholder="Select your Department"
+            />
+          </View>
+
+          {/* Project Level Pills */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Project Level</Text>
+            <View style={styles.levelPillsRow}>
+              {LEVELS.map((lvl) => {
+                const isSelected = level === lvl.value;
+                return (
+                  <Pressable
+                    key={lvl.value}
+                    style={[styles.levelPill, isSelected && styles.levelPillActive]}
+                    onPress={() => setLevel(lvl.value)}
+                  >
+                    <Text style={[styles.levelPillText, isSelected && styles.levelPillTextActive]}>
+                      {lvl.label}
+                    </Text>
                   </Pressable>
-                </View>
-              ))}
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Abstract */}
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Abstract / Summary (objectives, technologies, outcomes...)"
+              placeholderTextColor={appColors.textMuted}
+              value={abstract}
+              onChangeText={setAbstract}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* GitHub Repo Link */}
+          <View style={styles.inputGroup}>
+            <View style={styles.iconInputRow}>
+              <MaterialCommunityIcons name="github" size={20} color={appColors.textSecondary} style={{ marginLeft: 12 }} />
+              <TextInput
+                style={[styles.input, styles.iconInputField]}
+                placeholder="GitHub Repository Link (https://github.com/...)"
+                placeholderTextColor={appColors.textMuted}
+                value={githubLink}
+                onChangeText={setGithubLink}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+            </View>
+          </View>
+
+          {/* Files Upload Section */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Attached Documents / Report *</Text>
+            <Pressable style={styles.uploadArea} onPress={pickFiles}>
+              <View style={styles.uploadIconCircle}>
+                <MaterialCommunityIcons name="cloud-upload-outline" size={24} color={appColors.primary} />
+              </View>
+              <Text style={styles.uploadAreaTitle}>Tap to select documents or PDFs</Text>
+              <Text style={styles.uploadAreaSub}>PDF, DOCX, ZIP up to 25MB</Text>
+            </Pressable>
+
+            {files.length > 0 && (
+              <View style={styles.fileList}>
+                {files.map((f, index) => (
+                  <View key={`${f.name}-${index}`} style={styles.fileItem}>
+                    <MaterialCommunityIcons name="file-document-outline" size={18} color={appColors.primary} />
+                    <Text style={styles.fileItemName} numberOfLines={1}>{f.name}</Text>
+                    <Pressable onPress={() => removeFile(index)} hitSlop={8}>
+                      <MaterialCommunityIcons name="close-circle" size={18} color={appColors.textMuted} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {error && (
+            <View style={styles.errorBox}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
+
+          <Pressable
+            style={[styles.primaryBtn, isSubmitting && styles.primaryBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#000000" size="small" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Submit for Review</Text>
+            )}
+          </Pressable>
         </View>
-
-        {error && <Text style={styles.error}>{error}</Text>}
-
-        <Button label="Submit for Review" onPress={handleSubmit} loading={isSubmitting} />
-      </Card>
-    </ScreenContainer>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink, marginBottom: spacing.md },
-  card: { gap: spacing.lg },
-  fieldLabel: { fontSize: typography.size.xs, fontFamily: font.familyMedium, color: colors.textSecondary, marginBottom: spacing.xs },
-  fileList: { gap: spacing.xs, marginTop: spacing.sm },
-  fileRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-  fileName: { flex: 1, fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.text },
-  abstractInput: { height: 100, paddingTop: spacing.sm, textAlignVertical: "top" },
-  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
-  confirmation: { alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg },
-  confirmTitle: { fontSize: typography.size.lg, fontFamily: font.serif, color: colors.ink, textAlign: "center" },
-  confirmBody: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textMuted, textAlign: "center", lineHeight: 21 },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  topNavBar: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: appColors.border,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(13, 62, 2, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  formContainer: {
+    width: "100%",
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: appColors.text,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 12 : 9,
+    fontSize: 14,
+    color: appColors.text,
+  },
+  textArea: {
+    minHeight: 90,
+  },
+  iconInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+
+
+
+
+  },
+  iconInputField: {
+    flex: 1,
+
+
+  },
+  levelPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  levelPill: {
+    backgroundColor: appColors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: appColors.border,
+  },
+  levelPillActive: {
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
+  },
+  levelPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: appColors.textSecondary,
+  },
+  levelPillTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  uploadArea: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: appColors.border,
+    borderRadius: 14,
+    padding: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: appColors.background,
+    gap: 6,
+  },
+  uploadIconCircle: {
+    width: 42,
+    height: 42,
+
+
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  uploadAreaTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: appColors.primary,
+  },
+  uploadAreaSub: {
+    fontSize: 11,
+    color: appColors.textSecondary,
+  },
+  fileList: {
+    marginTop: 8,
+    gap: 6,
+  },
+  fileItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: appColors.background,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    gap: 8,
+  },
+  fileItemName: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "500",
+    color: appColors.textSecondary,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#DC2626",
+    fontWeight: "600",
+  },
+  primaryBtn: {
+    backgroundColor: "#FDBF1E",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  primaryBtnDisabled: {
+    opacity: 0.6,
+  },
+  primaryBtnText: {
+    color: "#000000",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    gap: 12,
+  },
+  successIconCircle: {
+    width: 80,
+    height: 80,
+
+
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  badgePending: {
+    backgroundColor: "#FFFBEB",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgePendingText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#B45309",
+  },
+  confirmTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: appColors.text,
+    textAlign: "center",
+  },
+  confirmBody: {
+    fontSize: 13,
+    color: appColors.textSecondary,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
 });

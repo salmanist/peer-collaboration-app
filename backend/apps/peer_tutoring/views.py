@@ -108,6 +108,36 @@ class TutorProfileListCreateView(generics.ListCreateAPIView):
             qs = qs.filter(skill_q)
         return qs
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        items = page if page is not None else list(queryset)
+
+        # Batch fetch recent reviews with select_related("reviewer") in 1 single join query
+        tutor_user_ids = [p.user_id for p in items]
+        recent_reviews_by_tutor = {}
+        if tutor_user_ids:
+            reviews = (
+                SessionReview.objects.filter(tutor_id__in=tutor_user_ids)
+                .select_related("reviewer")
+                .order_by("-created_at")
+            )
+            for rev in reviews:
+                if rev.tutor_id not in recent_reviews_by_tutor:
+                    recent_reviews_by_tutor[rev.tutor_id] = []
+                if len(recent_reviews_by_tutor[rev.tutor_id]) < 3:
+                    recent_reviews_by_tutor[rev.tutor_id].append(rev)
+
+        serializer = self.get_serializer(
+            items,
+            many=True,
+            context={**self.get_serializer_context(), "recent_reviews_by_tutor": recent_reviews_by_tutor},
+        )
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         if TutorProfile.objects.filter(user=self.request.user).exists():
             raise ValidationError({"detail": "You already have a tutor/mentor profile. Use update instead."})
@@ -176,6 +206,8 @@ class TutoringSessionListCreateView(generics.ListCreateAPIView):
                 message=f"{learner_name} requested a {subject} study session with you.",
                 priority="high",
                 sender=self.request.user,
+                category="sessions",
+                action_url="/(app)/tutoring",
             )
         except Exception:
             pass

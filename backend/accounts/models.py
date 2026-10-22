@@ -1,4 +1,5 @@
 import random
+import time
 from datetime import timedelta
 
 from django.conf import settings
@@ -6,6 +7,13 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.utils import timezone
+
+
+class PersonalProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="personal_profile")
+    bio = models.CharField(max_length=300, blank=True, default="")
+    skills = models.JSONField(default=list, blank=True)
+    gender = models.CharField(max_length=10, blank=True, default="")
 
 
 class UserManager(BaseUserManager):
@@ -25,6 +33,54 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_email_verified", True)
         extra_fields.setdefault("role", User.Role.ADMIN)
         return self.create_user(email, password, **extra_fields)
+
+
+_ROSTER_CACHE = {}  # email -> (timestamp, roster_entry)
+_ROSTER_CACHE_TTL = 300  # 5 minutes cache to prevent repetitive roundtrips
+
+def prime_roster_cache(users_or_emails):
+    """Pre-fetch and cache StudentRoster records for multiple users or emails in a single query."""
+    if not users_or_emails:
+        return
+    emails = []
+    for item in users_or_emails:
+        if isinstance(item, str):
+            emails.append(item.strip().lower())
+        elif hasattr(item, "email") and item.email:
+            emails.append(item.email.strip().lower())
+    now = time.time()
+    missing = [
+        e for e in set(emails)
+        if e and (e not in _ROSTER_CACHE or (now - _ROSTER_CACHE[e][0]) >= _ROSTER_CACHE_TTL)
+    ]
+    if not missing:
+        return
+    entries = StudentRoster.objects.filter(email__in=missing).select_related("dept")
+    found = set()
+    for entry in entries:
+        clean = entry.email.strip().lower()
+        _ROSTER_CACHE[clean] = (now, entry)
+        found.add(clean)
+    for e in missing:
+        if e not in found:
+            _ROSTER_CACHE[e] = (now, None)
+
+def get_cached_roster_entry(email):
+    if not email:
+        return None
+    email_clean = email.strip().lower()
+    now = time.time()
+    if email_clean in _ROSTER_CACHE:
+        cached_time, entry = _ROSTER_CACHE[email_clean]
+        if now - cached_time < _ROSTER_CACHE_TTL:
+            return entry
+    entry = (
+        StudentRoster.objects.filter(email__iexact=email_clean)
+        .select_related("dept")
+        .first()
+    )
+    _ROSTER_CACHE[email_clean] = (now, entry)
+    return entry
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -58,14 +114,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def roster_entry(self):
-        """Fetch student details from StudentRoster matching email."""
-        if not hasattr(self, "_cached_roster"):
-            self._cached_roster = (
-                StudentRoster.objects.filter(email__iexact=self.email)
-                .select_related("dept")
-                .first()
-            )
-        return self._cached_roster
+        """Fetch student details from StudentRoster matching email (process-cached)."""
+        return get_cached_roster_entry(self.email)
 
     @property
     def full_name(self) -> str:
@@ -96,6 +146,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     @property
     def gender(self) -> str:
+        profile = getattr(self, "personal_profile", None)
+        if profile and getattr(profile, "gender", None) and profile.gender.strip() and profile.gender.strip().lower() in ("male", "female"):
+            return profile.gender.strip().lower()
         roster = self.roster_entry
         return (roster.gender or "other").strip().lower() if roster else "other"
 

@@ -1,3 +1,7 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import { AdminModulePanel } from "./AdminModulePanel";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -13,8 +17,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -56,7 +58,7 @@ import {
 import { useCampusNotificationStore } from "../../notifications/useCampusNotificationStore";
 import { CampusNotificationItem } from "../../notifications/data/notificationsApi";
 
-type AdminTab = "overview" | "broadcasts" | "marketplace" | "lost_found" | "tutoring" | "catalog" | "users";
+type AdminTab = "overview" | "broadcasts" | "marketplace" | "lost_found" | "tutoring" | "catalog" | "users" | "printing" | "library" | "rides";
 
 export function AdminCenterScreen() {
   const insets = useSafeAreaInsets();
@@ -73,7 +75,24 @@ export function AdminCenterScreen() {
   const [passwordInput, setPasswordInput] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    const style = document.createElement("style");
+    style.textContent = `
+      #admin-security-password,
+      #admin-security-password:focus,
+      #admin-security-password:focus-visible {
+        outline: none !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => style.remove();
+  }, []);
 
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [isLoading, setIsLoading] = useState(true);
@@ -216,7 +235,7 @@ export function AdminCenterScreen() {
     return (
       <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0D3E02" />
+          <LoadingSkeleton variant="form" />
           <Text style={styles.loadingText}>Verifying session...</Text>
         </View>
       </View>
@@ -228,8 +247,8 @@ export function AdminCenterScreen() {
     return (
       <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
         <View style={styles.topNav}>
-          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <Pressable style={styles.navBackBtn} accessibilityLabel="Return to home" onPress={() => router.replace("/(app)/home")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Access Denied</Text>
           <View style={styles.navSpacer} />
@@ -253,8 +272,8 @@ export function AdminCenterScreen() {
     return (
       <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
         <View style={styles.topNav}>
-          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <Pressable style={styles.navBackBtn} accessibilityLabel="Return to home" onPress={() => router.replace("/(app)/home")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Security Check</Text>
           <View style={styles.navSpacer} />
@@ -278,12 +297,18 @@ export function AdminCenterScreen() {
               </View>
             ) : null}
 
-            <View style={styles.lockInputWrap}>
-              <MaterialCommunityIcons name="lock-outline" size={20} color="#64748b" style={{ marginRight: 8 }} />
+            <View style={[styles.lockInputWrap, passwordFocused && { borderColor: appColors.primary }]}>
               <TextInput
+                nativeID="admin-security-password"
+                accessibilityLabel="Account password"
                 style={styles.lockInput}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                underlineColorAndroid="transparent"
+                autoCapitalize="none"
+                autoCorrect={false}
                 placeholder="Enter your account password"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={appColors.textMuted}
                 secureTextEntry={!showPassword}
                 value={passwordInput}
                 onChangeText={(t) => {
@@ -298,7 +323,7 @@ export function AdminCenterScreen() {
                 <MaterialCommunityIcons
                   name={showPassword ? "eye-off-outline" : "eye-outline"}
                   size={20}
-                  color="#64748b"
+                  color={appColors.textSecondary}
                 />
               </Pressable>
             </View>
@@ -318,9 +343,6 @@ export function AdminCenterScreen() {
               )}
             </Pressable>
 
-            <Pressable style={styles.cancelLink} onPress={() => router.back()}>
-              <Text style={styles.cancelLinkText}>Cancel & Return to App</Text>
-            </Pressable>
           </View>
         </ScrollView>
       </View>
@@ -655,8 +677,8 @@ export function AdminCenterScreen() {
     <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
       {/* Top Navigation Bar */}
       <View style={styles.topNav}>
-        <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        <Pressable style={styles.navBackBtn} accessibilityLabel="Return to home" onPress={() => router.replace("/(app)/home")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Admin Center</Text>
         <View style={styles.navSpacer} />
@@ -671,6 +693,9 @@ export function AdminCenterScreen() {
             { key: "marketplace", label: "Marketplace", icon: "storefront-outline" as const },
             { key: "lost_found", label: "Lost & Found", icon: "magnify" as const },
             { key: "tutoring", label: "Peer Tutoring", icon: "school-outline" as const },
+            { key: "printing", label: "Print Center", icon: "printer" as const },
+            { key: "library", label: "Digital Library", icon: "bookshelf" as const },
+            { key: "rides", label: "Ride Sharing", icon: "car-outline" as const },
             { key: "catalog", label: "Academics", icon: "book-education-outline" as const },
             { key: "users", label: "Students", icon: "account-group-outline" as const },
           ].map((tab) => {
@@ -687,7 +712,7 @@ export function AdminCenterScreen() {
                 <MaterialCommunityIcons
                   name={tab.icon}
                   size={15}
-                  color={isSelected ? "#FDBF1E" : "#64748b"}
+                  color={isSelected ? "#FDBF1E" : appColors.textSecondary}
                   style={{ marginRight: 5 }}
                 />
                 <Text style={[styles.tabButtonText, isSelected && styles.tabButtonTextActive]}>
@@ -711,6 +736,9 @@ export function AdminCenterScreen() {
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void loadData(true)} />}
         >
           {/* TAB 1: OVERVIEW */}
+          {(activeTab === "printing" || activeTab === "library" || activeTab === "rides") && (
+            <AdminModulePanel key={activeTab} module={activeTab} refreshing={isRefreshing} />
+          )}
           {activeTab === "overview" && metrics && (
             <View style={styles.tabSection}>
               <View style={styles.welcomeBanner}>
@@ -720,7 +748,7 @@ export function AdminCenterScreen() {
                     <Text style={styles.welcomeTitle}>Welcome, {user?.full_name || "Admin"}</Text>
                   </View>
                   <Text style={styles.welcomeSub}>
-                    Platform control center for FellOo. Manage all listings, notices, sessions, and students.
+                    Platform control center for Fello. Manage all listings, notices, sessions, and students.
                   </Text>
                 </View>
               </View>
@@ -728,35 +756,35 @@ export function AdminCenterScreen() {
               <Text style={styles.sectionHeaderTitle}>System Metrics & Platform Health</Text>
               <View style={styles.kpiGrid}>
                 <View style={styles.kpiCard}>
-                  <MaterialCommunityIcons name="account-group" size={24} color="#0D3E02" />
+                  <MaterialCommunityIcons name="account-group" size={24} color={appColors.primary} />
                   <Text style={styles.kpiValue}>{metrics.total_students}</Text>
                   <Text style={styles.kpiLabel}>Registered Students</Text>
                   <Text style={styles.kpiSub}>Roster: {metrics.total_roster}</Text>
                 </View>
 
                 <View style={styles.kpiCard}>
-                  <MaterialCommunityIcons name="storefront" size={24} color="#0284C7" />
+                  <MaterialCommunityIcons name="storefront" size={24} color={appColors.icon} />
                   <Text style={styles.kpiValue}>{metrics.active_listings}</Text>
                   <Text style={styles.kpiLabel}>Active Listings</Text>
                   <Text style={styles.kpiSub}>Total: {metrics.total_listings}</Text>
                 </View>
 
                 <View style={styles.kpiCard}>
-                  <MaterialCommunityIcons name="map-marker-question" size={24} color="#D97706" />
+                  <MaterialCommunityIcons name="map-marker-question" size={24} color={appColors.icon} />
                   <Text style={styles.kpiValue}>{metrics.open_lost_found}</Text>
                   <Text style={styles.kpiLabel}>Open Lost & Found</Text>
                   <Text style={styles.kpiSub}>Claims: {metrics.total_claims}</Text>
                 </View>
 
                 <View style={styles.kpiCard}>
-                  <MaterialCommunityIcons name="school" size={24} color="#7C3AED" />
+                  <MaterialCommunityIcons name="school" size={24} color={appColors.icon} />
                   <Text style={styles.kpiValue}>{metrics.active_tutors}</Text>
                   <Text style={styles.kpiLabel}>Active Tutors</Text>
                   <Text style={styles.kpiSub}>Total: {metrics.total_tutors}</Text>
                 </View>
 
                 <View style={styles.kpiCard}>
-                  <MaterialCommunityIcons name="calendar-check" size={24} color="#16A34A" />
+                  <MaterialCommunityIcons name="calendar-check" size={24} color={appColors.icon} />
                   <Text style={styles.kpiValue}>{metrics.completed_sessions}</Text>
                   <Text style={styles.kpiLabel}>Completed Sessions</Text>
                   <Text style={styles.kpiSub}>Total: {metrics.total_sessions}</Text>
@@ -779,7 +807,7 @@ export function AdminCenterScreen() {
               <View style={styles.broadcastComposerCard}>
                 <View style={styles.broadcastHeaderRow}>
                   <View style={styles.broadcastIconBadge}>
-                    <MaterialCommunityIcons name="bullhorn-outline" size={20} color="#0D3E02" />
+                    <MaterialCommunityIcons name="bullhorn-outline" size={20} color={appColors.primary} />
                   </View>
                   <View>
                     <Text style={styles.broadcastCardTitle}>Create Campus Broadcast</Text>
@@ -794,7 +822,7 @@ export function AdminCenterScreen() {
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g., Enrollment is Open / Results Announced / Urgent Alert..."
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={appColors.textMuted}
                   value={bTitle}
                   onChangeText={setBTitle}
                 />
@@ -835,7 +863,7 @@ export function AdminCenterScreen() {
                 <TextInput
                   style={[styles.textInput, styles.textArea]}
                   placeholder="Enter details for the campus notification announcement..."
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={appColors.textMuted}
                   value={bMessage}
                   onChangeText={setBMessage}
                   multiline
@@ -860,7 +888,7 @@ export function AdminCenterScreen() {
                     style={styles.broadcastImagePickerBtn}
                     onPress={() => setIsImagePickerOpen(true)}
                   >
-                    <MaterialCommunityIcons name="camera-plus-outline" size={20} color="#0D3E02" style={{ marginRight: 8 }} />
+                    <MaterialCommunityIcons name="camera-plus-outline" size={20} color={appColors.primary} style={{ marginRight: 8 }} />
                     <Text style={styles.broadcastImagePickerBtnText}>Add Event Photo (Camera or Gallery)</Text>
                   </Pressable>
                 )}
@@ -931,7 +959,7 @@ export function AdminCenterScreen() {
                     <View key={item.id} style={styles.broadcastItemCard}>
                       <View style={styles.broadcastItemHeader}>
                         <View style={styles.noticeIconWrap}>
-                          <MaterialCommunityIcons name="bell-ring-outline" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="bell-ring-outline" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.noticeTagText}>Notice</Text>
                         </View>
                         <Text style={styles.broadcastItemDate}>{formattedDate}</Text>
@@ -1003,11 +1031,11 @@ export function AdminCenterScreen() {
 
               {/* Search Bar */}
               <View style={styles.searchBar}>
-                <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={{ marginRight: 6 }} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search item, student name, roll number..."
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={appColors.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
@@ -1037,15 +1065,15 @@ export function AdminCenterScreen() {
 
                       <View style={styles.cardMetaRow}>
                         <View style={styles.cardMetaPill}>
-                          <MaterialCommunityIcons name="tag-outline" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="tag-outline" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.cardMetaText}>{item.category}</Text>
                         </View>
                         <View style={styles.cardMetaPill}>
-                          <MaterialCommunityIcons name="cash" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="cash" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.cardMetaText}>{item.price ? `PKR ${item.price}` : "Free"}</Text>
                         </View>
                         <View style={styles.cardMetaPill}>
-                          <MaterialCommunityIcons name="swap-horizontal" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="swap-horizontal" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.cardMetaText}>{item.exchange_type}</Text>
                         </View>
                       </View>
@@ -1090,12 +1118,12 @@ export function AdminCenterScreen() {
                       <Text style={styles.cardDesc}>{req.description}</Text>
                       <View style={styles.cardMetaRow}>
                         <View style={styles.cardMetaPill}>
-                          <MaterialCommunityIcons name="tag-outline" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="tag-outline" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                           <Text style={styles.cardMetaText}>{req.category}</Text>
                         </View>
                         {req.course ? (
                           <View style={styles.cardMetaPill}>
-                            <MaterialCommunityIcons name="book-open-variant" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                            <MaterialCommunityIcons name="book-open-variant" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                             <Text style={styles.cardMetaText}>{req.course}</Text>
                           </View>
                         ) : null}
@@ -1125,11 +1153,11 @@ export function AdminCenterScreen() {
           {activeTab === "lost_found" && (
             <View style={styles.tabSection}>
               <View style={styles.searchBar}>
-                <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={{ marginRight: 6 }} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search notices, locations, student names..."
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={appColors.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
@@ -1167,7 +1195,7 @@ export function AdminCenterScreen() {
                     </View>
 
                     <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 6 }}>
-                      <MaterialCommunityIcons name="map-marker-outline" size={15} color="#0D3E02" style={{ marginTop: 1 }} />
+                      <MaterialCommunityIcons name="map-marker-outline" size={15} color={appColors.primary} style={{ marginTop: 1 }} />
                       <Text style={styles.cardDesc}><Text style={{ fontWeight: "700" }}>{item.location}</Text> • {item.description}</Text>
                     </View>
 
@@ -1234,7 +1262,7 @@ export function AdminCenterScreen() {
                         <Text style={styles.cardMetaText}>{tutor.rating_avg} ({tutor.rating_count} reviews)</Text>
                       </View>
                       <View style={styles.cardMetaPill}>
-                        <MaterialCommunityIcons name="school-outline" size={12} color="#0D3E02" style={{ marginRight: 4 }} />
+                        <MaterialCommunityIcons name="school-outline" size={12} color={appColors.primary} style={{ marginRight: 4 }} />
                         <Text style={styles.cardMetaText}>Peer Tutor</Text>
                       </View>
                     </View>
@@ -1257,7 +1285,7 @@ export function AdminCenterScreen() {
                     </View>
 
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                      <MaterialCommunityIcons name="calendar-clock" size={14} color="#0D3E02" />
+                      <MaterialCommunityIcons name="calendar-clock" size={14} color={appColors.primary} />
                       <Text style={styles.cardDesc}>
                         {new Date(session.scheduled_at).toLocaleDateString()} • {session.duration_minutes}m ({session.meeting_mode})
                       </Text>
@@ -1325,11 +1353,11 @@ export function AdminCenterScreen() {
               {/* Action Header with Search and "+ Add" button */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 }}>
                 <View style={[styles.searchBar, { flex: 1, marginBottom: 0 }]}>
-                  <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={{ marginRight: 6 }} />
                   <TextInput
                     style={styles.searchInput}
                     placeholder={`Search ${catalogSubTab}...`}
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={appColors.textMuted}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                   />
@@ -1342,7 +1370,7 @@ export function AdminCenterScreen() {
                     else handleOpenAddCatalogModal("department");
                   }}
                 >
-                  <MaterialCommunityIcons name="plus" size={16} color="#0D3E02" style={{ marginRight: 4 }} />
+                  <MaterialCommunityIcons name="plus" size={16} color={appColors.primary} style={{ marginRight: 4 }} />
                   <Text style={styles.addCatalogBtnText}>Add</Text>
                 </Pressable>
               </View>
@@ -1368,7 +1396,7 @@ export function AdminCenterScreen() {
                             style={styles.cardEditBtn}
                             onPress={() => handleOpenEditCatalogModal("course", c)}
                           >
-                            <MaterialCommunityIcons name="pencil-outline" size={16} color="#0D3E02" />
+                            <MaterialCommunityIcons name="pencil-outline" size={16} color={appColors.primary} />
                           </Pressable>
                           <Pressable
                             style={styles.cardDeleteBtn}
@@ -1412,7 +1440,7 @@ export function AdminCenterScreen() {
                             style={styles.cardEditBtn}
                             onPress={() => handleOpenEditCatalogModal("skill", s)}
                           >
-                            <MaterialCommunityIcons name="pencil-outline" size={16} color="#0D3E02" />
+                            <MaterialCommunityIcons name="pencil-outline" size={16} color={appColors.primary} />
                           </Pressable>
                           <Pressable
                             style={styles.cardDeleteBtn}
@@ -1456,7 +1484,7 @@ export function AdminCenterScreen() {
                             style={styles.cardEditBtn}
                             onPress={() => handleOpenEditCatalogModal("department", d)}
                           >
-                            <MaterialCommunityIcons name="pencil-outline" size={16} color="#0D3E02" />
+                            <MaterialCommunityIcons name="pencil-outline" size={16} color={appColors.primary} />
                           </Pressable>
                           <Pressable
                             style={styles.cardDeleteBtn}
@@ -1475,11 +1503,11 @@ export function AdminCenterScreen() {
           {activeTab === "users" && (
             <View style={styles.tabSection}>
               <View style={styles.searchBar}>
-                <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={{ marginRight: 6 }} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search students, roll numbers, departments..."
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={appColors.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
@@ -1529,7 +1557,7 @@ export function AdminCenterScreen() {
                 {modalTarget === "course" ? "Academic Course" : modalTarget === "skill" ? "Skill Topic" : "Department"}
               </Text>
               <Pressable onPress={() => setIsModalOpen(false)} style={styles.modalCloseBtn}>
-                <MaterialCommunityIcons name="close" size={20} color="#64748b" />
+                <MaterialCommunityIcons name="close" size={20} color={appColors.textSecondary} />
               </Pressable>
             </View>
 
@@ -1543,7 +1571,7 @@ export function AdminCenterScreen() {
                   value={formField1}
                   onChangeText={setFormField1}
                   placeholder="Enter name or code"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={appColors.textMuted}
                 />
 
                 <Text style={styles.formLabel}>
@@ -1554,7 +1582,7 @@ export function AdminCenterScreen() {
                   value={formField2}
                   onChangeText={setFormField2}
                   placeholder="Enter title, category or code"
-                  placeholderTextColor="#94a3b8"
+                  placeholderTextColor={appColors.textMuted}
                 />
 
                 {modalTarget === "course" && (
@@ -1582,7 +1610,7 @@ export function AdminCenterScreen() {
                       value={formDesc}
                       onChangeText={setFormDesc}
                       placeholder="Course overview or prerequisites..."
-                      placeholderTextColor="#94a3b8"
+                      placeholderTextColor={appColors.textMuted}
                       multiline
                     />
                   </>
@@ -1619,15 +1647,15 @@ export function AdminCenterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 9,
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
   },
   navBackBtn: {
     width: 36,
@@ -1648,12 +1676,12 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   adminBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1662,12 +1690,12 @@ const styles = StyleSheet.create({
   adminBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   tabStrip: {
     backgroundColor: "#ffffff",
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    borderBottomColor: appColors.border,
   },
   tabScroll: {
     paddingHorizontal: 12,
@@ -1681,15 +1709,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
   tabButtonActive: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
   },
   tabButtonText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   tabButtonTextActive: {
     color: "#FDBF1E",
@@ -1705,7 +1733,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   welcomeBanner: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
@@ -1725,7 +1753,7 @@ const styles = StyleSheet.create({
   sectionHeaderTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 4,
   },
   kpiGrid: {
@@ -1740,28 +1768,28 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
+    borderColor: appColors.border,
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.035,
     shadowRadius: 3,
     elevation: 1,
   },
   kpiValue: {
     fontSize: 20,
     fontWeight: "900",
-    color: "#070D1F",
+    color: appColors.text,
     marginTop: 6,
   },
   kpiLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   kpiSub: {
     fontSize: 11,
-    color: "#94A3B8",
+    color: appColors.textMuted,
     marginTop: 2,
   },
   searchBar: {
@@ -1770,7 +1798,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     paddingHorizontal: 12,
     height: 42,
     marginBottom: 6,
@@ -1778,7 +1806,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: "#070D1F",
+    color: appColors.text,
   },
   subTabRow: {
     flexDirection: "row",
@@ -1786,7 +1814,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 3,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     marginBottom: 6,
   },
   subTabBtn: {
@@ -1797,12 +1825,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   subTabBtnActive: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
   },
   subTabBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   subTabBtnTextActive: {
     color: "#FDBF1E",
@@ -1812,7 +1840,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     gap: 8,
   },
   cardHeader: {
@@ -1823,16 +1851,16 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
   },
   cardOwner: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   cardDesc: {
     fontSize: 12,
-    color: "#334155",
+    color: appColors.textSecondary,
     lineHeight: 16,
   },
   cardDeleteBtn: {
@@ -1848,14 +1876,14 @@ const styles = StyleSheet.create({
   cardMetaPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   cardMetaText: {
     fontSize: 11,
-    color: "#475569",
+    color: appColors.textSecondary,
     fontWeight: "700",
   },
   statusActionRow: {
@@ -1863,30 +1891,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 8,
   },
   statusActionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   statusTogglePill: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   statusTogglePillActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   statusToggleText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
     textTransform: "capitalize",
   },
   statusToggleTextActive: {
@@ -1904,14 +1932,14 @@ const styles = StyleSheet.create({
     color: "#DC2626",
   },
   typeBadgeFound: {
-    backgroundColor: "#DCFCE7",
-    color: "#16A34A",
+    backgroundColor: appColors.surfaceMuted,
+    color: appColors.icon,
   },
   rollNoBadge: {
     fontSize: 10,
     fontWeight: "800",
-    backgroundColor: "#FEF3C7",
-    color: "#92400E",
+    backgroundColor: appColors.surfaceMuted,
+    color: appColors.icon,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1919,7 +1947,7 @@ const styles = StyleSheet.create({
   adminRoleBadge: {
     fontSize: 9,
     fontWeight: "900",
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     color: "#FDBF1E",
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1931,7 +1959,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   toggleActiveBtnOn: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
   },
   toggleActiveBtnOff: {
     backgroundColor: "#FEE2E2",
@@ -1939,7 +1967,7 @@ const styles = StyleSheet.create({
   toggleActiveBtnText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -1949,7 +1977,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   accessDeniedCard: {
@@ -1962,18 +1990,18 @@ const styles = StyleSheet.create({
   accessDeniedTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     textAlign: "center",
   },
   accessDeniedSub: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     lineHeight: 18,
   },
   backHomeBtn: {
     marginTop: 10,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1997,34 +2025,34 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
+    borderColor: appColors.border,
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 10,
-    elevation: 4,
+    elevation: 1,
   },
   lockIconCircle: {
     width: 72,
     height: 72,
-    borderRadius: 36,
-    backgroundColor: "#0D3E02",
+
+
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
-    borderWidth: 2,
-    borderColor: "#FDBF1E",
+
+
   },
   lockTitle: {
     fontSize: 20,
     fontWeight: "900",
-    color: "#070D1F",
+    color: appColors.text,
     textAlign: "center",
     marginBottom: 6,
   },
   lockSub: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     lineHeight: 18,
     marginBottom: 18,
@@ -2050,9 +2078,9 @@ const styles = StyleSheet.create({
   lockInputWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderWidth: 1.5,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     height: 48,
@@ -2060,15 +2088,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   lockInput: {
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    ...(Platform.OS === "web" ? { outlineWidth: 0 } : {}),
     flex: 1,
     fontSize: 14,
-    color: "#070D1F",
+    color: appColors.text,
   },
   verifyBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderRadius: 10,
     height: 48,
     width: "100%",
@@ -2081,14 +2112,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#FDBF1E",
   },
-  cancelLink: {
-    paddingVertical: 8,
-  },
-  cancelLinkText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748b",
-  },
   addCatalogBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -2100,11 +2123,11 @@ const styles = StyleSheet.create({
   addCatalogBtnText: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   cardEditBtn: {
     padding: 6,
-    backgroundColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
     borderRadius: 6,
   },
   modalOverlay: {
@@ -2121,10 +2144,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.035,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -2134,13 +2157,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: appColors.border,
     paddingBottom: 10,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
   },
   modalCloseBtn: {
     padding: 4,
@@ -2151,35 +2174,35 @@ const styles = StyleSheet.create({
   formLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
     marginTop: 6,
   },
   formInput: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
-    color: "#070D1F",
+    color: appColors.text,
   },
   deptSelectPill: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
   },
   deptSelectPillActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   deptSelectText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   deptSelectTextActive: {
     color: "#FDBF1E",
@@ -2191,7 +2214,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 12,
   },
   modalCancelBtn: {
@@ -2202,10 +2225,10 @@ const styles = StyleSheet.create({
   modalCancelText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   modalSaveBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 18,
     paddingVertical: 9,
     borderRadius: 8,
@@ -2222,15 +2245,15 @@ const styles = StyleSheet.create({
   // Broadcast Composer & Items
   broadcastComposerCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 1,
   },
   broadcastHeaderRow: {
     flexDirection: "row",
@@ -2238,25 +2261,25 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: appColors.border,
     paddingBottom: 12,
   },
   broadcastIconBadge: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: "#F0FDF4",
+
+
     alignItems: "center",
     justifyContent: "center",
   },
   broadcastCardTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
   },
   broadcastCardSub: {
     fontSize: 11,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   categoryPillsRow: {
@@ -2268,21 +2291,21 @@ const styles = StyleSheet.create({
   categoryPillBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   categoryPillBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   categoryPillBtnText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   categoryPillBtnTextActive: {
     color: "#FDBF1E",
@@ -2297,26 +2320,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     paddingVertical: 7,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   priorityPillBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   priorityPillBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   priorityPillBtnTextActive: {
     color: "#FDBF1E",
     fontWeight: "800",
   },
   broadcastSubmitBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -2337,7 +2360,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     marginBottom: 10,
   },
   broadcastItemHeader: {
@@ -2349,32 +2372,32 @@ const styles = StyleSheet.create({
   noticeIconWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+
   },
   noticeTagText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
   broadcastItemDate: {
     fontSize: 11,
-    color: "#94A3B8",
+    color: appColors.textMuted,
     fontWeight: "500",
   },
   broadcastItemTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
     marginBottom: 4,
   },
   broadcastItemMessage: {
     fontSize: 12,
-    color: "#475569",
+    color: appColors.textSecondary,
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -2388,7 +2411,7 @@ const styles = StyleSheet.create({
   },
   broadcastAuthorText: {
     fontSize: 11,
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   broadcastDeleteBtn: {
@@ -2408,19 +2431,19 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#334155",
+    color: appColors.textSecondary,
     marginBottom: 6,
     marginTop: 10,
   },
   textInput: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
     fontSize: 13,
-    color: "#0F172A",
+    color: appColors.text,
   },
   textArea: {
     minHeight: 80,
@@ -2432,11 +2455,11 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   emptyStateText: {
     fontSize: 13,
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontWeight: "500",
   },
   broadcastImagePreviewWrap: {
@@ -2444,13 +2467,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#F8FAFC",
+    borderColor: appColors.border,
+    backgroundColor: appColors.background,
   },
   broadcastImagePreview: {
     width: "100%",
     height: 140,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
   broadcastRemoveImageBtn: {
     flexDirection: "row",
@@ -2470,10 +2493,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1.5,
     borderStyle: "dashed",
-    borderColor: "#86EFAC",
+    borderColor: appColors.border,
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 6,
@@ -2481,7 +2504,7 @@ const styles = StyleSheet.create({
   broadcastImagePickerBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   broadcastCardImageWrap: {
     borderRadius: 10,
@@ -2489,11 +2512,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   broadcastCardImage: {
     width: "100%",
     height: 130,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
 });

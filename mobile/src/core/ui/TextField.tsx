@@ -1,5 +1,6 @@
+import { Text, TextInput } from "./AppText";
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type TextInputProps, type ViewStyle } from "react-native";
 
 import { border, colors, font, radius, spacing, typography } from "./theme";
 
@@ -52,6 +53,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.base,
     fontFamily: font.familyRegular,
     color: colors.text,
+    outlineStyle: "none" as any,
   },
   inputFocused: { borderColor: colors.primary },
   inputError: { borderColor: colors.danger },

@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,8 +12,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -257,7 +257,7 @@ export function SessionChatScreen() {
             style={styles.navBackBtn}
             onPress={handleBack}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <View style={{ flex: 1, alignItems: "center", marginHorizontal: 12 }}>
             <Skeleton width={130} height={18} borderRadius={4} style={{ marginBottom: 4 }} />
@@ -294,7 +294,7 @@ export function SessionChatScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <View style={styles.topNavCenter}>
           <Text style={styles.topNavTitle} numberOfLines={1}>
@@ -317,7 +317,7 @@ export function SessionChatScreen() {
         <View style={styles.activeSessionBar}>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialCommunityIcons name="circle" size={10} color="#16A34A" style={{ marginRight: 5 }} />
+              <MaterialCommunityIcons name="circle" size={10} color={appColors.icon} style={{ marginRight: 5 }} />
               <Text style={styles.activeSessionBadgeText}>Active Session</Text>
             </View>
             <Text style={styles.activeSessionSub}>Finished meeting? Tap to complete:</Text>
@@ -328,10 +328,10 @@ export function SessionChatScreen() {
             disabled={isCompleting}
           >
             {isCompleting ? (
-              <ActivityIndicator size="small" color="#070D1F" />
+              <ActivityIndicator size="small" color={appColors.text} />
             ) : (
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="check-circle-outline" size={15} color="#070D1F" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="check-circle-outline" size={15} color={appColors.text} style={{ marginRight: 4 }} />
                 <Text style={styles.completeChatSessionBtnText}>Mark Completed</Text>
               </View>
             )}
@@ -348,7 +348,7 @@ export function SessionChatScreen() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="chat-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+            <MaterialCommunityIcons name="chat-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>Live Coordination Chat</Text>
             <Text style={styles.emptySubtitle}>
               Say hi to {partnerName}! Coordinate your meeting location, study notes, or share questions.
@@ -404,7 +404,7 @@ export function SessionChatScreen() {
           ]}
         >
           <View style={styles.lockIconCircle}>
-            <MaterialCommunityIcons name="lock-outline" size={18} color="#64748b" />
+            <MaterialCommunityIcons name="lock-outline" size={18} color={appColors.textSecondary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.completedChatTitle}>Session Completed</Text>
@@ -418,7 +418,7 @@ export function SessionChatScreen() {
               onPress={() => setShowRatingModal(true)}
             >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="star-outline" size={14} color="#92400E" style={{ marginRight: 3 }} />
+                <MaterialCommunityIcons name="star-outline" size={14} color={appColors.icon} style={{ marginRight: 3 }} />
                 <Text style={styles.rateFromChatBtnText}>Rate</Text>
               </View>
             </Pressable>
@@ -432,7 +432,7 @@ export function SessionChatScreen() {
           ]}
         >
           <Pressable style={styles.attachBtn} onPress={() => setIsImagePickerOpen(true)}>
-            <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
+            <MaterialCommunityIcons name="camera-outline" size={20} color={appColors.primary} />
           </Pressable>
 
           <TextInput
@@ -440,7 +440,7 @@ export function SessionChatScreen() {
             value={inputText}
             onChangeText={setInputText}
             placeholder={`Message ${partnerName || "peer"}...`}
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={appColors.textMuted}
             multiline
             returnKeyType="default"
           />
@@ -498,11 +498,11 @@ export function SessionChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -526,15 +526,15 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   topNavSub: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 1,
   },
   sessionsBtn: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -542,22 +542,22 @@ const styles = StyleSheet.create({
   sessionsBtnText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   activeSessionBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#C8E6C9",
+    borderBottomColor: appColors.border,
     gap: 12,
   },
   activeSessionBadgeText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   activeSessionSub: {
     fontSize: 11,
@@ -571,12 +571,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     shadowColor: "#FDBF1E",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 2,
   },
   completeChatSessionBtnText: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 12,
     fontWeight: "800",
   },
@@ -584,12 +584,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   messagesContent: {
     padding: 16,
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   senderName: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
     marginBottom: 3,
     marginLeft: 4,
   },
@@ -617,14 +617,14 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   bubbleMe: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
     backgroundColor: "#ffffff",
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   bubbleText: {
     fontSize: 14,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   bubbleTextOther: {
-    color: "#070D1F",
+    color: appColors.text,
   },
   chatImage: {
     width: 200,
@@ -651,12 +651,12 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.7)",
   },
   timeTextOther: {
-    color: "#94a3b8",
+    color: appColors.textMuted,
   },
   photoPreviewBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     padding: 8,
     marginHorizontal: 16,
     marginBottom: 6,
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   previewName: {
     flex: 1,
     fontSize: 12,
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "600",
   },
   removePhotoBtn: {
@@ -689,24 +689,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
+    borderTopColor: appColors.border,
     gap: 8,
   },
   completedChatBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 16,
     paddingTop: 14,
     borderTopWidth: 1,
-    borderTopColor: "#CBD5E1",
+    borderTopColor: appColors.border,
     gap: 12,
   },
   lockIconCircle: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: "#E2E8F0",
+
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -716,11 +716,11 @@ const styles = StyleSheet.create({
   completedChatTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#334155",
+    color: appColors.textSecondary,
   },
   completedChatSub: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     lineHeight: 16,
     marginTop: 2,
   },
@@ -731,12 +731,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     shadowColor: "#FDBF1E",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 2,
   },
   rateFromChatBtnText: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -748,15 +748,15 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    backgroundColor: "#F8FAF8",
-    borderRadius: 20,
+    backgroundColor: appColors.background,
+    borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 8,
     fontSize: 14,
-    color: "#070D1F",
+    color: appColors.text,
     maxHeight: 90,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   sendBtn: {
     backgroundColor: "#FDBF1E",
@@ -784,11 +784,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     marginTop: 4,
     lineHeight: 18,

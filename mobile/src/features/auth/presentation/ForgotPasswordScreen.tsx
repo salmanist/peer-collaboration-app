@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import { FelloLogo } from "../../../core/components/FelloLogo";
 import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -9,8 +12,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -111,7 +112,7 @@ export default function ForgotPasswordScreen() {
           style={styles.navBackBtn}
           onPress={() => router.replace("/(auth)/login" as any)}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Reset Password</Text>
         <View style={{ width: 36 }} />
@@ -125,7 +126,10 @@ export default function ForgotPasswordScreen() {
       >
         {/* Brand Banner */}
         <View style={styles.brandBox}>
-          <Text style={styles.brandTitle}>FellOo</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <FelloLogo size={42} />
+            <Text style={styles.brandTitle}>Fello</Text>
+          </View>
           <Text style={styles.brandSub}>Lahore Garrison University Student Portal</Text>
         </View>
 
@@ -143,11 +147,10 @@ export default function ForgotPasswordScreen() {
               Enter your official LGU student email. We will send a 6-digit verification code to your registered mobile number and email.
             </Text>
 
-            <Text style={styles.fieldLabel}>LGU Email Address *</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. zahra@lgu.edu.pk"
-              placeholderTextColor="#94a3b8"
+              placeholder="LGU Email Address (e.g. zahra@lgu.edu.pk)"
+              placeholderTextColor={appColors.textMuted}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -180,37 +183,34 @@ export default function ForgotPasswordScreen() {
 
             {debugOtp ? (
               <View style={styles.debugOtpBox}>
-                <MaterialCommunityIcons name="key-variant" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="key-variant" size={15} color={appColors.primary} style={{ marginRight: 6 }} />
                 <Text style={styles.debugOtpText}>Test Code: <Text style={styles.debugOtpBold}>{debugOtp}</Text></Text>
               </View>
             ) : null}
 
-            <Text style={styles.fieldLabel}>6-Digit OTP Code *</Text>
             <TextInput
               style={[styles.input, styles.otpInput]}
-              placeholder="123456"
-              placeholderTextColor="#94a3b8"
+              placeholder="Enter 6-Digit OTP Code"
+              placeholderTextColor={appColors.textMuted}
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
               maxLength={6}
             />
 
-            <Text style={styles.fieldLabel}>New Password * (Min 6 characters)</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Enter new password"
-              placeholderTextColor="#94a3b8"
+              style={[styles.input, { marginTop: 12 }]}
+              placeholder="New Password (min 6 characters)"
+              placeholderTextColor={appColors.textMuted}
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry
             />
 
-            <Text style={styles.fieldLabel}>Confirm New Password *</Text>
             <TextInput
-              style={styles.input}
-              placeholder="Re-enter new password"
-              placeholderTextColor="#94a3b8"
+              style={[styles.input, { marginTop: 12 }]}
+              placeholder="Confirm New Password"
+              placeholderTextColor={appColors.textMuted}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -244,7 +244,7 @@ export default function ForgotPasswordScreen() {
         {step === "success" && (
           <View style={styles.card}>
             <View style={{ alignItems: "center" }}>
-              <MaterialCommunityIcons name="check-circle" size={54} color="#0D3E02" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="check-circle" size={54} color={appColors.primary} style={{ marginBottom: 12 }} />
             </View>
             <Text style={styles.cardHeading}>Password Reset Successfully!</Text>
             <Text style={styles.cardDesc}>
@@ -273,8 +273,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   topNavBar: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -284,14 +284,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -308,15 +308,15 @@ const styles = StyleSheet.create({
   brandTitle: {
     fontSize: 32,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.primary,
     letterSpacing: -0.5,
   },
   brandGold: {
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   brandSub: {
     fontSize: 13,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 4,
     fontWeight: "600",
   },
@@ -342,13 +342,13 @@ const styles = StyleSheet.create({
   cardHeading: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 6,
     textAlign: "center",
   },
   cardDesc: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     lineHeight: 18,
     marginBottom: 20,
     textAlign: "center",
@@ -356,19 +356,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     marginTop: 10,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#F8FAFC",
-    borderColor: "#CBD5E1",
+    backgroundColor: appColors.background,
+    borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 6,
   },
   otpInput: {
@@ -376,12 +376,12 @@ const styles = StyleSheet.create({
     letterSpacing: 6,
     textAlign: "center",
     fontWeight: "800",
-    color: "#0D3E02",
-    backgroundColor: "#E8F5E9",
-    borderColor: "#A5D6A7",
+    color: appColors.primary,
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
   },
   debugOtpBox: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.surfaceMuted,
     padding: 10,
     borderRadius: 8,
     borderColor: "#FDE68A",
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   debugOtpText: {
-    color: "#92400E",
+    color: appColors.icon,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -404,9 +404,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 16,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   resendText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 13,
     fontWeight: "700",
     textDecorationLine: "underline",

@@ -189,6 +189,8 @@ class PublicResourceOfferCreateView(generics.CreateAPIView):
                 message=f"{offerer_name} offered a resource for your request '{public_request.title}'.",
                 priority="normal",
                 sender=self.request.user,
+                category="resources",
+                action_url="/(app)/resources",
             )
         except Exception:
             pass
@@ -225,7 +227,7 @@ class PublicResourceOfferStatusUpdateView(APIView):
         requested_status = request.data.get("status")
         with transaction.atomic():
             offer = get_object_or_404(
-                PublicResourceOffer.objects.select_for_update().select_related("public_request"),
+                PublicResourceOffer.objects.select_for_update().select_related("public_request", "offerer"),
                 pk=pk,
             )
             is_requester = offer.public_request.requester_id == request.user.id
@@ -363,6 +365,8 @@ class ResourceInterestRequestCreateView(generics.CreateAPIView):
                 message=f"{requester_name} is interested in your listing '{resource.title}'.",
                 priority="normal",
                 sender=self.request.user,
+                category="resources",
+                action_url="/(app)/resources",
             )
         except Exception:
             pass
@@ -400,7 +404,7 @@ class ResourceInterestRequestStatusUpdateView(APIView):
 
         with transaction.atomic():
             interest_request = get_object_or_404(
-                ResourceInterestRequest.objects.select_for_update().select_related("resource"),
+                ResourceInterestRequest.objects.select_for_update().select_related("resource", "requester"),
                 pk=pk,
             )
             resource = interest_request.resource

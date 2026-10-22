@@ -91,7 +91,7 @@ DATABASES = {
         # reused. CONN_HEALTH_CHECKS pings a reused connection before trusting it, so a
         # connection Neon silently dropped while idle gets transparently reopened instead
         # of surfacing as a request error.
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": 600,
         "CONN_HEALTH_CHECKS": True,
     }
 }

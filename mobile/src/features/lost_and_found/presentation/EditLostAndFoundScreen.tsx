@@ -1,3 +1,7 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -11,8 +15,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -183,7 +185,7 @@ export default function EditLostAndFoundScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0D3E02" />
+        <LoadingSkeleton variant="form" />
       </View>
     );
   }
@@ -197,9 +199,9 @@ export default function EditLostAndFoundScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/lost-and-found")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Notice</Text>
         <Pressable
@@ -226,11 +228,10 @@ export default function EditLostAndFoundScreen() {
         ) : null}
 
         {/* Title */}
-        <Text style={styles.fieldLabel}>Item Title *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g., Black Dell Laptop Charger"
-          placeholderTextColor="#94a3b8"
+          placeholder="Item Title (e.g. Black Dell Laptop Charger)"
+          placeholderTextColor={appColors.textMuted}
           value={title}
           onChangeText={setTitle}
         />
@@ -252,31 +253,28 @@ export default function EditLostAndFoundScreen() {
         </View>
 
         {/* Campus Location */}
-        <Text style={styles.fieldLabel}>Campus Location *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g., Central Library 2nd Floor, CS Lab 3"
-          placeholderTextColor="#94a3b8"
+          placeholder="Campus Location (e.g. Central Library 2nd Floor, CS Lab 3)"
+          placeholderTextColor={appColors.textMuted}
           value={location}
           onChangeText={setLocation}
         />
 
         {/* Date Lost or Found (Strict Date format YYYY-MM-DD) */}
-        <Text style={styles.fieldLabel}>Date Lost / Found (YYYY-MM-DD)</Text>
         <TextInput
-          style={styles.input}
-          placeholder="e.g., 2026-08-23"
-          placeholderTextColor="#94a3b8"
+          style={[styles.input, { marginTop: 12 }]}
+          placeholder="Date Lost / Found (YYYY-MM-DD, e.g. 2026-08-23)"
+          placeholderTextColor={appColors.textMuted}
           value={dateLostOrFound}
           onChangeText={setDateLostOrFound}
         />
 
         {/* Description */}
-        <Text style={styles.fieldLabel}>Detailed Description *</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Describe item details..."
-          placeholderTextColor="#94a3b8"
+          style={[styles.input, styles.textArea, { marginTop: 12 }]}
+          placeholder="Detailed Description (describe item details...)"
+          placeholderTextColor={appColors.textMuted}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -300,14 +298,14 @@ export default function EditLostAndFoundScreen() {
             <Image source={{ uri: getImageUrl(existingImage)! }} style={styles.previewImage} resizeMode="cover" />
             <Pressable style={styles.photoUploadBtn} onPress={() => setIsImagePickerOpen(true)}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="camera-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="camera-outline" size={16} color={appColors.primary} style={{ marginRight: 6 }} />
                 <Text style={styles.photoUploadText}>Replace Photo (Camera / Gallery)</Text>
               </View>
             </Pressable>
           </View>
         ) : (
           <Pressable style={styles.photoUploadBtn} onPress={() => setIsImagePickerOpen(true)}>
-            <MaterialCommunityIcons name="camera-plus-outline" size={28} color="#0D3E02" style={{ marginBottom: 4 }} />
+            <MaterialCommunityIcons name="camera-plus-outline" size={28} color={appColors.primary} style={{ marginBottom: 4 }} />
             <Text style={styles.photoUploadText}>Tap to add photo (Camera or Gallery)</Text>
           </Pressable>
         )}
@@ -355,11 +353,11 @@ export default function EditLostAndFoundScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -378,13 +376,13 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   scrollContent: {
     padding: 16,
@@ -408,19 +406,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     marginTop: 14,
     marginBottom: 6,
   },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#070D1F",
+    color: appColors.text,
   },
   textArea: {
     minHeight: 90,
@@ -436,17 +434,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: "#ffffff",
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   catBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   catBtnText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   catBtnTextActive: {
     color: "#FDBF1E",
@@ -456,7 +454,7 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: "#0D3E02",
+    borderColor: appColors.primary,
     borderStyle: "dashed",
     backgroundColor: "#ffffff",
     alignItems: "center",
@@ -467,7 +465,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   photoUploadText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -475,7 +473,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 10,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderWidth: 1,
     alignItems: "center",
   },
@@ -500,9 +498,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 24,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },

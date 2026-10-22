@@ -1,6 +1,8 @@
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
+import { Text, TextInput } from "./AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { usePersistentCache } from "../data/PersistentCache";
 import { listCourses, type AcademicCourse } from "../network/coursesApi";
@@ -61,7 +63,7 @@ export function CoursePicker({ label, placeholder = "Select course", value, onCh
             />
           </View>
           {isLoading ? (
-            <ActivityIndicator color={colors.primary} style={styles.loading} />
+            <LoadingSkeleton variant="list" count={2} />
           ) : (
             <ScrollView bounces={false} showsVerticalScrollIndicator>
               {filtered.map((course) => (

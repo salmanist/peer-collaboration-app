@@ -1,3 +1,5 @@
+import { colors as appColors } from "../ui/theme";
+import { Text, TextInput } from "../ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -8,8 +10,6 @@ import {
   Pressable,
   SafeAreaView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { fetchDepartments } from "../departments/departmentApi";
@@ -130,7 +130,7 @@ export function DepartmentDropdown({
         >
           {loading && !departmentList.length ? "Loading departments..." : displayLabel}
         </Text>
-        <MaterialCommunityIcons name="chevron-down" size={18} color="#0D3E02" />
+        <MaterialCommunityIcons name="chevron-down" size={18} color={appColors.primary} />
       </Pressable>
 
       {/* Modal Dropdown Selection */}
@@ -167,24 +167,24 @@ export function DepartmentDropdown({
                   setSearch("");
                 }}
               >
-                <MaterialCommunityIcons name="close" size={20} color="#070D1F" />
+                <MaterialCommunityIcons name="close" size={20} color={appColors.text} />
               </Pressable>
             </View>
 
             {/* Search Input */}
             <View style={styles.searchWrap}>
-              <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
+              <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search department (e.g., CS, AI, Management)..."
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={appColors.textMuted}
                 value={search}
                 onChangeText={setSearch}
                 autoCorrect={false}
               />
               {search ? (
                 <Pressable onPress={() => setSearch("")} style={styles.clearSearchBtn}>
-                  <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+                  <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
                 </Pressable>
               ) : null}
             </View>
@@ -192,7 +192,7 @@ export function DepartmentDropdown({
             {/* List */}
             {loading && !departmentList.length ? (
               <View style={styles.centerLoading}>
-                <ActivityIndicator size="small" color="#0D3E02" />
+                <ActivityIndicator size="small" color={appColors.primary} />
                 <Text style={styles.loadingText}>Fetching department list...</Text>
               </View>
             ) : (
@@ -213,7 +213,7 @@ export function DepartmentDropdown({
                     >
                       <View style={styles.itemTextWrap}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <MaterialCommunityIcons name="domain" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
+                          <MaterialCommunityIcons name="domain" size={16} color={appColors.primary} style={{ marginRight: 6 }} />
                           <Text
                             style={[
                               styles.itemName,
@@ -227,7 +227,7 @@ export function DepartmentDropdown({
                         <Text style={styles.itemSub}>Show items from all departments</Text>
                       </View>
                       {(!selectedDepartment || selectedDepartment === "all") && (
-                        <MaterialCommunityIcons name="check" size={18} color="#0D3E02" />
+                        <MaterialCommunityIcons name="check" size={18} color={appColors.primary} />
                       )}
                     </Pressable>
                   ) : null
@@ -258,7 +258,7 @@ export function DepartmentDropdown({
                           </Text>
                         </View>
                       </View>
-                      {isSelected && <MaterialCommunityIcons name="check" size={18} color="#0D3E02" />}
+                      {isSelected && <MaterialCommunityIcons name="check" size={18} color={appColors.primary} />}
                     </Pressable>
                   );
                 }}
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   labelText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#1E293B",
+    color: appColors.text,
     marginBottom: 6,
   },
   requiredStar: {
@@ -295,29 +295,29 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#ffffff",
     borderWidth: 1.5,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     minHeight: 48,
   },
   selectorBtnEmpty: {
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
   },
   selectorBtnText: {
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: "#0F172A",
+    color: appColors.text,
     marginRight: 8,
   },
   placeholderText: {
-    color: "#94A3B8",
+    color: appColors.textMuted,
     fontWeight: "400",
   },
   arrowIcon: {
     fontSize: 10,
-    color: "#64748B",
+    color: appColors.textSecondary,
   },
   modalOverlay: {
     flex: 1,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.035,
     shadowRadius: 12,
     elevation: 20,
   },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: "#CBD5E1",
+    backgroundColor: appColors.border,
   },
   modalHeader: {
     flexDirection: "row",
@@ -354,42 +354,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: appColors.border,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   modalSubtitle: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   closeBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
   closeBtnText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#64748B",
+    color: appColors.textSecondary,
   },
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 12,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   searchIcon: {
     fontSize: 14,
@@ -399,14 +399,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 42,
     fontSize: 14,
-    color: "#0F172A",
+    color: appColors.text,
   },
   clearSearchBtn: {
     padding: 4,
   },
   clearSearchText: {
     fontSize: 12,
-    color: "#94A3B8",
+    color: appColors.textMuted,
     fontWeight: "700",
   },
   listContent: {
@@ -423,11 +423,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: appColors.border,
   },
   listItemSelected: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   itemTextWrap: {
     flex: 1,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: "#FFF8E1",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -449,27 +449,27 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   itemName: {
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: "#1E293B",
+    color: appColors.text,
   },
   itemNameSelected: {
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   itemSub: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   checkIcon: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   emptyList: {
     padding: 32,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: "#94A3B8",
+    color: appColors.textMuted,
   },
   centerLoading: {
     padding: 40,
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 8,
   },
 });

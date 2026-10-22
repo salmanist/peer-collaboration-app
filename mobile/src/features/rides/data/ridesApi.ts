@@ -1,4 +1,4 @@
-import { apiClient } from "../../../core/network/apiClient";
+import { apiClient, API_REQUEST_TIMEOUT_MS } from "../../../core/network/apiClient";
 
 export interface RideUser {
   id: number;
@@ -27,6 +27,7 @@ export interface Ride {
   started_at: string | null;
   completed_at: string | null;
   my_request_status: JoinRequestStatus | null;
+  pending_request_count?: number | null;
   created_at: string;
 }
 
@@ -50,6 +51,7 @@ export interface RideJoinRequest {
 
 export interface Paginated<T> {
   count: number;
+  next?: string | null;
   results: T[];
 }
 
@@ -61,6 +63,8 @@ export interface RideLocation {
 }
 
 export interface RideSearchParams {
+  q?: string;
+  page?: number;
   departure?: string;
   destination?: string;
   date?: string;
@@ -80,14 +84,31 @@ export interface CreateRidePayload {
   same_gender_only: boolean;
 }
 
-export async function searchLocations(query: string) {
-  const { data } = await apiClient.get<Paginated<RideLocation>>("/rides/locations/", { params: { q: query } });
+export async function searchLocations(query?: string) {
+  const params = query?.trim() ? { q: query.trim() } : {};
+  const { data } = await apiClient.get<Paginated<RideLocation>>("/rides/locations/", { params });
   return data.results;
 }
 
-export async function listRides(params?: RideSearchParams) {
-  const { data } = await apiClient.get<Paginated<Ride>>("/rides/", { params });
+export async function listRides(params?: RideSearchParams, signal?: AbortSignal) {
+  const { data } = await apiClient.get<Paginated<Ride>>("/rides/", { params, signal, timeout: 25000 });
   return data;
+}
+
+// Search every results page, so matches aren't limited to the first page.
+export async function listAvailableRides(params?: RideSearchParams, options?: { signal?: AbortSignal; onPage?: (rides: Ride[]) => void }) {
+  const rides: Ride[] = [];
+  const seen = new Set<number>();
+  let page = 1;
+  while (true) {
+    const data = await listRides({ ...params, page }, options?.signal);
+    const fresh = data.results.filter(ride => !seen.has(ride.id));
+    if (data.results.length && !fresh.length) throw new Error("Ride results repeated. Please retry.");
+    fresh.forEach(ride => { seen.add(ride.id); rides.push(ride); });
+    options?.onPage?.([...rides]);
+    if (!data.next || !data.results.length || rides.length >= data.count) return { ...data, results: rides };
+    page += 1;
+  }
 }
 
 export async function listMyRides() {
@@ -139,5 +160,23 @@ export async function acceptRequest(requestId: number) {
 
 export async function declineRequest(requestId: number) {
   const { data } = await apiClient.post<RideJoinRequest>(`/rides/requests/${requestId}/decline/`);
+  return data;
+}
+
+export interface RideHistory {
+  scheduled: Ride[];
+  realtime: {
+    id: number;
+    pickup: string;
+    destination: string;
+    status: string;
+    created_at: string;
+    role: string;
+    partner_name?: string;
+    departure_time?: string;
+  }[];
+}
+export async function listRideHistory() {
+  const { data } = await apiClient.get<RideHistory>("/rides/history/");
   return data;
 }

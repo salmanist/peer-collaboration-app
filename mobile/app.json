@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "FellOo",
+    "name": "Fello",
     "slug": "felloo",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -31,7 +31,21 @@
           "locationWhenInUsePermission": "LGU Peer uses your location to suggest nearby ride matches when you offer or search for a ride."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFFFFF",
+          "image": "./assets/fello-launch.png",
+          "imageWidth": 320,
+          "resizeMode": "contain",
+          "android": {
+            "image": "./assets/splash-icon.png",
+            "imageWidth": 72,
+            "backgroundColor": "#FFFFFF"
+          }
+        }
+      ]
     ]
   }
 }

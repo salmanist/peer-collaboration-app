@@ -1,14 +1,27 @@
 import axios, { AxiosError } from "axios";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 import { getSessionSnapshot } from "../auth/session";
 
 function resolveApiBaseUrl(): string {
   if (Platform.OS === "web") {
-    return process.env.EXPO_PUBLIC_WEB_API_URL ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api";
+    return process.env.EXPO_PUBLIC_WEB_API_URL ?? process.env.EXPO_PUBLIC_API_URL ?? (__DEV__ ? "/api" : "http://localhost:8000/api");
   }
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+
+  // Use the connection that already delivered the bundle to Expo Go, instead
+  // of requiring the iPhone to reach a second Windows development-server port.
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri;
+    if (hostUri) {
+      const scheme = hostUri.includes(".exp.direct") ? "https" : "http";
+      const origin = new URL(hostUri.includes("://") ? hostUri : `${scheme}://${hostUri}`).origin;
+      return `${origin}/api`;
+    }
+    const scriptUrl = NativeModules.SourceCode?.scriptURL as string | undefined;
+    if (scriptUrl?.startsWith("http")) return `${new URL(scriptUrl).origin}/api`;
+  }
 
   // On Expo Go the Metro host is the dev machine, so reuse its IP for the API.
   const hostUri = Constants.expoConfig?.hostUri;
@@ -19,7 +32,8 @@ function resolveApiBaseUrl(): string {
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
-export const apiClient = axios.create({ baseURL: API_BASE_URL });
+export const API_REQUEST_TIMEOUT_MS = 45000;
+export const apiClient = axios.create({ baseURL: API_BASE_URL, timeout: API_REQUEST_TIMEOUT_MS });
 
 apiClient.interceptors.request.use((config) => {
   const { accessToken } = getSessionSnapshot();
@@ -36,11 +50,15 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null;
 
   try {
-    const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh: refreshToken });
+    const { data } = await axios.post(`${API_BASE_URL}/auth/refresh/`, { refresh: refreshToken }, { timeout: API_REQUEST_TIMEOUT_MS });
     await setAccessToken(data.access, data.refresh);
     return data.access as string;
-  } catch {
-    await clearSession();
+  } catch (error) {
+    // A temporary API outage is not an expired login. Only discard the session
+    // when the server actually rejects the refresh token.
+    if (axios.isAxiosError(error) && [400, 401].includes(error.response?.status || 0)) {
+      await clearSession();
+    }
     return null;
   }
 }

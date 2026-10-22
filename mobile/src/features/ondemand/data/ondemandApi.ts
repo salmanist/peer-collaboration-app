@@ -139,3 +139,118 @@ export async function listNearbyRequests() {
   const { data } = await apiClient.get<OnDemandRide[]>("/ondemand/driver/requests/");
   return data;
 }
+
+
+export type PeerRequestStatus = "open" | "accepted" | "completed" | "cancelled";
+export type PeerRequestKind = "need_ride" | "offering";
+
+export interface PeerRideRequest {
+  id: number;
+  kind: PeerRequestKind;
+  seats: number;
+  departure_time: string;
+  status: PeerRequestStatus;
+  poster: { id: number; full_name: string };
+  responder: { id: number; full_name: string } | null;
+  pickup_label: string;
+  pickup_lat: number;
+  pickup_lng: number;
+  drop_label: string;
+  drop_lat: number;
+  drop_lng: number;
+  note: string;
+  created_at: string;
+  accepted_at: string | null;
+}
+
+export interface CreatePeerRequestPayload {
+  kind?: PeerRequestKind;
+  seats?: number;
+  departure_time?: string;
+  pickup_label: string;
+  pickup_lat?: number;
+  pickup_lng?: number;
+  drop_label: string;
+  drop_lat?: number;
+  drop_lng?: number;
+  note?: string;
+}
+
+export async function listPeerRequests() {
+  const { data } = await apiClient.get<PeerRideRequest[]>("/ondemand/peer-requests/");
+  return data;
+}
+
+export async function createPeerRequest(payload: CreatePeerRequestPayload) {
+  const { data } = await apiClient.post<PeerRideRequest>("/ondemand/peer-requests/", payload);
+  return data;
+}
+
+export async function cancelPeerRequest(id: number) {
+  const { data } = await apiClient.delete<PeerRideRequest>(`/ondemand/peer-requests/${id}/`);
+  return data;
+}
+
+export async function respondToPeerRequest(id: number) {
+  const { data } = await apiClient.post<PeerRideRequest>(`/ondemand/peer-requests/${id}/respond/`);
+  return data;
+}
+
+export async function completePeerRequest(id: number) {
+  const { data } = await apiClient.post<PeerRideRequest>(`/ondemand/peer-requests/${id}/complete/`);
+  return data;
+}
+
+export interface PeerRideChatMessage {
+  id: number;
+  request: number;
+  sender_id: number;
+  sender_name: string;
+  body: string;
+  image: string | null;
+  created_at: string;
+}
+
+export interface PaginatedPeerRideChatMessages {
+  count?: number;
+  results: PeerRideChatMessage[];
+}
+
+export async function fetchPeerRideChatMessages(requestId: number) {
+  const { data } = await apiClient.get<PaginatedPeerRideChatMessages | PeerRideChatMessage[]>(
+    `/ondemand/peer-requests/${requestId}/messages/`,
+  );
+  if (Array.isArray(data)) {
+    return { results: data };
+  }
+  return data;
+}
+
+export async function sendPeerRideChatMessage(
+  requestId: number,
+  payload: { body?: string; imageUri?: string },
+) {
+  const form = new FormData();
+  if (payload.body) {
+    form.append("body", payload.body);
+  }
+  if (payload.imageUri) {
+    const filename = payload.imageUri.split("/").pop() || "chat.jpg";
+    const extension = filename.split(".").pop()?.toLowerCase();
+    const type = extension === "png" ? "image/png" : "image/jpeg";
+    form.append("image", {
+      uri: payload.imageUri,
+      name: filename,
+      type,
+    } as any);
+  }
+
+  const { data } = await apiClient.post<PeerRideChatMessage>(
+    `/ondemand/peer-requests/${requestId}/messages/`,
+    form,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
+  return data;
+}

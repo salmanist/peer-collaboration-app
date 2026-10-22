@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -8,8 +10,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -112,7 +112,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
               <Text style={styles.modalSubtitle}>With {tutor.tutor_name}</Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeBtn}>
-              <MaterialCommunityIcons name="close" size={20} color="#070D1F" />
+              <MaterialCommunityIcons name="close" size={20} color={appColors.text} />
             </Pressable>
           </View>
 
@@ -135,7 +135,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
                   <MaterialCommunityIcons
                     name="book-open-outline"
                     size={15}
-                    color={sessionType === "academic" ? "#0D3E02" : "#475569"}
+                    color={sessionType === "academic" ? appColors.primary : appColors.textSecondary}
                     style={{ marginRight: 5 }}
                   />
                   <Text style={[styles.optionText, sessionType === "academic" && styles.optionTextActive]}>
@@ -151,7 +151,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
                   <MaterialCommunityIcons
                     name="briefcase-outline"
                     size={15}
-                    color={sessionType === "skill_mentorship" ? "#0D3E02" : "#475569"}
+                    color={sessionType === "skill_mentorship" ? appColors.primary : appColors.textSecondary}
                     style={{ marginRight: 5 }}
                   />
                   <Text style={[styles.optionText, sessionType === "skill_mentorship" && styles.optionTextActive]}>
@@ -184,7 +184,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
               value={subjectOrSkill}
               onChangeText={setSubjectOrSkill}
               placeholder="Or type specific topic..."
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={appColors.textMuted}
             />
 
             {/* Meeting Mode */}
@@ -201,7 +201,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
                   <MaterialCommunityIcons
                     name="school-outline"
                     size={15}
-                    color={meetingMode === "on_campus" ? "#0D3E02" : "#475569"}
+                    color={meetingMode === "on_campus" ? appColors.primary : appColors.textSecondary}
                     style={{ marginRight: 5 }}
                   />
                   <Text style={[styles.optionText, meetingMode === "on_campus" && styles.optionTextActive]}>
@@ -220,7 +220,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
                   <MaterialCommunityIcons
                     name="laptop"
                     size={15}
-                    color={meetingMode === "online" ? "#0D3E02" : "#475569"}
+                    color={meetingMode === "online" ? appColors.primary : appColors.textSecondary}
                     style={{ marginRight: 5 }}
                   />
                   <Text style={[styles.optionText, meetingMode === "online" && styles.optionTextActive]}>
@@ -231,25 +231,21 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
             </View>
 
             {/* Location or Link */}
-            <Text style={styles.label}>
-              {meetingMode === "on_campus" ? "Campus Location *" : "Online Platform / Link *"}
-            </Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { marginTop: 12 }]}
               value={locationOrLink}
               onChangeText={setLocationOrLink}
-              placeholder={meetingMode === "on_campus" ? "e.g. LGU CS Lab 3, Library Pod 2" : "e.g. Google Meet link, Discord ID"}
-              placeholderTextColor="#94a3b8"
+              placeholder={meetingMode === "on_campus" ? "Campus Location (e.g. LGU CS Lab 3, Library Pod 2)" : "Online Platform / Link (e.g. Google Meet, Discord ID)"}
+              placeholderTextColor={appColors.textMuted}
             />
 
             {/* Date & Time */}
-            <Text style={styles.label}>Scheduled Date & Time (YYYY-MM-DD HH:MM) *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { marginTop: 12 }]}
               value={scheduledDate}
               onChangeText={setScheduledDate}
-              placeholder="2026-08-25 15:00"
-              placeholderTextColor="#94a3b8"
+              placeholder="Scheduled Date & Time (YYYY-MM-DD HH:MM, e.g. 2026-08-25 15:00)"
+              placeholderTextColor={appColors.textMuted}
             />
 
             {/* Duration */}
@@ -269,15 +265,14 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
             </View>
 
             {/* Notes / Questions */}
-            <Text style={styles.label}>Session Goals & Questions</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { marginTop: 12 }]}
               value={notes}
               onChangeText={setNotes}
               multiline
               numberOfLines={3}
-              placeholder="What topics or questions would you like to cover in this session?"
-              placeholderTextColor="#94a3b8"
+              placeholder="Session Goals & Questions (topics or questions you'd like to cover...)"
+              placeholderTextColor={appColors.textMuted}
             />
           </ScrollView>
 
@@ -318,17 +313,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+    borderBottomColor: appColors.border,
     paddingBottom: 12,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
   },
   modalSubtitle: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   closeBtn: {
@@ -336,7 +331,7 @@ const styles = StyleSheet.create({
   },
   closeBtnText: {
     fontSize: 18,
-    color: "#94a3b8",
+    color: appColors.textMuted,
     fontWeight: "700",
   },
   formScroll: {
@@ -355,7 +350,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 6,
     marginTop: 10,
   },
@@ -367,22 +362,22 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 9,
     borderRadius: 10,
-    backgroundColor: "#f8fafc",
+    backgroundColor: appColors.background,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: appColors.border,
   },
   optionBtnActive: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   optionText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   optionTextActive: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
   },
   tagsRow: {
@@ -395,17 +390,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: appColors.border,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: appColors.border,
   },
   tagBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   tagBtnText: {
     fontSize: 11,
-    color: "#475569",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   tagBtnTextActive: {
@@ -415,12 +410,12 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: appColors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
     fontSize: 13,
-    color: "#070D1F",
+    color: appColors.text,
   },
   textArea: {
     minHeight: 70,
@@ -434,19 +429,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: appColors.border,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: appColors.border,
   },
   durationBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   durationText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   durationTextActive: {
     color: "#FDBF1E",
@@ -457,9 +452,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },

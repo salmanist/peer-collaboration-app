@@ -8,12 +8,13 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import EmailVerification, StudentRoster, User
+from .models import EmailVerification, PersonalProfile, StudentRoster, User
 from .serializers import (
     ForgotPasswordSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
     UserSerializer,
+    PersonalProfileSerializer,
     VerifyEmailSerializer,
 )
 
@@ -161,11 +162,6 @@ class EmailVerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         if not self.user.is_email_verified or not self.user.is_active:
             raise AuthenticationFailed("Please verify your email before logging in.")
-        if not self.user.full_name or not self.user.full_name.strip():
-            roster = StudentRoster.objects.filter(email=self.user.email).first()
-            if roster and roster.full_name and roster.full_name.strip():
-                self.user.full_name = roster.full_name.strip()
-                self.user.save(update_fields=["full_name"])
         data["user"] = UserSerializer(self.user).data
         return data
 
@@ -179,7 +175,19 @@ class MeView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        return User.objects.select_related("personal_profile").get(pk=self.request.user.pk)
+
+    def patch(self, request):
+        serializer = PersonalProfileSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        PersonalProfile.objects.update_or_create(user=request.user, defaults=serializer.validated_data)
+        if "gender" in serializer.validated_data and serializer.validated_data["gender"] in ("male", "female"):
+            roster = request.user.roster_entry
+            if roster:
+                roster.gender = serializer.validated_data["gender"]
+                roster.save(update_fields=["gender"])
+        user = User.objects.select_related("personal_profile").get(pk=request.user.pk)
+        return Response(UserSerializer(user).data)
 
 
 

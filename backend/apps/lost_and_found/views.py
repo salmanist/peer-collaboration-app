@@ -135,6 +135,8 @@ class ItemClaimListCreateView(generics.ListCreateAPIView):
                 message=f"{claimer_name} submitted a claim verification for your item '{item.title}'.",
                 priority="high",
                 sender=self.request.user,
+                category="lost_and_found",
+                action_url="/(app)/lost-and-found",
             )
         except Exception:
             pass

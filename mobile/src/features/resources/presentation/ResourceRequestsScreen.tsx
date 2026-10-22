@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -8,7 +11,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -93,9 +95,9 @@ export default function ResourceRequestsScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Interest Requests</Text>
         <View style={{ width: 36 }} />
@@ -121,8 +123,8 @@ export default function ResourceRequestsScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={() => void loadRequests(true)}
-              colors={["#0D3E02"]}
-              tintColor="#0D3E02"
+              colors={[appColors.primary]}
+              tintColor={appColors.primary}
             />
           }
         >
@@ -211,7 +213,7 @@ function RequestCard({
 
       {kind === "incoming" ? (
         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-          <MaterialCommunityIcons name="account-outline" size={13} color="#475569" style={{ marginRight: 4 }} />
+          <MaterialCommunityIcons name="account-outline" size={13} color={appColors.textSecondary} style={{ marginRight: 4 }} />
           <Text style={styles.fromText}>From: {interestRequest.requester_name}</Text>
         </View>
       ) : null}
@@ -265,7 +267,7 @@ function RequestCard({
             onPress={() => void onUpdate(interestRequest.id, "cancelled")}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="close" size={14} color="#64748b" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="close" size={14} color={appColors.textSecondary} style={{ marginRight: 4 }} />
               <Text style={styles.cancelBtnText}>Cancel Request</Text>
             </View>
           </Pressable>
@@ -286,7 +288,7 @@ function RequestCard({
           }
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-            <MaterialCommunityIcons name="chat-outline" size={15} color="#0D3E02" style={{ marginRight: 5 }} />
+            <MaterialCommunityIcons name="chat-outline" size={15} color={appColors.primary} style={{ marginRight: 5 }} />
             <Text style={styles.chatBtnText}>Open Chat with Student</Text>
           </View>
         </Pressable>
@@ -298,11 +300,11 @@ function RequestCard({
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -321,7 +323,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   scrollContent: {
     padding: 16,
@@ -333,7 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sectionHeader: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: -0.2,
@@ -343,26 +345,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     padding: 16,
     alignItems: "center",
   },
   emptyCardText: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 12,
   },
   card: {
     backgroundColor: "#ffffff",
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     gap: 8,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 1,
     marginBottom: 6,
   },
   cardHeaderRow: {
@@ -372,7 +374,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 15,
     fontWeight: "700",
     flex: 1,
@@ -388,22 +390,22 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   statusAccepted: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   statusAcceptedText: {
-    color: "#15803D",
+    color: appColors.icon,
     fontSize: 10,
     fontWeight: "800",
   },
   statusPending: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.surfaceMuted,
     borderColor: "#FDE68A",
     borderWidth: 1,
   },
   statusPendingText: {
-    color: "#92400E",
+    color: appColors.icon,
     fontSize: 10,
     fontWeight: "800",
   },
@@ -418,14 +420,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   fromText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
   messageText: {
-    color: "#334155",
+    color: appColors.textSecondary,
     fontSize: 12,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     padding: 10,
     borderRadius: 8,
     fontStyle: "italic",
@@ -435,13 +437,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 8,
     marginTop: 4,
   },
   acceptBtn: {
     flex: 1,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
@@ -467,7 +469,7 @@ const styles = StyleSheet.create({
   },
   completeBtn: {
     flex: 1,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
@@ -492,7 +494,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   chatBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingVertical: 9,
     borderRadius: 8,
     alignItems: "center",

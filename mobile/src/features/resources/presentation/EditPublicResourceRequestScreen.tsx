@@ -1,3 +1,7 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -8,8 +12,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -129,7 +131,7 @@ export default function EditPublicResourceRequestScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0D3E02" />
+        <LoadingSkeleton variant="form" />
       </View>
     );
   }
@@ -140,9 +142,9 @@ export default function EditPublicResourceRequestScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Request</Text>
         <Pressable
@@ -162,22 +164,20 @@ export default function EditPublicResourceRequestScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.label}>What do you need? *</Text>
         <TextInput
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g. Data Structures & Algorithms"
-          placeholderTextColor="#94a3b8"
+          placeholder="What do you need? (e.g. Data Structures & Algorithms)"
+          placeholderTextColor={appColors.textMuted}
         />
 
-        <Text style={styles.label}>Course Code (optional)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { marginTop: 12 }]}
           value={course}
           onChangeText={setCourse}
-          placeholder="e.g. CS-302"
-          placeholderTextColor="#94a3b8"
+          placeholder="Course Code (optional, e.g. CS-302)"
+          placeholderTextColor={appColors.textMuted}
         />
 
         <Text style={styles.label}>Category</Text>
@@ -194,7 +194,7 @@ export default function EditPublicResourceRequestScreen() {
                   <MaterialCommunityIcons
                     name={cat.icon}
                     size={14}
-                    color={isSelected ? "#0D3E02" : "#64748b"}
+                    color={isSelected ? appColors.primary : appColors.textSecondary}
                     style={{ marginRight: 4 }}
                   />
                   <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
@@ -224,9 +224,10 @@ export default function EditPublicResourceRequestScreen() {
           })}
         </View>
 
-        <Text style={styles.label}>Description *</Text>
         <TextInput
-          style={[styles.input, styles.descriptionInput]}
+          style={[styles.input, styles.descriptionInput, { marginTop: 14 }]}
+          placeholder="Description"
+          placeholderTextColor={appColors.textMuted}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -275,11 +276,11 @@ export default function EditPublicResourceRequestScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -298,31 +299,31 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   centered: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   container: {
     padding: 16,
     gap: 10,
   },
   label: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
     fontWeight: "700",
     marginTop: 6,
   },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     borderWidth: 1,
     padding: 12,
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
   },
   descriptionInput: {
@@ -339,26 +340,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
     gap: 6,
   },
   optionPillSelected: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   optionPillIcon: {
     fontSize: 12,
   },
   optionPillText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
   optionPillTextSelected: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   saveButton: {
@@ -368,9 +369,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 16,
     minHeight: 48,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },

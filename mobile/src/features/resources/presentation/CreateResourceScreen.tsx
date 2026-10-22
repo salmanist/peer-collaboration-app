@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -10,8 +13,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -158,9 +159,9 @@ export default function CreateResourceScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>
           {postMode === "share" ? "Share an Item" : "Post a Request"}
@@ -188,7 +189,7 @@ export default function CreateResourceScreen() {
               <MaterialCommunityIcons
                 name="package-variant-plus"
                 size={16}
-                color={postMode === "share" ? "#0D3E02" : "#64748B"}
+                color={postMode === "share" ? appColors.primary : appColors.textSecondary}
                 style={{ marginRight: 6 }}
               />
               <Text style={[styles.segmentBtnText, postMode === "share" && styles.segmentBtnTextActive]}>
@@ -208,7 +209,7 @@ export default function CreateResourceScreen() {
               <MaterialCommunityIcons
                 name="hand-wave-outline"
                 size={16}
-                color={postMode === "request" ? "#0D3E02" : "#64748B"}
+                color={postMode === "request" ? appColors.primary : appColors.textSecondary}
                 style={{ marginRight: 6 }}
               />
               <Text style={[styles.segmentBtnText, postMode === "request" && styles.segmentBtnTextActive]}>
@@ -229,26 +230,22 @@ export default function CreateResourceScreen() {
           </Text>
         </View>
 
-        <Text style={styles.label}>
-          {postMode === "share" ? "Item Title *" : "What do you need? *"}
-        </Text>
         <TextInput
           style={styles.input}
           placeholder={
             postMode === "share"
-              ? "e.g. Database Systems 6th Edition / Midterm Notes"
-              : "e.g. Data Structures & Algorithms (Robert Lafore)"
+              ? "Item Title (e.g. Database Systems 6th Edition / Midterm Notes)"
+              : "What do you need? (e.g. Data Structures & Algorithms)"
           }
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
           value={title}
           onChangeText={setTitle}
         />
 
-        <Text style={styles.label}>Course Code (optional)</Text>
         <TextInput
-          style={styles.input}
-          placeholder="e.g. CS-301, SE-204"
-          placeholderTextColor="#94a3b8"
+          style={[styles.input, { marginTop: 12 }]}
+          placeholder="Course Code (optional, e.g. CS-301, SE-204)"
+          placeholderTextColor={appColors.textMuted}
           value={course}
           onChangeText={setCourse}
         />
@@ -267,7 +264,7 @@ export default function CreateResourceScreen() {
                   <MaterialCommunityIcons
                     name={cat.icon}
                     size={14}
-                    color={isSelected ? "#0D3E02" : "#64748b"}
+                    color={isSelected ? appColors.primary : appColors.textSecondary}
                     style={{ marginRight: 4 }}
                   />
                   <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
@@ -318,19 +315,14 @@ export default function CreateResourceScreen() {
             </View>
 
             {(exchangeType === "sell" || exchangeType === "rent") && (
-              <>
-                <Text style={styles.label}>
-                  {exchangeType === "rent" ? "Rental Price in PKR *" : "Price in PKR *"}
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. 500"
-                  placeholderTextColor="#94a3b8"
-                  value={price}
-                  onChangeText={setPrice}
-                  keyboardType="decimal-pad"
-                />
-              </>
+              <TextInput
+                style={[styles.input, { marginTop: 12 }]}
+                placeholder={exchangeType === "rent" ? "Rental Price in PKR (e.g. 500)" : "Price in PKR (e.g. 500)"}
+                placeholderTextColor={appColors.textMuted}
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="decimal-pad"
+              />
             )}
 
             <Text style={styles.label}>Photo (optional)</Text>
@@ -347,7 +339,7 @@ export default function CreateResourceScreen() {
             ) : (
               <Pressable style={styles.imagePickerButton} onPress={() => setIsImagePickerOpen(true)}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                  <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="camera-plus-outline" size={18} color={appColors.primary} style={{ marginRight: 6 }} />
                   <Text style={styles.imagePickerButtonText}>Add Photo (Camera or Gallery)</Text>
                 </View>
               </Pressable>
@@ -375,17 +367,14 @@ export default function CreateResourceScreen() {
           </>
         )}
 
-        <Text style={styles.label}>
-          {postMode === "share" ? "Item Description *" : "Details / Notes *"}
-        </Text>
         <TextInput
-          style={[styles.input, styles.descriptionInput]}
+          style={[styles.input, styles.descriptionInput, { marginTop: 14 }]}
           placeholder={
             postMode === "share"
-              ? "Describe edition, chapters covered, condition, or meetup location..."
-              : "Specify any required author, edition, deadline, or meetup preference..."
+              ? "Item Description (edition, chapters, condition, meetup spot...)"
+              : "Details / Notes (author, edition, deadline, meetup preference...)"
           }
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -405,7 +394,7 @@ export default function CreateResourceScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#0D3E02" />
+            <ActivityIndicator color={appColors.primary} />
           ) : (
             <Text style={styles.submitButtonText}>
               {postMode === "share" ? "Publish Shared Item" : "Publish Request"}
@@ -427,11 +416,11 @@ export default function CreateResourceScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -450,7 +439,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   container: {
     padding: 16,
@@ -458,7 +447,7 @@ const styles = StyleSheet.create({
   },
   segmentContainer: {
     flexDirection: "row",
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
     borderRadius: 14,
     padding: 4,
     marginBottom: 4,
@@ -474,17 +463,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.035,
     shadowRadius: 2,
     elevation: 2,
   },
   segmentBtnText: {
     fontSize: 12.5,
     fontWeight: "700",
-    color: "#64748B",
+    color: appColors.textSecondary,
   },
   segmentBtnTextActive: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   header: {
@@ -495,15 +484,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
   },
   subtitle: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
   },
   label: {
-    color: "#070D1F",
+    color: appColors.text,
     fontWeight: "700",
     fontSize: 13,
     marginTop: 6,
@@ -511,10 +500,10 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     padding: 12,
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 14,
   },
   descriptionInput: {
@@ -524,7 +513,7 @@ const styles = StyleSheet.create({
   imagePickerButton: {
     backgroundColor: "#ffffff",
     borderWidth: 1.5,
-    borderColor: "#0D3E02",
+    borderColor: appColors.primary,
     borderStyle: "dashed",
     borderRadius: 12,
     padding: 14,
@@ -532,7 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   imagePickerButtonText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
     fontSize: 13.5,
   },
@@ -563,22 +552,22 @@ const styles = StyleSheet.create({
   optionPill: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 20,
     paddingHorizontal: 13,
     paddingVertical: 7,
   },
   optionPillSelected: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   optionPillText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
   optionPillTextSelected: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   errorText: {
@@ -594,9 +583,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 14,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -604,7 +593,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
     fontSize: 15,
   },

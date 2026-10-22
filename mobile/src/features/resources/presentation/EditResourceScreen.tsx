@@ -1,3 +1,7 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -10,8 +14,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -157,7 +159,7 @@ export default function EditResourceScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0D3E02" />
+        <LoadingSkeleton variant="form" />
       </View>
     );
   }
@@ -170,9 +172,9 @@ export default function EditResourceScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Resource</Text>
         <Pressable
@@ -192,22 +194,20 @@ export default function EditResourceScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.label}>Title *</Text>
         <TextInput
           style={styles.input}
           value={title}
           onChangeText={setTitle}
           placeholder="Resource title"
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
         />
 
-        <Text style={styles.label}>Course Code (optional)</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { marginTop: 12 }]}
           value={course}
           onChangeText={setCourse}
-          placeholder="e.g. CS-301"
-          placeholderTextColor="#94a3b8"
+          placeholder="Course Code (optional, e.g. CS-301)"
+          placeholderTextColor={appColors.textMuted}
         />
 
         <Text style={styles.label}>Category</Text>
@@ -265,19 +265,14 @@ export default function EditResourceScreen() {
         </View>
 
         {exchangeType === "sell" || exchangeType === "rent" ? (
-          <>
-            <Text style={styles.label}>
-              {exchangeType === "rent" ? "Rental Price in PKR *" : "Price in PKR *"}
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="decimal-pad"
-              placeholder="e.g. 500"
-              placeholderTextColor="#94a3b8"
-            />
-          </>
+          <TextInput
+            style={[styles.input, { marginTop: 12 }]}
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="decimal-pad"
+            placeholder={exchangeType === "rent" ? "Rental Price in PKR (e.g. 500)" : "Price in PKR (e.g. 500)"}
+            placeholderTextColor={appColors.textMuted}
+          />
         ) : null}
 
         <Text style={styles.label}>Photo (optional)</Text>
@@ -286,7 +281,7 @@ export default function EditResourceScreen() {
             <Image source={{ uri: displayImageUri }} style={styles.imagePreview} />
             <Pressable style={styles.changeImageButton} onPress={() => setIsImagePickerOpen(true)}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <MaterialCommunityIcons name="camera-retake-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="camera-retake-outline" size={16} color={appColors.primary} style={{ marginRight: 6 }} />
                 <Text style={styles.changeImageText}>Change Photo (Camera / Gallery)</Text>
               </View>
             </Pressable>
@@ -294,15 +289,16 @@ export default function EditResourceScreen() {
         ) : (
           <Pressable style={styles.imagePickerButton} onPress={() => setIsImagePickerOpen(true)}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="camera-plus-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="camera-plus-outline" size={18} color={appColors.primary} style={{ marginRight: 6 }} />
               <Text style={styles.imagePickerButtonText}>Add Photo (Camera or Gallery)</Text>
             </View>
           </Pressable>
         )}
 
-        <Text style={styles.label}>Description *</Text>
         <TextInput
-          style={[styles.input, styles.descriptionInput]}
+          style={[styles.input, styles.descriptionInput, { marginTop: 14 }]}
+          placeholder="Description"
+          placeholderTextColor={appColors.textMuted}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -358,11 +354,11 @@ export default function EditResourceScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -381,31 +377,31 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   centered: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   container: {
     padding: 16,
     gap: 10,
   },
   label: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
     fontWeight: "700",
     marginTop: 6,
   },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     borderWidth: 1,
     padding: 12,
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
   },
   descriptionInput: {
@@ -420,28 +416,28 @@ const styles = StyleSheet.create({
   optionPill: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   optionPillSelected: {
-    backgroundColor: "#E8F5E9",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   optionPillText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
   },
   optionPillTextSelected: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   imagePickerButton: {
     backgroundColor: "#ffffff",
     borderWidth: 1.5,
-    borderColor: "#0D3E02",
+    borderColor: appColors.primary,
     borderStyle: "dashed",
     borderRadius: 12,
     padding: 16,
@@ -449,7 +445,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   imagePickerButtonText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -468,7 +464,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   changeImageText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -479,9 +475,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 16,
     minHeight: 48,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },

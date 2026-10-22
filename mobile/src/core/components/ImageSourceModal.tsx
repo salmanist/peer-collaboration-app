@@ -1,10 +1,11 @@
+import { colors as appColors } from "../ui/theme";
+import { Text } from "../ui/AppText";
 import React from "react";
 import {
   Alert,
   Modal,
   Pressable,
   StyleSheet,
-  Text,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
@@ -122,14 +123,14 @@ export const ImageSourceModal: React.FC<ImageSourceModalProps> = ({
                     <MaterialCommunityIcons
                       name="camera"
                       size={28}
-                      color="#0D3E02"
+                      color={appColors.primary}
                     />
                   </View>
                   <View style={styles.optionTextContainer}>
                     <Text style={styles.optionTitle}>Take Photo</Text>
                     <Text style={styles.optionSubtitle}>Capture a new picture using camera</Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={appColors.textMuted} />
                 </Pressable>
 
                 {/* Option 2: Gallery */}
@@ -144,14 +145,14 @@ export const ImageSourceModal: React.FC<ImageSourceModalProps> = ({
                     <MaterialCommunityIcons
                       name="image-multiple"
                       size={28}
-                      color="#0284C7"
+                      color={appColors.icon}
                     />
                   </View>
                   <View style={styles.optionTextContainer}>
                     <Text style={styles.optionTitle}>Choose from Gallery</Text>
                     <Text style={styles.optionSubtitle}>Select an existing image from library</Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={appColors.textMuted} />
                 </Pressable>
               </View>
 
@@ -186,9 +187,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 34,
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 16,
     elevation: 20,
   },
@@ -196,19 +197,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
     alignSelf: "center",
     marginBottom: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 13,
-    color: "#64748B",
+    color: appColors.textSecondary,
     textAlign: "center",
     marginTop: 4,
     marginBottom: 20,
@@ -219,29 +220,29 @@ const styles = StyleSheet.create({
   optionCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   optionCardPressed: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     transform: [{ scale: 0.99 }],
   },
   iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 14,
+
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   },
   cameraIconBox: {
-    backgroundColor: "#DCFCE7",
+
   },
   galleryIconBox: {
-    backgroundColor: "#E0F2FE",
+
   },
   optionTextContainer: {
     flex: 1,
@@ -249,27 +250,27 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#0F172A",
+    color: appColors.text,
   },
   optionSubtitle: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   cancelButton: {
     marginTop: 16,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
   cancelButtonPressed: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
   },
   cancelButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
 });

@@ -1,6 +1,8 @@
+import { LoadingSkeleton } from "../components/LoadingSkeleton";
+import { Text } from "./AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { usePersistentCache } from "../data/PersistentCache";
 import { listDepartments, type Department } from "../network/departmentsApi";
@@ -56,7 +58,7 @@ export function DepartmentPicker({
         <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)} />
         <View style={styles.sheet}>
           {isLoading ? (
-            <ActivityIndicator color={colors.primary} style={styles.loading} />
+            <LoadingSkeleton variant="list" count={2} />
           ) : (
             <ScrollView bounces={false} showsVerticalScrollIndicator>
               {clearable && (

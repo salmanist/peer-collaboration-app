@@ -1,89 +1,130 @@
-import { Stack } from "expo-router";
+import { colors as appColors } from "../../src/core/ui/theme";
+import { Stack, usePathname } from "expo-router";
 import { useEffect } from "react";
-import { AppState, View } from "react-native";
+import {
+  AppState,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 import { useSessionStore } from "../../src/core/auth/session";
-import { BottomNavBar } from "../../src/core/ui/BottomNavBar";
-import { colors } from "../../src/core/ui/theme";
-import { fetchMe } from "../../src/features/auth/auth";
+import AppSidebar from "../../src/core/navigation/AppSidebar";
+import AppBottomBar from "../../src/core/navigation/AppBottomBar";
+import { fetchMe } from "../../src/features/auth/data/authApi";
+import { useResourceNotificationStore } from "../../src/features/resources/resourceNotifications";
 import { useLostAndFoundNotificationStore } from "../../src/features/lost_and_found/lostAndFoundNotifications";
+import { useTutoringNotificationStore } from "../../src/features/tutoring/tutoringNotifications";
+import { useCampusNotificationStore } from "../../src/features/notifications/useCampusNotificationStore";
+import { RateTutorModal } from "../../src/features/tutoring/presentation/RateTutorModal";
 import CampusNotificationCenterModal from "../../src/features/notifications/presentation/CampusNotificationCenterModal";
 import CampusNotificationPopupModal from "../../src/features/notifications/presentation/CampusNotificationPopupModal";
-import { useCampusNotificationStore } from "../../src/features/notifications/useCampusNotificationStore";
-import { useResourceNotificationStore } from "../../src/features/resources/resourceNotifications";
-import { RateTutorModal } from "../../src/features/tutoring/presentation/RateTutorModal";
-import { useTutoringNotificationStore } from "../../src/features/tutoring/tutoringNotifications";
 
-const POLL_MS = 45000;
+import { useModuleUsageStore, ModuleKey } from "../../src/core/store/useModuleUsageStore";
 
-// Same stack options as the root layout. The tab bar floats over the screens
-// (absolutely positioned) so content scrolls underneath its glass.
-export default function AppLayout() {
+export default function AuthenticatedAppLayout() {
+  const pathname = usePathname();
+  useEffect(() => {
+    const segment = pathname.split("/").find(part => ["tutoring", "resources", "lost-and-found", "library", "rides", "ondemand", "printing"].includes(part));
+    const modules: Record<string, ModuleKey> = { tutoring: "tutoring", resources: "marketplace", "lost-and-found": "lost_and_found", library: "library", rides: "ride_sharing", ondemand: "ride_sharing", printing: "print_center" };
+    if (segment) useModuleUsageStore.getState().recordVisit(modules[segment]);
+  }, [pathname]);
+
+  const { width } = useWindowDimensions();
+  const hasPermanentSidebar = width >= 768;
   const user = useSessionStore((state) => state.user);
   const updateUser = useSessionStore((state) => state.updateUser);
 
   const fetchCampusNotifications = useCampusNotificationStore((state) => state.fetchNotifications);
-  const checkResourceUpdates = useResourceNotificationStore((state) => state.checkForUpdates);
-  const pollLostAndFound = useLostAndFoundNotificationStore((state) => state.pollSummary);
-  const pollTutoring = useTutoringNotificationStore((state) => state.pollSummary);
+  const checkForUpdates = useResourceNotificationStore((state) => state.checkForUpdates);
+  const pollLostAndFoundSummary = useLostAndFoundNotificationStore((state) => state.pollSummary);
+  const pollTutoringSummary = useTutoringNotificationStore((state) => state.pollSummary);
   const unreviewedSession = useTutoringNotificationStore((state) => state.unreviewedSession);
   const dismissUnreviewedSession = useTutoringNotificationStore((state) => state.dismissUnreviewedSession);
 
-  // Refresh the cached profile once per login so roster edits show up.
   useEffect(() => {
-    fetchMe().then(updateUser).catch(() => {});
+    fetchMe()
+      .then((me) => updateUser(me))
+      .catch(() => {});
   }, [updateUser]);
 
-  // One shared 45s poll for every module's badge/summary; paused while backgrounded.
   useEffect(() => {
     if (!user) return;
     const pollAll = () => {
       void fetchCampusNotifications();
-      void checkResourceUpdates(user.id);
-      void pollLostAndFound();
-      void pollTutoring();
-    };
-
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    const start = () => {
-      if (!intervalId) intervalId = setInterval(pollAll, POLL_MS);
-    };
-    const stop = () => {
-      if (intervalId) clearInterval(intervalId);
-      intervalId = null;
+      void checkForUpdates(user.id);
+      void pollLostAndFoundSummary();
+      void pollTutoringSummary();
     };
 
     pollAll();
-    start();
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") {
+
+    let intervalId: any = setInterval(pollAll, 45000);
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
         pollAll();
-        start();
+        if (!intervalId) intervalId = setInterval(pollAll, 45000);
       } else {
-        stop();
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
       }
     });
+
     return () => {
-      stop();
+      if (intervalId) clearInterval(intervalId);
       subscription.remove();
     };
-  }, [user, fetchCampusNotifications, checkResourceUpdates, pollLostAndFound, pollTutoring]);
+  }, [checkForUpdates, pollLostAndFoundSummary, pollTutoringSummary, fetchCampusNotifications, user]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: "none" }} />
-      <BottomNavBar />
+    <View style={[styles.root, hasPermanentSidebar ? styles.rootRow : styles.rootColumn]}>
+      {hasPermanentSidebar ? (
+        <View style={styles.desktopSidebar}>
+          <AppSidebar />
+        </View>
+      ) : null}
+
+      <View style={styles.content}>
+        <Stack screenOptions={{ headerShown: false, animation: "none" }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="home" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="admin" />
+          <Stack.Screen name="resources" />
+          <Stack.Screen name="lost-and-found" />
+          <Stack.Screen name="tutoring" />
+          <Stack.Screen name="library" />
+          <Stack.Screen name="rides" />
+          <Stack.Screen name="printing" />
+          <Stack.Screen name="ondemand" />
+        </Stack>
+      </View>
+
+      {!hasPermanentSidebar ? <AppBottomBar /> : null}
+
       <CampusNotificationPopupModal />
       <CampusNotificationCenterModal />
+
       <RateTutorModal
         visible={Boolean(unreviewedSession)}
         session={unreviewedSession}
         onClose={dismissUnreviewedSession}
         onSuccess={() => {
           dismissUnreviewedSession();
-          void pollTutoring();
+          void pollTutoringSummary();
         }}
       />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { backgroundColor: appColors.background, flex: 1 },
+  rootRow: { flexDirection: "row" },
+  rootColumn: { flexDirection: "column" },
+  desktopSidebar: { borderRightColor: appColors.border, borderRightWidth: 1, width: 244, height: "100%" },
+  content: { flex: 1 },
+});

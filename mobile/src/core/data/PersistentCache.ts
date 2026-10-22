@@ -68,6 +68,8 @@ export function usePersistentCache<T>(key: string, fetcher: () => Promise<T>, ma
       if (!cancelled) setIsLoading(true);
       try {
         await refresh();
+      } catch {
+        // Safe fallback if network/backend is unreachable
       } finally {
         if (!cancelled) setIsLoading(false);
       }

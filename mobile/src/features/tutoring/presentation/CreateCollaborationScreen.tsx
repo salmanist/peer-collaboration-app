@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -5,8 +7,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -101,13 +101,12 @@ export function CreateCollaborationScreen() {
       ) : null}
 
       {/* Title */}
-      <Text style={styles.label}>Project Title</Text>
       <TextInput
         style={styles.input}
         value={title}
         onChangeText={setTitle}
-        placeholder="e.g. Need Flutter Developer for Smart Campus FYP"
-        placeholderTextColor="#94a3b8"
+        placeholder="Project Title (e.g. Need Flutter Developer for FYP)"
+        placeholderTextColor={appColors.textMuted}
       />
 
       {/* Category */}
@@ -144,7 +143,7 @@ export function CreateCollaborationScreen() {
                 <MaterialCommunityIcons
                   name={isSelected ? "check" : "plus"}
                   size={13}
-                  color={isSelected ? "#0D3E02" : "#475569"}
+                  color={isSelected ? appColors.primary : appColors.textSecondary}
                   style={{ marginRight: 3 }}
                 />
                 <Text style={[styles.skillPillText, isSelected && styles.skillPillTextSelected]}>
@@ -163,7 +162,7 @@ export function CreateCollaborationScreen() {
           value={customSkillInput}
           onChangeText={setCustomSkillInput}
           placeholder="Add custom skill (e.g. OpenCV, Node.js)..."
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
         />
         <Pressable style={styles.addBtn} onPress={handleAddCustomSkill}>
           <Text style={styles.addBtnText}>Add</Text>
@@ -171,25 +170,23 @@ export function CreateCollaborationScreen() {
       </View>
 
       {/* Description */}
-      <Text style={styles.label}>Project Description & Expectations</Text>
       <TextInput
-        style={[styles.input, styles.textArea]}
+        style={[styles.input, styles.textArea, { marginTop: 14 }]}
         value={description}
         onChangeText={setDescription}
         multiline
         numberOfLines={4}
-        placeholder="Describe what the project is about, current progress, and what role the collaborator will take..."
-        placeholderTextColor="#94a3b8"
+        placeholder="Project Description & Expectations (what the project is about, role needed...)"
+        placeholderTextColor={appColors.textMuted}
       />
 
       {/* Contact Info */}
-      <Text style={styles.label}>Contact Email or Phone</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { marginTop: 12 }]}
         value={contactInfo}
         onChangeText={setContactInfo}
-        placeholder="e.g. student@lgu.edu.pk or WhatsApp number"
-        placeholderTextColor="#94a3b8"
+        placeholder="Contact Email or Phone (e.g. student@lgu.edu.pk or WhatsApp number)"
+        placeholderTextColor={appColors.textMuted}
       />
 
       {/* Submit Button */}
@@ -211,7 +208,7 @@ export function CreateCollaborationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: appColors.background,
   },
   contentContainer: {
     padding: 20,
@@ -220,11 +217,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#0f172a",
+    color: appColors.text,
   },
   subtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 2,
     marginBottom: 16,
     lineHeight: 18,
@@ -244,19 +241,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#334155",
+    color: appColors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: appColors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#0f172a",
+    color: appColors.text,
   },
   textArea: {
     height: 90,
@@ -273,19 +270,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: appColors.border,
   },
   catBtnActive: {
-    backgroundColor: "#eff6ff",
-    borderColor: "#1d4ed8",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   catBtnText: {
     fontSize: 12,
-    color: "#475569",
+    color: appColors.textSecondary,
     fontWeight: "500",
   },
   catBtnTextActive: {
-    color: "#1d4ed8",
+    color: appColors.primary,
     fontWeight: "600",
   },
   skillsWrap: {
@@ -300,19 +297,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: appColors.border,
   },
   skillPillSelected: {
-    backgroundColor: "#f0fdf4",
-    borderColor: "#16a34a",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.icon,
   },
   skillPillText: {
     fontSize: 12,
-    color: "#475569",
+    color: appColors.textSecondary,
     fontWeight: "500",
   },
   skillPillTextSelected: {
-    color: "#16a34a",
+    color: appColors.icon,
     fontWeight: "600",
   },
   customAddRow: {
@@ -324,15 +321,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: appColors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
-    color: "#0f172a",
+    color: appColors.text,
   },
   addBtn: {
-    backgroundColor: "#e2e8f0",
+    backgroundColor: appColors.border,
     paddingHorizontal: 16,
     justifyContent: "center",
     borderRadius: 8,
@@ -340,10 +337,10 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#334155",
+    color: appColors.textSecondary,
   },
   submitBtn: {
-    backgroundColor: "#1d4ed8",
+    backgroundColor: appColors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",

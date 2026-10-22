@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     height: BAR_HEIGHT,
     borderRadius: BAR_HEIGHT / 2,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.035,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,

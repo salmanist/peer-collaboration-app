@@ -1,22 +1,47 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { Badge, Button, Card, ScreenContainer, Skeleton, TextField, colors, font, spacing, typography } from "../../../core/ui";
+import { Skeleton } from "../../../core/components/Skeleton";
 import { applyToDrive, getMyRideProfile, stopDriving, type RideProfile } from "../data/ondemandApi";
 
-// Where a rider applies to become a driver, and where a driver (or a pending applicant) steps back.
+const SEAT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+
 export default function OnDemandSettingsScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
+
   const [profile, setProfile] = useState<RideProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [vehicleColour, setVehicleColour] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
-  const [vehicleSeats, setVehicleSeats] = useState("");
+  const [vehicleSeats, setVehicleSeats] = useState("3");
   const [isConfirmingStop, setIsConfirmingStop] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(app)/rides" as any);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -34,22 +59,26 @@ export default function OnDemandSettingsScreen() {
 
   const submitApplication = async () => {
     setError(null);
+    if (!vehicleMake.trim() || !vehicleModel.trim() || !vehicleColour.trim() || !plateNumber.trim()) {
+      setError("Please fill in all vehicle information.");
+      return;
+    }
+
     const seats = Number(vehicleSeats);
     if (!Number.isInteger(seats) || seats < 1 || seats > 8) {
-      setError("Seats must be a whole number from 1 to 8.");
+      setError("Seats must be a whole number between 1 and 8.");
       return;
     }
     setIsBusy(true);
     try {
-      setProfile(
-        await applyToDrive({
-          vehicle_make: vehicleMake.trim(),
-          vehicle_model: vehicleModel.trim(),
-          vehicle_colour: vehicleColour.trim(),
-          plate_number: plateNumber.trim(),
-          vehicle_seats: seats,
-        }),
-      );
+      const updated = await applyToDrive({
+        vehicle_make: vehicleMake.trim(),
+        vehicle_model: vehicleModel.trim(),
+        vehicle_colour: vehicleColour.trim(),
+        plate_number: plateNumber.trim(),
+        vehicle_seats: seats,
+      });
+      setProfile(updated);
     } catch (err: any) {
       setError(readError(err, "Couldn't send your application. Please try again."));
     } finally {
@@ -73,75 +102,583 @@ export default function OnDemandSettingsScreen() {
 
   if (isLoading || !profile) {
     return (
-      <ScreenContainer scroll back="/(app)/rides">
-        <Text style={styles.pageTitle}>On-demand settings</Text>
-        {isLoading ? <Skeleton style={styles.skeleton} /> : <Text style={styles.error}>{error}</Text>}
-      </ScreenContainer>
+      <View style={styles.container}>
+        <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+          <Pressable style={styles.navBackBtn} onPress={handleBack}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          </Pressable>
+          <Text style={styles.topNavTitle}>Driver Settings</Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+          <Skeleton width={160} height={24} borderRadius={6} style={{ marginBottom: 8 }} />
+          <Skeleton width="100%" height={16} borderRadius={4} style={{ marginBottom: 20 }} />
+          <Skeleton width="100%" height={260} borderRadius={16} style={{ marginBottom: 16 }} />
+        </ScrollView>
+      </View>
     );
   }
 
   const isDriver = profile.role === "driver";
-  const vehicleSummary = `${profile.vehicle_colour} ${profile.vehicle_make} ${profile.vehicle_model} · ${profile.plate_number} · ${profile.vehicle_seats} seats`;
 
   return (
-    <ScreenContainer scroll back="/(app)/rides">
-      <Text style={styles.pageTitle}>On-demand settings</Text>
+    <View style={styles.container}>
+      {/* Top Navigation Bar */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={handleBack}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+        </Pressable>
+        <Text style={styles.topNavTitle}>{isDriver ? "Driver Profile" : "Become a Driver"}</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-      {!isDriver && (
-        <Card contentStyle={styles.card}>
-          <Text style={styles.heading}>Become a driver</Text>
-          <Text style={styles.body}>Send your vehicle details to the admin. Once approved, you can go online and accept ride requests.</Text>
-          <TextField label="Make" placeholder="Honda" value={vehicleMake} onChangeText={setVehicleMake} />
-          <TextField label="Model" placeholder="Civic" value={vehicleModel} onChangeText={setVehicleModel} />
-          <TextField label="Colour" placeholder="White" value={vehicleColour} onChangeText={setVehicleColour} />
-          <TextField label="Plate number" placeholder="LEA-1234" value={plateNumber} onChangeText={setPlateNumber} autoCapitalize="characters" />
-          <TextField label="Seats for riders" placeholder="1–8" value={vehicleSeats} onChangeText={setVehicleSeats} keyboardType="number-pad" />
-          {error && <Text style={styles.error}>{error}</Text>}
-          <Button label="Submit application" onPress={submitApplication} loading={isBusy} />
-        </Card>
-      )}
-
-      {isDriver && (
-        <Card contentStyle={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.heading}>{profile.is_approved ? "You are a driver" : "Application sent"}</Text>
-            <Badge label={profile.is_approved ? "Approved" : "Waiting for approval"} tone={profile.is_approved ? "success" : "warning"} />
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: Math.max(insets.bottom + 40, 60) }]}
+      >
+        {error ? (
+          <View style={styles.errorBanner}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+            <Text style={styles.errorText}>{error}</Text>
           </View>
-          <Text style={styles.body}>{vehicleSummary}</Text>
-          {!profile.is_approved && <Text style={styles.body}>An admin will review your vehicle. Until then you can still request rides as a rider.</Text>}
-          {error && <Text style={styles.error}>{error}</Text>}
+        ) : null}
 
-          {!isConfirmingStop ? (
-            <Button
-              label={profile.is_approved ? "Stop being a driver" : "Withdraw application"}
-              variant="danger"
-              onPress={() => setIsConfirmingStop(true)}
-              disabled={isBusy}
-            />
-          ) : (
-            <View style={styles.confirmBox}>
-              <Text style={styles.body}>
-                {profile.is_approved
-                  ? "You will become a rider again and your vehicle details will be removed. To drive again you must re-apply."
-                  : "Your application and vehicle details will be removed."}
-              </Text>
-              <Button label="Yes, continue" variant="danger" onPress={stop} loading={isBusy} />
-              <Button label="Keep it" variant="ghost" onPress={() => setIsConfirmingStop(false)} disabled={isBusy} />
+        {!isDriver && (
+          <View style={styles.card}>
+            <Text style={styles.cardSectionHeading}>Vehicle Information</Text>
+
+            {/* Make */}
+            <View style={styles.formGroup}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Vehicle Make (e.g. Honda, Toyota, Suzuki)"
+                placeholderTextColor={appColors.textMuted}
+                value={vehicleMake}
+                onChangeText={setVehicleMake}
+              />
             </View>
-          )}
-        </Card>
-      )}
-    </ScreenContainer>
+
+            {/* Model */}
+            <View style={styles.formGroup}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Vehicle Model (e.g. Civic, Corolla, Alto)"
+                placeholderTextColor={appColors.textMuted}
+                value={vehicleModel}
+                onChangeText={setVehicleModel}
+              />
+            </View>
+
+            {/* Colour */}
+            <View style={styles.formGroup}>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Vehicle Colour (e.g. White, Silver, Black)"
+                placeholderTextColor={appColors.textMuted}
+                value={vehicleColour}
+                onChangeText={setVehicleColour}
+              />
+            </View>
+
+            {/* Plate Number */}
+            <View style={styles.formGroup}>
+              <TextInput
+                style={[styles.textInput, { letterSpacing: 1, fontWeight: "700" }]}
+                placeholder="License Plate Number (e.g. LEA-1234)"
+                placeholderTextColor={appColors.textMuted}
+                value={plateNumber}
+                onChangeText={setPlateNumber}
+                autoCapitalize="characters"
+              />
+            </View>
+
+            {/* Seats */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Available Passenger Seats *</Text>
+              <Text style={styles.hint}>How many passengers can comfortably sit in your car?</Text>
+              <View style={styles.seatsRow}>
+                {SEAT_OPTIONS.map((num) => {
+                  const isSelected = vehicleSeats === String(num);
+                  return (
+                    <Pressable
+                      key={num}
+                      style={[styles.seatPill, isSelected && styles.seatPillActive]}
+                      onPress={() => setVehicleSeats(String(num))}
+                    >
+                      <Text style={[styles.seatPillText, isSelected && styles.seatPillTextActive]}>
+                        {num} {num === 1 ? "seat" : "seats"}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <Pressable
+              style={[styles.primaryBtn, isBusy && styles.btnDisabled]}
+              onPress={submitApplication}
+              disabled={isBusy}
+            >
+              {isBusy ? (
+                <ActivityIndicator color={appColors.primary} />
+              ) : (
+                <View style={styles.btnContentRow}>
+                  <MaterialCommunityIcons name="check-circle-outline" size={20} color={appColors.primary} style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryBtnText}>Submit Driver Application</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )}
+
+        {isDriver && (
+          <View style={{ gap: 14 }}>
+            {/* Status Card */}
+            <View style={styles.card}>
+              <View style={styles.statusHeaderRow}>
+                <View>
+                  <Text style={styles.statusTitle}>
+                    {profile.is_approved ? "Approved Campus Driver" : "Application Pending Review"}
+                  </Text>
+                  <Text style={styles.statusSubtitle}>
+                    {profile.is_approved
+                      ? "You can go online and accept peer ride requests."
+                      : "An admin is reviewing your vehicle details. You can still request rides."}
+                  </Text>
+                </View>
+                <View style={[styles.statusBadge, profile.is_approved ? styles.statusBadgeSuccess : styles.statusBadgeWarning]}>
+                  <MaterialCommunityIcons
+                    name={profile.is_approved ? "check-decagram" : "clock-outline"}
+                    size={14}
+                    color={profile.is_approved ? appColors.primary : "#B45309"}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      profile.is_approved ? styles.statusBadgeTextSuccess : styles.statusBadgeTextWarning,
+                    ]}
+                  >
+                    {profile.is_approved ? "Approved" : "Under Review"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Vehicle Specs Box */}
+              <View style={styles.vehicleBox}>
+                <View style={styles.vehicleIconCircle}>
+                  <MaterialCommunityIcons name="car" size={24} color={appColors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.vehicleName}>
+                    {profile.vehicle_colour} {profile.vehicle_make} {profile.vehicle_model}
+                  </Text>
+                  <View style={styles.vehicleChipsRow}>
+                    <View style={styles.plateChip}>
+                      <Text style={styles.plateChipText}>{profile.plate_number}</Text>
+                    </View>
+                    <View style={styles.seatChip}>
+                      <MaterialCommunityIcons name="seatbelt" size={13} color={appColors.textSecondary} style={{ marginRight: 3 }} />
+                      <Text style={styles.seatChipText}>{profile.vehicle_seats} Seats</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              {/* Direct Link to Driver Mode if Approved */}
+              {profile.is_approved && (
+                <Pressable
+                  style={[styles.primaryBtn, { marginTop: 12 }]}
+                  onPress={() => router.push("/(app)/ondemand/drive" as any)}
+                >
+                  <View style={styles.btnContentRow}>
+                    <MaterialCommunityIcons name="steering" size={20} color={appColors.primary} style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryBtnText}>Open Driver Mode</Text>
+                  </View>
+                </Pressable>
+              )}
+            </View>
+
+            {/* Withdrawal / Exit Section */}
+            <View style={styles.card}>
+              <Text style={styles.cardSectionHeading}>Driver Settings</Text>
+              {!isConfirmingStop ? (
+                <Pressable
+                  style={styles.dangerOutlineBtn}
+                  onPress={() => setIsConfirmingStop(true)}
+                  disabled={isBusy}
+                >
+                  <MaterialCommunityIcons
+                    name={profile.is_approved ? "account-cancel-outline" : "close-circle-outline"}
+                    size={18}
+                    color="#DC2626"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text style={styles.dangerOutlineBtnText}>
+                    {profile.is_approved ? "Stop being a driver" : "Withdraw application"}
+                  </Text>
+                </Pressable>
+              ) : (
+                <View style={styles.confirmBox}>
+                  <Text style={styles.confirmText}>
+                    {profile.is_approved
+                      ? "Are you sure? You will switch back to passenger mode and your registered vehicle will be cleared. To drive again, you will need to re-apply."
+                      : "Are you sure you want to withdraw your pending driver application?"}
+                  </Text>
+                  <View style={styles.confirmActionsRow}>
+                    <Pressable
+                      style={[styles.dangerSolidBtn, isBusy && styles.btnDisabled]}
+                      onPress={stop}
+                      disabled={isBusy}
+                    >
+                      {isBusy ? (
+                        <ActivityIndicator color="#FFFFFF" size="small" />
+                      ) : (
+                        <Text style={styles.dangerSolidBtnText}>Yes, Confirm</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      style={styles.cancelGhostBtn}
+                      onPress={() => setIsConfirmingStop(false)}
+                      disabled={isBusy}
+                    >
+                      <Text style={styles.cancelGhostBtnText}>Keep Status</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pageTitle: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink },
-  card: { gap: spacing.lg },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
-  confirmBox: { gap: spacing.md },
-  heading: { fontSize: typography.size.base, fontFamily: font.familyMedium, color: colors.ink },
-  body: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textSecondary },
-  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
-  skeleton: { height: 120, borderRadius: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  topNavBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: appColors.border,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(13, 62, 2, 0.15)",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
+    padding: 20,
+  },
+  headerBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 18,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+
+
+
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: appColors.text,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: appColors.textSecondary,
+    lineHeight: 18,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  errorText: {
+    flex: 1,
+    color: "#DC2626",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    padding: 0,
+  },
+  cardSectionHeading: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: appColors.text,
+    marginBottom: 14,
+  },
+  formGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: appColors.text,
+    marginBottom: 6,
+  },
+  hint: {
+    fontSize: 12,
+    color: appColors.textSecondary,
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: appColors.text,
+  },
+  seatsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  seatPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+  },
+  seatPillActive: {
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
+  },
+  seatPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: appColors.textSecondary,
+  },
+  seatPillTextActive: {
+    color: appColors.primary,
+    fontWeight: "800",
+  },
+  primaryBtn: {
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  btnContentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryBtnText: {
+    color: appColors.primary,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  btnDisabled: {
+    opacity: 0.6,
+  },
+  statusHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 14,
+    gap: 10,
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: appColors.text,
+  },
+  statusSubtitle: {
+    fontSize: 12,
+    color: appColors.textSecondary,
+    marginTop: 2,
+    maxWidth: 220,
+    lineHeight: 16,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusBadgeSuccess: {
+    backgroundColor: appColors.surfaceMuted,
+  },
+  statusBadgeWarning: {
+    backgroundColor: appColors.surfaceMuted,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  statusBadgeTextSuccess: {
+    color: appColors.primary,
+  },
+  statusBadgeTextWarning: {
+    color: "#B45309",
+  },
+  vehicleBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: appColors.background,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    gap: 12,
+  },
+  vehicleIconCircle: {
+    width: 44,
+    height: 44,
+
+
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  vehicleName: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: appColors.text,
+  },
+  vehicleChipsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+  },
+  plateChip: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  plateChipText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: appColors.text,
+    letterSpacing: 0.5,
+  },
+  seatChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: appColors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  seatChipText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: appColors.textSecondary,
+  },
+  dangerOutlineBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  dangerOutlineBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#DC2626",
+  },
+  confirmBox: {
+    backgroundColor: "#FFF5F5",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  confirmText: {
+    fontSize: 13,
+    color: "#7F1D1D",
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  confirmActionsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  dangerSolidBtn: {
+    flex: 1,
+    backgroundColor: "#DC2626",
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dangerSolidBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  cancelGhostBtn: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelGhostBtnText: {
+    color: appColors.textSecondary,
+    fontSize: 13,
+    fontWeight: "700",
+  },
 });

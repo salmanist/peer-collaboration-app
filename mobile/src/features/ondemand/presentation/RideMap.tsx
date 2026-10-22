@@ -1,5 +1,6 @@
+import { Text } from "../../../core/ui/AppText";
 import { useEffect, useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 
 import { colors, font, radius, typography } from "../../../core/ui";

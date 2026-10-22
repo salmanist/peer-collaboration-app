@@ -1,53 +1,55 @@
 // Shared design tokens — earthy palette: forest green + sage + tan + gold
-// on a soft off-white canvas, Inter throughout, tight 6-20px corners,
+// on a soft off-white canvas, GoogleSans throughout, tight 6-20px corners,
 // bordered white cards with a subtle ambient shadow. Replaces the prior
 // "LGU Connect" university-blue/orange scheme with the same token shape,
 // so no call site needed touching.
 
 export const colors = {
-  background: "#F9F9FD",
+  background: "#FFFFFF",
   surface: "#FFFFFF",
-  surfaceMuted: "#F3F3F7", // surface-container-low
-  surfaceContainer: "#EEEDF2",
-  surfaceContainerHigh: "#E8E8EC", // inactive chip fill
+  surfaceMuted: "#F8FAFC",
+  surfaceContainer: "#F1F5F9",
+  surfaceContainerHigh: "#E2E8F0",
 
-  ink: "#1A1C1F", // on-surface
-  text: "#1A1C1F",
-  textSecondary: "#44474E", // on-surface-variant
-  textMuted: "#74777F", // outline
+  ink: "#0F172A",
+  text: "#0F172A",
+  textSecondary: "#475569",
+  textMuted: "#64748B",
+  icon: "#364A41",
+  accent: "#F4B73F",
   onInk: "#FFFFFF",
 
-  border: "#C4C6CF", // outline-variant
+  border: "#E2E8F0",
 
   // Forest green — CTA buttons, FABs, small image badges.
-  primary: "#0C3B2E",
+  primary: "#0D3E02",
   onPrimary: "#FFFFFF",
   // Same forest green — hero banners, active bottom-nav pill (the palette's
   // only dark anchor, so primary and primaryContainer share it).
-  primaryContainer: "#0C3B2E",
-  onPrimaryContainer: "#9cd6a5",
+  primaryContainer: "#0D3E02",
+  onPrimaryContainer: "#FFFFFF",
   // Sage tint — icon-chip backgrounds (quick actions, avatars).
-  primaryFixed: "#9cd6a5",
-  onPrimaryFixed: "#0C3B2E",
+  primaryFixed: "#E8F5E9",
+  onPrimaryFixed: "#0D3E02",
 
   // Tan / gold — active filter chips, high-priority accents.
-  secondary: "#BB8A52",
+  secondary: "#D97706",
   onSecondary: "#FFFFFF",
-  secondaryContainer: "#FFBA00",
-  onSecondaryContainer: "#0C3B2E",
-  tertiary: "#9cd6a5",
-  onTertiary: "#0C3B2E",
+  secondaryContainer: "#FEF3C7",
+  onSecondaryContainer: "#92400E",
+  tertiary: "#F1F5F9",
+  onTertiary: "#0F172A",
 
-  success: "#137333",
-  successBg: "#E6F4EA",
-  successBorder: "#CEEAD6",
+  success: "#16A34A",
+  successBg: "#DCFCE7",
+  successBorder: "#86EFAC",
   onSuccess: "#FFFFFF",
 
-  warning: "#BB8A52",
-  warningBg: "#FFF4E5",
+  warning: "#D97706",
+  warningBg: "#FEF3C7",
 
-  danger: "#BA1A1A",
-  dangerBg: "#FFDAD6",
+  danger: "#DC2626",
+  dangerBg: "#FEE2E2",
   onDanger: "#FFFFFF",
 } as const;
 
@@ -63,7 +65,7 @@ export const spacing = {
 export const radius = {
   sm: 6,
   md: 12,
-  lg: 20,
+  lg: 16,
   // Bottom corners of a full-bleed colored hero banner (list-screen headers).
   hero: 32,
   full: 999,
@@ -81,19 +83,19 @@ export const border = {
 // dropped their hairline border and now rely on the shadow alone to read as
 // separated from the background.
 export const shadow = {
-  color: "#0C3B2E",
-  opacity: 0.096,
-  radius: 9.6,
-  offsetY: 3.6,
+  color: "#303A37",
+  opacity: 0.035,
+  radius: 6,
+  offsetY: 2,
 };
 
 export const font = {
-  family: "Inter_700Bold",
-  familyMedium: "Inter_600SemiBold",
-  familyRegular: "Inter_400Regular",
-  // This system is Inter-exclusive (no separate display face) — alias kept
+  family: "GoogleSans_700Bold",
+  familyMedium: "GoogleSans_600SemiBold",
+  familyRegular: "GoogleSans_400Regular",
+  // This system is GoogleSans-exclusive (no separate display face) — alias kept
   // so screens that reach for a "heading" font don't need touching per pass.
-  serif: "Inter_700Bold",
+  serif: "GoogleSans_700Bold",
 };
 
 // Weight is expressed via `font.family*` (separate TTFs), not `fontWeight` —

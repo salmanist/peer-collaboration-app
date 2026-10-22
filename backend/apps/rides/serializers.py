@@ -3,7 +3,7 @@ import datetime
 from django.utils import timezone
 from rest_framework import serializers
 
-from accounts.models import User
+from accounts.models import User, prime_roster_cache
 
 from .models import Location, Ride, RideJoinRequest
 
@@ -20,23 +20,44 @@ class LocationSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "lat", "lng"]
 
 
+class RideListSerializer(serializers.ListSerializer):
+    def to_representation(self, data):
+        offerers = [getattr(item, "offerer", None) for item in (data if hasattr(data, "__iter__") else [])]
+        prime_roster_cache([u for u in offerers if u is not None])
+        return super().to_representation(data)
+
+
 class RideSerializer(serializers.ModelSerializer):
     offerer = RideUserSerializer(read_only=True)
     my_request_status = serializers.SerializerMethodField()
+    pending_request_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Ride
+        list_serializer_class = RideListSerializer
         fields = [
             "id", "offerer", "departure", "destination",
             "departure_lat", "departure_lng", "destination_lat", "destination_lng",
             "departure_date", "departure_time",
             "seats_total", "seats_available", "same_gender_only", "status",
             "started_at", "completed_at",
-            "my_request_status", "created_at",
+            "my_request_status", "pending_request_count", "created_at",
         ]
         read_only_fields = ["id", "offerer", "seats_available", "status", "started_at", "completed_at", "created_at"]
 
+    def get_pending_request_count(self, ride):
+        request = self.context.get("request")
+        if request is None or ride.offerer_id != request.user.id:
+            return None
+        counts = self.context.get("pending_request_counts")
+        if counts is not None:
+            return counts.get(ride.id, 0)
+        return ride.join_requests.filter(status="pending").count()
+
     def get_my_request_status(self, ride):
+        statuses = self.context.get("user_join_request_statuses")
+        if statuses is not None:
+            return statuses.get(ride.id)
         request = self.context.get("request")
         if request is None or not request.user.is_authenticated:
             return None
@@ -87,10 +108,18 @@ class RideSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class RideJoinRequestListSerializer(serializers.ListSerializer):
+    def to_representation(self, data):
+        requesters = [getattr(item, "requester", None) for item in (data if hasattr(data, "__iter__") else [])]
+        prime_roster_cache([u for u in requesters if u is not None])
+        return super().to_representation(data)
+
+
 class RideJoinRequestSerializer(serializers.ModelSerializer):
     requester = RideUserSerializer(read_only=True)
 
     class Meta:
         model = RideJoinRequest
+        list_serializer_class = RideJoinRequestListSerializer
         fields = ["id", "ride", "requester", "status", "created_at"]
         read_only_fields = ["id", "ride", "requester", "status", "created_at"]

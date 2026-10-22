@@ -1,17 +1,9 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import {
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-  Inter_900Black,
-} from "@expo-google-fonts/inter";
+import { GoogleSans_400Regular, GoogleSans_500Medium, GoogleSans_600SemiBold, GoogleSans_700Bold, GoogleSans_400Regular_Italic, GoogleSans_500Medium_Italic, GoogleSans_600SemiBold_Italic, GoogleSans_700Bold_Italic } from "@expo-google-fonts/google-sans";
 import { useFonts } from "expo-font";
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../src/core/auth/session";
@@ -21,48 +13,40 @@ import { DataStoreProvider as ModuleDataStoreProvider } from "../src/core/store/
 import { applyGlobalFontFamily } from "../src/core/theme/typography";
 import { colors } from "../src/core/ui/theme";
 
+// Keep native branding visible until our identical branded view has drawn.
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function RootLayout() {
   const router = useRouter();
   const [showSplash, setShowSplash] = useState(true);
+  const finishSplash = useCallback(() => setShowSplash(false), []);
   const segments = useSegments();
   const isHydrated = useSessionStore((state) => state.isHydrated);
   const accessToken = useSessionStore((state) => state.accessToken);
   const hydrate = useSessionStore((state) => state.hydrate);
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     ...MaterialCommunityIcons.font,
-    Inter: Inter_400Regular,
-    Inter_300Light,
-    Inter_800ExtraBold,
-    Inter_900Black,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    GoogleSans_400Regular, GoogleSans_500Medium, GoogleSans_600SemiBold, GoogleSans_700Bold,
+    GoogleSans_400Regular_Italic, GoogleSans_500Medium_Italic, GoogleSans_600SemiBold_Italic, GoogleSans_700Bold_Italic,
   });
 
   useEffect(() => {
-    hydrate();
+    void hydrate().catch(() => useSessionStore.setState({ user: null, accessToken: null, refreshToken: null, isHydrated: true }));
     applyGlobalFontFamily();
   }, [hydrate]);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || (!fontsLoaded && !fontError)) return;
 
     const inAuthGroup = segments[0] === "(auth)";
     if (!accessToken && !inAuthGroup) {
       router.replace("/(auth)/login");
     } else if (accessToken && inAuthGroup) {
-      router.replace("/(app)/home");
+      router.replace("/(app)");
     }
-  }, [isHydrated, accessToken, segments, router]);
+  }, [isHydrated, fontsLoaded, fontError, accessToken, segments, router]);
 
-  if (!isHydrated || !fontsLoaded) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
+  const appReady = isHydrated && (fontsLoaded || !!fontError);
 
   return (
     // Wrapped here, at the navigation root, so every screen under the Stack shares
@@ -70,8 +54,8 @@ export default function RootLayout() {
     <DataStoreProvider>
       <ModuleDataStoreProvider>
         <SafeAreaProvider>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: "none" }} />
-          {showSplash && <AppSplashScreen onFinish={() => setShowSplash(false)} />}
+          {appReady && <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background }, animation: "none" }} />}
+          {(showSplash || !appReady) && <AppSplashScreen ready={appReady} onFinish={finishSplash} />}
         </SafeAreaProvider>
       </ModuleDataStoreProvider>
     </DataStoreProvider>

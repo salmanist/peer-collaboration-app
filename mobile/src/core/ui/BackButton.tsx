@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { goBack } from "../navigation/goBack";
 import { Pressable } from "react-native";
 
 import { SoftBlock } from "./SoftBlock";
@@ -18,15 +18,11 @@ interface BackButtonProps {
 // its own chrome — this is the one shared "go back" affordance.
 export function BackButton({ fallbackHref }: BackButtonProps) {
   const handlePress = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else if (fallbackHref) {
-      router.replace(fallbackHref);
-    }
+    goBack(fallbackHref);
   };
 
   return (
-    <Pressable onPress={handlePress} hitSlop={8}>
+    <Pressable onPress={handlePress} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
       <SoftBlock backgroundColor={colors.surface} pill size={SIZE}>
         <MaterialCommunityIcons name="chevron-left" size={22} color={colors.ink} />
       </SoftBlock>

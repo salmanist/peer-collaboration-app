@@ -1,3 +1,5 @@
+import { colors as appColors } from "../ui/theme";
+import { Text } from "../ui/AppText";
 import React, { useState } from "react";
 import {
   Modal,
@@ -5,7 +7,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
@@ -61,7 +62,7 @@ export const ModuleOptionsMenu: React.FC<ModuleOptionsMenuProps> = ({
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <MaterialCommunityIcons name="dots-horizontal" size={20} color="#0D3E02" />
+        <MaterialCommunityIcons name="dots-horizontal" size={20} color={appColors.primary} />
         {hasNotification && <View style={styles.triggerBadgeDot} />}
       </TouchableOpacity>
 
@@ -112,7 +113,7 @@ export const ModuleOptionsMenu: React.FC<ModuleOptionsMenuProps> = ({
                             size={18}
                             color={
                               item.iconColor ||
-                              (item.isAction ? "#0D3E02" : "#0D3E02")
+                              (item.isAction ? appColors.primary : appColors.primary)
                             }
                           />
                         </View>
@@ -164,9 +165,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.88)",
     borderWidth: 1,
     borderColor: "rgba(226, 232, 240, 0.85)",
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.035,
     shadowRadius: 6,
     elevation: 2,
     justifyContent: "center",
@@ -197,9 +198,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "rgba(226, 232, 240, 0.85)",
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.035,
     shadowRadius: 16,
     elevation: 10,
     overflow: "hidden",
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
   popupHeaderTitle: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#64748B",
+    color: appColors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
@@ -238,14 +239,14 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(13, 62, 2, 0.06)",
+
+
     justifyContent: "center",
     alignItems: "center",
     marginRight: 10,
   },
   actionIconContainer: {
-    backgroundColor: "rgba(22, 163, 74, 0.12)",
+
   },
   itemTextContainer: {
     flex: 1,
@@ -254,20 +255,20 @@ const styles = StyleSheet.create({
   itemLabel: {
     fontSize: 13.5,
     fontWeight: "600",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.2,
   },
   actionItemLabel: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
   },
   itemSubtitle: {
     fontSize: 11,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 1.5,
   },
   countBadge: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -285,7 +286,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: "#16A34A",
+    backgroundColor: appColors.surfaceMuted,
     marginLeft: 6,
   },
 });

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import OnDemandRide, Place, RideProfile
+from .models import OnDemandRide, PeerRideChatMessage, PeerRideRequest, Place, RideProfile
 
 VEHICLE_FIELDS = ["vehicle_make", "vehicle_model", "vehicle_colour", "plate_number", "vehicle_seats"]
 
@@ -91,3 +91,55 @@ class OnDemandRideSerializer(serializers.ModelSerializer):
     def get_pickup_distance_km(self, ride):
         # Only set by the driver's "nearby requests" list.
         return getattr(ride, "pickup_distance_km", None)
+
+
+# ---------------------------------------------------------------- peer ride requests
+
+class PeerRideRequestCreateSerializer(serializers.Serializer):
+    """What a student sends when posting an immediate lift-share request."""
+
+    kind = serializers.ChoiceField(choices=PeerRideRequest.Kind.choices, default=PeerRideRequest.Kind.NEED_RIDE)
+    seats = serializers.IntegerField(min_value=1, max_value=8, default=1)
+    departure_time = serializers.CharField(max_length=60, required=False, default="Right now")
+    pickup_label = serializers.CharField(max_length=150)
+    pickup_lat = serializers.FloatField(min_value=-90, max_value=90, default=31.5204)
+    pickup_lng = serializers.FloatField(min_value=-180, max_value=180, default=74.3587)
+    drop_label = serializers.CharField(max_length=150)
+    drop_lat = serializers.FloatField(min_value=-90, max_value=90, default=31.5204)
+    drop_lng = serializers.FloatField(min_value=-180, max_value=180, default=74.3587)
+    note = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class PeerRideRequestSerializer(serializers.ModelSerializer):
+    """Read representation returned to the frontend."""
+
+    poster = serializers.SerializerMethodField()
+    responder = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PeerRideRequest
+        fields = [
+            "id", "kind", "seats", "departure_time", "status", "poster", "responder",
+            "pickup_label", "pickup_lat", "pickup_lng",
+            "drop_label", "drop_lat", "drop_lng",
+            "note", "created_at", "accepted_at",
+        ]
+
+    def get_poster(self, obj):
+        return {"id": obj.poster_id, "full_name": obj.poster.full_name or obj.poster.email}
+
+    def get_responder(self, obj):
+        if obj.responder is None:
+            return None
+        return {"id": obj.responder_id, "full_name": obj.responder.full_name or obj.responder.email}
+
+
+class PeerRideChatMessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(source="sender.id", read_only=True)
+    sender_name = serializers.CharField(source="sender.display_name", read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = PeerRideChatMessage
+        fields = ["id", "request", "sender_id", "sender_name", "body", "image", "created_at"]
+        read_only_fields = ["id", "request", "sender_id", "sender_name", "created_at"]

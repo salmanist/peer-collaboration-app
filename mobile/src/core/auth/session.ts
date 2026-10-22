@@ -18,6 +18,8 @@ export type AccountRole = "student" | "admin";
 export type Gender = "male" | "female" | "other" | "";
 
 export interface AuthedUser {
+  bio?: string;
+  skills?: string[];
   id: number;
   email: string;
   full_name: string;

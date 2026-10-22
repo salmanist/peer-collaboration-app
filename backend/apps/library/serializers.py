@@ -26,7 +26,7 @@ class LibraryProjectSerializer(serializers.ModelSerializer):
     # change for existing callers - while write validates against the Department table
     # for free via SlugRelatedField instead of a hand-rolled lookup.
     department = serializers.SlugRelatedField(slug_field="short_name", queryset=Department.objects.all())
-    upvote_count = serializers.IntegerField(source="upvoted_by.count", read_only=True)
+    upvote_count = serializers.SerializerMethodField()
     is_upvoted = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
     # Read-only nested list - the actual uploaded files come in as repeated "files"
@@ -46,11 +46,20 @@ class LibraryProjectSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         return request.user if request and request.user.is_authenticated else None
 
+    def get_upvote_count(self, project):
+        if hasattr(project, "annotated_upvote_count"):
+            return project.annotated_upvote_count
+        return project.upvoted_by.count()
+
     def get_is_upvoted(self, project):
+        if "user_upvoted_project_ids" in self.context:
+            return project.id in self.context["user_upvoted_project_ids"]
         caller = self._caller()
         return caller is not None and project.upvoted_by.filter(pk=caller.pk).exists()
 
     def get_is_bookmarked(self, project):
+        if "user_bookmarked_project_ids" in self.context:
+            return project.id in self.context["user_bookmarked_project_ids"]
         caller = self._caller()
         return caller is not None and project.bookmarked_by.filter(pk=caller.pk).exists()
 
@@ -69,7 +78,7 @@ class NoteSerializer(serializers.ModelSerializer):
     course = serializers.SlugRelatedField(slug_field="code", queryset=AcademicCourse.objects.filter(is_active=True))
     course_title = serializers.CharField(source="course.title", read_only=True)
     department = serializers.CharField(source="course.department.short_name", read_only=True)
-    upvote_count = serializers.IntegerField(source="upvoted_by.count", read_only=True)
+    upvote_count = serializers.SerializerMethodField()
     is_upvoted = serializers.SerializerMethodField()
     is_bookmarked = serializers.SerializerMethodField()
     files = NoteFileSerializer(many=True, read_only=True)
@@ -86,10 +95,19 @@ class NoteSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         return request.user if request and request.user.is_authenticated else None
 
+    def get_upvote_count(self, note):
+        if hasattr(note, "annotated_upvote_count"):
+            return note.annotated_upvote_count
+        return note.upvoted_by.count()
+
     def get_is_upvoted(self, note):
+        if "user_upvoted_note_ids" in self.context:
+            return note.id in self.context["user_upvoted_note_ids"]
         caller = self._caller()
         return caller is not None and note.upvoted_by.filter(pk=caller.pk).exists()
 
     def get_is_bookmarked(self, note):
+        if "user_bookmarked_note_ids" in self.context:
+            return note.id in self.context["user_bookmarked_note_ids"]
         caller = self._caller()
         return caller is not None and note.bookmarked_by.filter(pk=caller.pk).exists()

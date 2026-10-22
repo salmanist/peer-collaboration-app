@@ -1,3 +1,4 @@
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -16,7 +17,12 @@ class LibraryProjectListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         # Only moderator-approved projects are publicly listed — pending/rejected
         # submissions stay visible solely to their author via `mine/`.
-        queryset = LibraryProject.objects.filter(status=LibraryProject.Status.APPROVED).select_related("author", "department")
+        queryset = (
+            LibraryProject.objects.filter(status=LibraryProject.Status.APPROVED)
+            .select_related("author", "department")
+            .prefetch_related("files")
+            .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
+        )
 
         department = self.request.query_params.get("department")
         if department:
@@ -27,6 +33,18 @@ class LibraryProjectListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(title__icontains=search) | queryset.filter(abstract__icontains=search)
 
         return queryset.order_by("-created_at")
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user and user.is_authenticated:
+            context["user_upvoted_project_ids"] = set(
+                user.upvoted_projects.values_list("id", flat=True)
+            )
+            context["user_bookmarked_project_ids"] = set(
+                user.bookmarked_projects.values_list("id", flat=True)
+            )
+        return context
 
     def create(self, request, *args, **kwargs):
         files = request.FILES.getlist("files")
@@ -43,9 +61,25 @@ class LibraryProjectListCreateView(generics.ListCreateAPIView):
 
 
 class LibraryProjectDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = LibraryProject.objects.select_related("author", "department")
+    queryset = (
+        LibraryProject.objects.select_related("author", "department")
+        .prefetch_related("files")
+        .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
+    )
     serializer_class = LibraryProjectSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user and user.is_authenticated:
+            context["user_upvoted_project_ids"] = set(
+                user.upvoted_projects.values_list("id", flat=True)
+            )
+            context["user_bookmarked_project_ids"] = set(
+                user.bookmarked_projects.values_list("id", flat=True)
+            )
+        return context
 
     def update(self, request, *args, **kwargs):
         project = self.get_object()
@@ -73,14 +107,35 @@ class MyLibraryProjectsView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return LibraryProject.objects.filter(author=self.request.user).select_related("author", "department").order_by("-created_at")
+        return (
+            LibraryProject.objects.filter(author=self.request.user)
+            .select_related("author", "department")
+            .prefetch_related("files")
+            .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
+            .order_by("-created_at")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user and user.is_authenticated:
+            context["user_upvoted_project_ids"] = set(
+                user.upvoted_projects.values_list("id", flat=True)
+            )
+            context["user_bookmarked_project_ids"] = set(
+                user.bookmarked_projects.values_list("id", flat=True)
+            )
+        return context
 
 
 class LibraryProjectUpvoteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        project = get_object_or_404(LibraryProject, pk=pk)
+        project = get_object_or_404(
+            LibraryProject.objects.select_related("author", "department").prefetch_related("files"),
+            pk=pk,
+        )
         if project.upvoted_by.filter(pk=request.user.pk).exists():
             project.upvoted_by.remove(request.user)
         else:
@@ -92,7 +147,10 @@ class LibraryProjectBookmarkView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        project = get_object_or_404(LibraryProject, pk=pk)
+        project = get_object_or_404(
+            LibraryProject.objects.select_related("author", "department").prefetch_related("files"),
+            pk=pk,
+        )
         if project.bookmarked_by.filter(pk=request.user.pk).exists():
             project.bookmarked_by.remove(request.user)
         else:
@@ -107,7 +165,11 @@ class NoteListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # No status filter - every note is visible the instant it's uploaded.
-        queryset = Note.objects.select_related("author", "course", "course__department")
+        queryset = (
+            Note.objects.select_related("author", "course", "course__department")
+            .prefetch_related("files")
+            .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
+        )
 
         department = self.request.query_params.get("department")
         if department:
@@ -122,6 +184,18 @@ class NoteListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(title__icontains=search) | queryset.filter(description__icontains=search)
 
         return queryset.order_by("-created_at")
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user and user.is_authenticated:
+            context["user_upvoted_note_ids"] = set(
+                user.upvoted_notes.values_list("id", flat=True)
+            )
+            context["user_bookmarked_note_ids"] = set(
+                user.bookmarked_notes.values_list("id", flat=True)
+            )
+        return context
 
     def create(self, request, *args, **kwargs):
         files = request.FILES.getlist("files")
@@ -138,9 +212,25 @@ class NoteListCreateView(generics.ListCreateAPIView):
 
 
 class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Note.objects.select_related("author", "course", "course__department")
+    queryset = (
+        Note.objects.select_related("author", "course", "course__department")
+        .prefetch_related("files")
+        .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
+    )
     serializer_class = NoteSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user and user.is_authenticated:
+            context["user_upvoted_note_ids"] = set(
+                user.upvoted_notes.values_list("id", flat=True)
+            )
+            context["user_bookmarked_note_ids"] = set(
+                user.bookmarked_notes.values_list("id", flat=True)
+            )
+        return context
 
     def update(self, request, *args, **kwargs):
         note = self.get_object()
@@ -160,14 +250,35 @@ class MyNotesView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Note.objects.filter(author=self.request.user).select_related("author", "course", "course__department").order_by("-created_at")
+        return (
+            Note.objects.filter(author=self.request.user)
+            .select_related("author", "course", "course__department")
+            .prefetch_related("files")
+            .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
+            .order_by("-created_at")
+        )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if user and user.is_authenticated:
+            context["user_upvoted_note_ids"] = set(
+                user.upvoted_notes.values_list("id", flat=True)
+            )
+            context["user_bookmarked_note_ids"] = set(
+                user.bookmarked_notes.values_list("id", flat=True)
+            )
+        return context
 
 
 class NoteUpvoteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
+        note = get_object_or_404(
+            Note.objects.select_related("author", "course", "course__department").prefetch_related("files"),
+            pk=pk,
+        )
         if note.upvoted_by.filter(pk=request.user.pk).exists():
             note.upvoted_by.remove(request.user)
         else:
@@ -179,7 +290,10 @@ class NoteBookmarkView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
-        note = get_object_or_404(Note, pk=pk)
+        note = get_object_or_404(
+            Note.objects.select_related("author", "course", "course__department").prefetch_related("files"),
+            pk=pk,
+        )
         if note.bookmarked_by.filter(pk=request.user.pk).exists():
             note.bookmarked_by.remove(request.user)
         else:

@@ -1,7 +1,8 @@
+import { Text } from "./AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Modal, Pressable, StyleSheet, Text } from "react-native";
+import { Animated, Dimensions, Modal, Pressable, StyleSheet} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../auth/session";

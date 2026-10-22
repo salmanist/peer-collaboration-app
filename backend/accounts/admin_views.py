@@ -193,7 +193,11 @@ class AdminLostFoundView(APIView):
     permission_classes = [IsPlatformAdmin]
 
     def get(self, request):
-        items = LostAndFoundItem.objects.select_related("poster").order_by("-created_at")
+        items = (
+            LostAndFoundItem.objects.select_related("poster")
+            .annotate(claims_count_annotated=Count("claims"))
+            .order_by("-created_at")
+        )
         items_data = []
         for item in items:
             items_data.append({
@@ -209,7 +213,7 @@ class AdminLostFoundView(APIView):
                 "posted_by_email": item.poster.email,
                 "posted_by_name": item.poster.full_name,
                 "posted_by_roll_no": item.poster.roll_number,
-                "claims_count": item.claims.count(),
+                "claims_count": item.claims_count_annotated,
                 "created_at": item.created_at.isoformat(),
             })
 

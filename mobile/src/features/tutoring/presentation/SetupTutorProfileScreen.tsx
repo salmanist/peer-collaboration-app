@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,8 +13,6 @@ import {
   StatusBar,
   StyleSheet,
   Switch,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -232,8 +233,8 @@ export function SetupTutorProfileScreen() {
           onPress={() => handleToggleSkill(s.name)}
         >
           <View style={styles.modalItemLeft}>
-            <View style={[styles.codeBadge, { backgroundColor: "#FEF3C7" }]}>
-              <MaterialCommunityIcons name="lightbulb-on-outline" size={16} color="#92400E" />
+            <View style={[styles.codeBadge, { backgroundColor: appColors.surfaceMuted }]}>
+              <MaterialCommunityIcons name="lightbulb-on-outline" size={16} color={appColors.icon} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.modalItemTitle, isSelected && styles.modalSkillTitleSelected]}>
@@ -243,7 +244,7 @@ export function SetupTutorProfileScreen() {
             </View>
           </View>
           <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxActiveGold]}>
-            {isSelected ? <MaterialCommunityIcons name="check" size={13} color="#92400E" /> : null}
+            {isSelected ? <MaterialCommunityIcons name="check" size={13} color={appColors.icon} /> : null}
           </View>
         </Pressable>
       );
@@ -306,7 +307,7 @@ export function SetupTutorProfileScreen() {
             style={styles.navBackBtn}
             onPress={handleBack}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Tutor Profile</Text>
           <View style={{ width: 36 }} />
@@ -332,10 +333,10 @@ export function SetupTutorProfileScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>
-          {existingProfile ? "Edit Tutor Profile" : "Become a Peer Tutor"}
+          {existingProfile ? "Edit Tutor Profile" : "Register Tutor Profile"}
         </Text>
         <View style={{ width: 36 }} />
       </View>
@@ -347,14 +348,6 @@ export function SetupTutorProfileScreen() {
           { paddingBottom: Math.max(insets.bottom + 40, 60) },
         ]}
       >
-        <Text style={styles.title}>
-          {existingProfile ? "Edit Tutor Profile" : "Become a Peer Tutor"}
-        </Text>
-        <Text style={styles.subtitle}>
-          {existingProfile
-            ? "Update your tutoring subjects, skills, schedule, and availability."
-            : "Share your academic knowledge! Register your subjects, skills, and schedule to help fellow LGU students."}
-        </Text>
 
         {errorMsg ? (
           <View style={styles.errorBanner}>
@@ -373,7 +366,7 @@ export function SetupTutorProfileScreen() {
             <MaterialCommunityIcons
               name="book-open-variant"
               size={24}
-              color={profileType === "tutor" ? "#0D3E02" : "#64748b"}
+              color={profileType === "tutor" ? appColors.primary : appColors.textSecondary}
               style={{ marginBottom: 4 }}
             />
             <Text style={[styles.typeOptionTitle, profileType === "tutor" && styles.typeOptionTitleActive]}>
@@ -389,7 +382,7 @@ export function SetupTutorProfileScreen() {
             <MaterialCommunityIcons
               name="briefcase-outline"
               size={24}
-              color={profileType === "mentor" ? "#0D3E02" : "#64748b"}
+              color={profileType === "mentor" ? appColors.primary : appColors.textSecondary}
               style={{ marginBottom: 4 }}
             />
             <Text style={[styles.typeOptionTitle, profileType === "mentor" && styles.typeOptionTitleActive]}>
@@ -405,7 +398,7 @@ export function SetupTutorProfileScreen() {
             <MaterialCommunityIcons
               name="star-outline"
               size={24}
-              color={profileType === "both" ? "#0D3E02" : "#64748b"}
+              color={profileType === "both" ? appColors.primary : appColors.textSecondary}
               style={{ marginBottom: 4 }}
             />
             <Text style={[styles.typeOptionTitle, profileType === "both" && styles.typeOptionTitleActive]}>
@@ -417,26 +410,24 @@ export function SetupTutorProfileScreen() {
 
         {/* Headline */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Profile Headline *</Text>
           <TextInput
             style={styles.textInput}
             value={headline}
             onChangeText={setHeadline}
-            placeholder="e.g. Senior CS student • DSA, OOP & C++ Tutor"
-            placeholderTextColor="#94a3b8"
+            placeholder="Profile Headline (e.g. Senior CS student • DSA, OOP & C++ Tutor)"
+            placeholderTextColor={appColors.textMuted}
             maxLength={100}
           />
         </View>
 
         {/* Bio */}
         <View style={styles.formGroup}>
-          <Text style={styles.label}>About You & Teaching Approach *</Text>
           <TextInput
             style={[styles.textInput, styles.textArea]}
             value={bio}
             onChangeText={setBio}
-            placeholder="Describe your academic background, experience, and how you assist students."
-            placeholderTextColor="#94a3b8"
+            placeholder="About You & Teaching Approach (academic background, experience, approach...)"
+            placeholderTextColor={appColors.textMuted}
             multiline
             numberOfLines={4}
             maxLength={600}
@@ -460,7 +451,7 @@ export function SetupTutorProfileScreen() {
             >
               <View style={styles.dropdownTriggerLeft}>
                 <View style={styles.dropdownIconCircle}>
-                  <MaterialCommunityIcons name="book-open-page-variant" size={20} color="#0D3E02" />
+                  <MaterialCommunityIcons name="book-open-page-variant" size={20} color={appColors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.dropdownTitle}>Choose from Course Catalog</Text>
@@ -472,30 +463,10 @@ export function SetupTutorProfileScreen() {
                 </View>
               </View>
               <View style={styles.dropdownArrowBox}>
-                <MaterialCommunityIcons name="chevron-down" size={18} color="#0D3E02" />
+                <MaterialCommunityIcons name="chevron-down" size={18} color={appColors.primary} />
               </View>
             </Pressable>
 
-            {/* Selected Courses Chips */}
-            {selectedSubjects.length > 0 && (
-              <View style={styles.selectedBox}>
-                <Text style={styles.selectedBoxLabel}>Your Selected Courses:</Text>
-                <View style={styles.chipsWrap}>
-                  {selectedSubjects.map((sub) => (
-                    <View key={sub} style={styles.selectedChip}>
-                      <Text style={styles.selectedChipText}>{sub}</Text>
-                      <Pressable
-                        style={styles.chipRemoveBtn}
-                        onPress={() => handleToggleSubject(sub)}
-                        hitSlop={8}
-                      >
-                        <MaterialCommunityIcons name="close" size={13} color="#0D3E02" />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
         )}
 
@@ -504,8 +475,8 @@ export function SetupTutorProfileScreen() {
           <View style={styles.formGroup}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Technical Skills & Mentorship Topics</Text>
-              <View style={[styles.badgeWrap, { backgroundColor: "#FEF3C7" }]}>
-                <Text style={[styles.badgeText, { color: "#92400E" }]}>
+              <View style={[styles.badgeWrap, { backgroundColor: appColors.surfaceMuted }]}>
+                <Text style={[styles.badgeText, { color: appColors.icon }]}>
                   {selectedSkills.length} selected
                 </Text>
               </View>
@@ -517,8 +488,8 @@ export function SetupTutorProfileScreen() {
               onPress={() => setIsSkillModalOpen(true)}
             >
               <View style={styles.dropdownTriggerLeft}>
-                <View style={[styles.dropdownIconCircle, { backgroundColor: "#FEF3C7" }]}>
-                  <MaterialCommunityIcons name="lightbulb-outline" size={20} color="#92400E" />
+                <View style={[styles.dropdownIconCircle, { }]}>
+                  <MaterialCommunityIcons name="lightbulb-outline" size={20} color={appColors.icon} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.dropdownTitle}>Choose from Skills Catalog</Text>
@@ -530,32 +501,10 @@ export function SetupTutorProfileScreen() {
                 </View>
               </View>
               <View style={styles.dropdownArrowBox}>
-                <MaterialCommunityIcons name="chevron-down" size={18} color="#92400E" />
+                <MaterialCommunityIcons name="chevron-down" size={18} color={appColors.icon} />
               </View>
             </Pressable>
 
-            {/* Selected Skills Chips */}
-            {selectedSkills.length > 0 && (
-              <View style={styles.selectedBox}>
-                <Text style={styles.selectedBoxLabel}>Your Selected Skills:</Text>
-                <View style={styles.chipsWrap}>
-                  {selectedSkills.map((skill) => (
-                    <View key={skill} style={[styles.selectedChip, styles.selectedSkillChip]}>
-                      <Text style={[styles.selectedChipText, styles.selectedSkillChipText]}>
-                        {skill}
-                      </Text>
-                      <Pressable
-                        style={styles.chipRemoveBtn}
-                        onPress={() => handleToggleSkill(skill)}
-                        hitSlop={8}
-                      >
-                        <MaterialCommunityIcons name="close" size={13} color="#92400E" />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
         )}
 
@@ -567,7 +516,7 @@ export function SetupTutorProfileScreen() {
             value={availability}
             onChangeText={setAvailability}
             placeholder="e.g. Mon-Thu after 2:00 PM (LGU Library or CS Labs)"
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={appColors.textMuted}
           />
         </View>
 
@@ -581,7 +530,7 @@ export function SetupTutorProfileScreen() {
             <Switch
               value={isActive}
               onValueChange={setIsActive}
-              trackColor={{ false: "#cbd5e1", true: "#0D3E02" }}
+              trackColor={{ false: appColors.border, true: appColors.primary }}
               thumbColor={isActive ? "#FDBF1E" : "#f4f3f4"}
             />
           </View>
@@ -594,7 +543,7 @@ export function SetupTutorProfileScreen() {
           disabled={isSaving}
         >
           {isSaving ? (
-            <ActivityIndicator color="#070D1F" />
+            <ActivityIndicator color={appColors.text} />
           ) : (
             <Text style={styles.saveButtonText}>
               {existingProfile ? "Save Profile Changes" : "Publish Tutor Profile"}
@@ -622,23 +571,23 @@ export function SetupTutorProfileScreen() {
                 style={styles.modalCloseBtn}
                 onPress={() => setIsCourseModalOpen(false)}
               >
-                <MaterialCommunityIcons name="close" size={20} color="#070D1F" />
+                <MaterialCommunityIcons name="close" size={20} color={appColors.text} />
               </Pressable>
             </View>
 
             {/* Search Bar */}
             <View style={styles.modalSearchBox}>
-              <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.modalSearchIcon} />
+              <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.modalSearchIcon} />
               <TextInput
                 style={styles.modalSearchInput}
                 placeholder="Search course code or title (e.g. AF-101, OOP, Biotech)..."
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={appColors.textMuted}
                 value={courseSearch}
                 onChangeText={setCourseSearch}
               />
               {courseSearch ? (
                 <Pressable onPress={() => setCourseSearch("")} hitSlop={8}>
-                  <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+                  <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
                 </Pressable>
               ) : null}
             </View>
@@ -685,16 +634,16 @@ export function SetupTutorProfileScreen() {
               ListEmptyComponent={
                 isCatalogLoading ? (
                   <View style={{ padding: 40, alignItems: "center" }}>
-                    <ActivityIndicator size="large" color="#0D3E02" />
-                    <Text style={{ color: "#64748b", marginTop: 10 }}>Loading courses catalog...</Text>
+                    <LoadingSkeleton variant="list" />
+                    <Text style={{ color: appColors.textSecondary, marginTop: 10 }}>Loading courses catalog...</Text>
                   </View>
                 ) : (
                   <View style={{ padding: 40, alignItems: "center" }}>
-                    <MaterialCommunityIcons name="magnify" size={36} color="#64748b" />
-                    <Text style={{ fontSize: 15, fontWeight: "700", color: "#070D1F", marginTop: 10 }}>
+                    <MaterialCommunityIcons name="magnify" size={36} color={appColors.textSecondary} />
+                    <Text style={{ fontSize: 15, fontWeight: "700", color: appColors.text, marginTop: 10 }}>
                       No courses found
                     </Text>
-                    <Text style={{ fontSize: 13, color: "#64748b", textAlign: "center", marginTop: 4 }}>
+                    <Text style={{ fontSize: 13, color: appColors.textSecondary, textAlign: "center", marginTop: 4 }}>
                       Try another keyword or select a different department.
                     </Text>
                   </View>
@@ -737,23 +686,23 @@ export function SetupTutorProfileScreen() {
                 style={styles.modalCloseBtn}
                 onPress={() => setIsSkillModalOpen(false)}
               >
-                <MaterialCommunityIcons name="close" size={20} color="#070D1F" />
+                <MaterialCommunityIcons name="close" size={20} color={appColors.text} />
               </Pressable>
             </View>
 
             {/* Search Bar */}
             <View style={styles.modalSearchBox}>
-              <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.modalSearchIcon} />
+              <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.modalSearchIcon} />
               <TextInput
                 style={styles.modalSearchInput}
                 placeholder="Search skills (e.g. Python, Excel, Communication)..."
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={appColors.textMuted}
                 value={skillSearch}
                 onChangeText={setSkillSearch}
               />
               {skillSearch ? (
                 <Pressable onPress={() => setSkillSearch("")} hitSlop={8}>
-                  <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+                  <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
                 </Pressable>
               ) : null}
             </View>
@@ -800,16 +749,16 @@ export function SetupTutorProfileScreen() {
               ListEmptyComponent={
                 isCatalogLoading ? (
                   <View style={{ padding: 40, alignItems: "center" }}>
-                    <ActivityIndicator size="large" color="#0D3E02" />
-                    <Text style={{ color: "#64748b", marginTop: 10 }}>Loading skills catalog...</Text>
+                    <LoadingSkeleton variant="list" />
+                    <Text style={{ color: appColors.textSecondary, marginTop: 10 }}>Loading skills catalog...</Text>
                   </View>
                 ) : (
                   <View style={{ padding: 40, alignItems: "center" }}>
                     <Text style={{ fontSize: 32 }}>💡</Text>
-                    <Text style={{ fontSize: 15, fontWeight: "700", color: "#070D1F", marginTop: 10 }}>
+                    <Text style={{ fontSize: 15, fontWeight: "700", color: appColors.text, marginTop: 10 }}>
                       No skills found
                     </Text>
-                    <Text style={{ fontSize: 13, color: "#64748b", textAlign: "center", marginTop: 4 }}>
+                    <Text style={{ fontSize: 13, color: appColors.textSecondary, textAlign: "center", marginTop: 4 }}>
                       Try another keyword or choose another category.
                     </Text>
                   </View>
@@ -839,11 +788,11 @@ export function SetupTutorProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -862,7 +811,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   scrollContainer: {
     flex: 1,
@@ -874,23 +823,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   loadingText: {
     marginTop: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
   title: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginBottom: 20,
     lineHeight: 18,
   },
@@ -910,7 +859,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 10,
   },
   typeOptionsRow: {
@@ -924,12 +873,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderWidth: 1.5,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     alignItems: "center",
   },
   typeOptionActive: {
-    borderColor: "#0D3E02",
-    backgroundColor: "#E8F5E9",
+    borderColor: appColors.primary,
+    backgroundColor: appColors.surfaceMuted,
   },
   typeOptionEmoji: {
     fontSize: 22,
@@ -938,14 +887,14 @@ const styles = StyleSheet.create({
   typeOptionTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#334155",
+    color: appColors.textSecondary,
   },
   typeOptionTitleActive: {
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   typeOptionSub: {
     fontSize: 10,
-    color: "#94a3b8",
+    color: appColors.textMuted,
     marginTop: 2,
     textAlign: "center",
   },
@@ -961,10 +910,10 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   badgeWrap: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -972,17 +921,17 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   textInput: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#070D1F",
+    color: appColors.text,
   },
   textArea: {
     minHeight: 90,
@@ -994,12 +943,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#ffffff",
     borderWidth: 1.5,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 14,
     padding: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.035,
     shadowRadius: 2,
     elevation: 1,
     marginBottom: 10,
@@ -1013,8 +962,8 @@ const styles = StyleSheet.create({
   dropdownIconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: "#E8F5E9",
+
+
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1024,30 +973,30 @@ const styles = StyleSheet.create({
   dropdownTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   dropdownSub: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 1,
   },
   dropdownArrowBox: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   dropdownArrowText: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   selectedBox: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 12,
     padding: 10,
     marginBottom: 10,
@@ -1055,7 +1004,7 @@ const styles = StyleSheet.create({
   selectedBoxLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginBottom: 6,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -1068,9 +1017,9 @@ const styles = StyleSheet.create({
   selectedChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: appColors.border,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 16,
@@ -1079,14 +1028,14 @@ const styles = StyleSheet.create({
   selectedChipText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   selectedSkillChip: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.surfaceMuted,
     borderColor: "#FCD34D",
   },
   selectedSkillChipText: {
-    color: "#92400E",
+    color: appColors.icon,
   },
   chipRemoveBtn: {
     width: 16,
@@ -1099,7 +1048,7 @@ const styles = StyleSheet.create({
   chipRemoveText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   customAddRow: {
     flexDirection: "row",
@@ -1109,25 +1058,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
-    color: "#070D1F",
+    color: appColors.text,
   },
   addBtn: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: appColors.border,
   },
   addBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1139,17 +1088,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     marginBottom: 14,
   },
   switchLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   switchSub: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   feeInputWrap: {
@@ -1157,7 +1106,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     marginTop: 8,
@@ -1165,7 +1114,7 @@ const styles = StyleSheet.create({
   feeCurrency: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginRight: 6,
   },
   feeInput: {
@@ -1173,11 +1122,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   feeUnit: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   saveButton: {
     backgroundColor: "#FDBF1E",
@@ -1185,9 +1134,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 10,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -1201,7 +1150,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   modalHeader: {
     flexDirection: "row",
@@ -1211,37 +1160,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    borderBottomColor: appColors.border,
   },
   modalHeaderTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
   },
   modalHeaderSub: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 1,
   },
   modalCloseBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   modalCloseBtnText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   modalSearchBox: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 12,
     marginHorizontal: 16,
     marginTop: 12,
@@ -1255,7 +1204,7 @@ const styles = StyleSheet.create({
   modalSearchInput: {
     flex: 1,
     fontSize: 13,
-    color: "#070D1F",
+    color: appColors.text,
   },
   modalFilterScrollWrap: {
     marginVertical: 10,
@@ -1270,20 +1219,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
   },
   modalFilterPillActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   modalFilterPillActiveGold: {
-    backgroundColor: "#D97706",
-    borderColor: "#D97706",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.icon,
   },
   modalFilterPillText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   modalFilterPillTextActive: {
     color: "#ffffff",
@@ -1305,14 +1254,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   modalItemRowSelected: {
-    borderColor: "#0D3E02",
-    backgroundColor: "#F0FDF4",
+    borderColor: appColors.primary,
+    backgroundColor: appColors.surfaceMuted,
   },
   modalSkillRowSelected: {
-    borderColor: "#D97706",
+    borderColor: appColors.icon,
     backgroundColor: "#FFFBEB",
   },
   modalItemLeft: {
@@ -1322,7 +1271,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   codeBadge: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1330,22 +1279,22 @@ const styles = StyleSheet.create({
   codeBadgeText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   modalItemTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   modalItemTitleSelected: {
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   modalSkillTitleSelected: {
-    color: "#92400E",
+    color: appColors.icon,
   },
   modalItemSub: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   checkboxBox: {
@@ -1353,18 +1302,18 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
   },
   checkboxBoxActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   checkboxBoxActiveGold: {
-    backgroundColor: "#D97706",
-    borderColor: "#D97706",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.icon,
   },
   checkboxTick: {
     color: "#ffffff",
@@ -1382,17 +1331,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#ffffff",
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
+    borderTopColor: appColors.border,
     paddingHorizontal: 16,
     paddingTop: 12,
   },
   modalFooterCount: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
   },
   modalDoneBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,

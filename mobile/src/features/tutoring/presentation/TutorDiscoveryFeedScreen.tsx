@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { cleanSampleText } from "../../../core/utils/cleanText";
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -8,8 +11,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -38,7 +39,7 @@ export function TutorDiscoveryFeedScreen() {
         label: "My Tutoring Sessions",
         subtitle: "View upcoming & past sessions",
         icon: "calendar-clock",
-        iconColor: "#0D3E02",
+        iconColor: appColors.primary,
         badgeCount: pendingRequestsCount,
         onPress: () => router.push("/(app)/tutoring/sessions" as any),
       },
@@ -47,7 +48,7 @@ export function TutorDiscoveryFeedScreen() {
         label: hasActiveTutorProfile ? "Edit Tutor Profile" : "Become a Peer Tutor",
         subtitle: hasActiveTutorProfile ? "Update your tutoring subjects & bio" : "Offer academic help to peers",
         icon: "account-edit-outline",
-        iconColor: "#0284C7",
+        iconColor: appColors.icon,
         isAction: true,
         onPress: () => router.push("/(app)/tutoring/setup" as any),
       },
@@ -67,10 +68,16 @@ export function TutorDiscoveryFeedScreen() {
 
   const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
 
+  const tutorsRef = useRef(tutors);
+  tutorsRef.current = tutors;
+
   const loadData = useCallback(
     async (refresh = false) => {
-      if (refresh) setIsRefreshing(true);
-      else if (!tutors.length && (!cachedTutors || cachedTutors.length === 0)) setIsLoading(true);
+      if (refresh) {
+        setIsRefreshing(true);
+      } else if (tutorsRef.current.length === 0) {
+        setIsLoading(true);
+      }
 
       try {
         const params: any = {};
@@ -95,17 +102,12 @@ export function TutorDiscoveryFeedScreen() {
         setIsRefreshing(false);
       }
     },
-    [activeTab, selectedTag, searchQuery, tutors.length, setStoreTutors],
+    [activeTab, selectedTag, searchQuery, setStoreTutors],
   );
-
-  useEffect(() => {
-    void loadData();
-  }, [activeTab, selectedTag]);
 
   useFocusEffect(
     useCallback(() => {
-      // Re-fetch in background without showing full screen loader
-      void loadData(true);
+      void loadData(false);
     }, [loadData]),
   );
 
@@ -154,7 +156,7 @@ export function TutorDiscoveryFeedScreen() {
   return (
     <View style={styles.container}>
       {/* Compact Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
         <Text style={styles.compactNavTitle}>Peer Tutoring</Text>
         <ModuleOptionsMenu
           items={dropdownItems}
@@ -165,11 +167,11 @@ export function TutorDiscoveryFeedScreen() {
       {/* Search Row */}
       <View style={styles.actionSearchRow}>
         <View style={styles.searchBar}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
+          <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search tutor, subject (DSA, OOP)..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={appColors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -177,7 +179,7 @@ export function TutorDiscoveryFeedScreen() {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery("")} style={styles.clearButton}>
-              <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+              <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
             </Pressable>
           )}
         </View>
@@ -228,7 +230,7 @@ export function TutorDiscoveryFeedScreen() {
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="school-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="school-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No tutors or mentors found</Text>
               <Text style={styles.emptySubtitle}>
                 Try adjusting your search query or subject filters.
@@ -245,11 +247,11 @@ export function TutorDiscoveryFeedScreen() {
               >
                 <View style={styles.cardHeader}>
                   <View style={styles.avatar}>
-                    <MaterialCommunityIcons name="account" size={24} color="#FDBF1E" />
+                    <MaterialCommunityIcons name="account" size={24} color={appColors.primary} />
                   </View>
                   <View style={styles.tutorHeaderInfo}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.tutorName} numberOfLines={1}>{item.tutor_name}</Text>
+                      <Text style={styles.tutorName} numberOfLines={1}>{cleanSampleText(item.tutor_name)}</Text>
                       {Number(item.average_rating) > 0 ? (
                         <View style={styles.ratingBadge}>
                           <MaterialCommunityIcons name="star" size={12} color="#FDBF1E" style={{ marginRight: 2 }} />
@@ -272,7 +274,7 @@ export function TutorDiscoveryFeedScreen() {
                 {/* Headline */}
                 {item.headline ? (
                   <Text style={styles.headline} numberOfLines={2}>
-                    {item.headline}
+                    {cleanSampleText(item.headline)}
                   </Text>
                 ) : null}
 
@@ -280,13 +282,13 @@ export function TutorDiscoveryFeedScreen() {
                 <View style={styles.badgesRow}>
                   {isTutor && item.subjects.slice(0, 3).map((sub, idx) => (
                     <View key={`sub-${idx}`} style={styles.subjectBadge}>
-                      <MaterialCommunityIcons name="book-outline" size={11} color="#0D3E02" style={{ marginRight: 3 }} />
+                      <MaterialCommunityIcons name="book-outline" size={11} color={appColors.primary} style={{ marginRight: 3 }} />
                       <Text style={styles.subjectBadgeText}>{sub}</Text>
                     </View>
                   ))}
                   {isMentor && item.skills.slice(0, 3).map((skill, idx) => (
                     <View key={`skill-${idx}`} style={styles.skillBadge}>
-                      <MaterialCommunityIcons name="briefcase-outline" size={11} color="#92400E" style={{ marginRight: 3 }} />
+                      <MaterialCommunityIcons name="briefcase-outline" size={11} color={appColors.icon} style={{ marginRight: 3 }} />
                       <Text style={styles.skillBadgeText}>{skill}</Text>
                     </View>
                   ))}
@@ -294,24 +296,9 @@ export function TutorDiscoveryFeedScreen() {
 
                 {/* Card Footer */}
                 <View style={styles.cardFooter}>
-                  <View style={styles.roleTagWrap}>
-                    <MaterialCommunityIcons
-                      name={item.profile_type === "mentor" ? "briefcase-outline" : "school-outline"}
-                      size={13}
-                      color="#0D3E02"
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text style={styles.roleTagText}>
-                      {item.profile_type === "both"
-                        ? "Tutor & Mentor"
-                        : item.profile_type === "mentor"
-                        ? "Academic Mentor"
-                        : "Peer Tutor"}
-                    </Text>
-                  </View>
                   <View style={styles.bookButton}>
                     <Text style={styles.bookButtonText}>View Profile</Text>
-                    <MaterialCommunityIcons name="arrow-right" size={14} color="#0D3E02" style={{ marginLeft: 4 }} />
+                    <MaterialCommunityIcons name="arrow-right" size={14} color={appColors.primary} style={{ marginLeft: 4 }} />
                   </View>
                 </View>
               </Pressable>
@@ -326,28 +313,30 @@ export function TutorDiscoveryFeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 7,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EFF0EF",
   },
   mySessionsHeaderBtn: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#C8E6C9",
+    borderColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   hamburgerBtn: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 10,
     width: 38,
     height: 38,
@@ -355,18 +344,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   hamburgerLine: {
     width: 17,
     height: 2,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderRadius: 2,
   },
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.primary,
     letterSpacing: -0.3,
   },
   avatarBtn: {
@@ -378,7 +367,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -399,8 +388,8 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
@@ -412,14 +401,14 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: "#0F172A",
+    color: appColors.text,
     fontWeight: "500",
   },
   clearButton: {
     padding: 4,
   },
   clearButtonText: {
-    color: "#94a3b8",
+    color: appColors.textMuted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -436,21 +425,21 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
   tagPillActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   tagPillText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   tagPillTextActive: {
     color: "#FDBF1E",
@@ -469,7 +458,7 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   loadingText: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 13,
   },
   emptyContainer: {
@@ -484,26 +473,26 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     textAlign: "center",
     lineHeight: 18,
   },
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -514,7 +503,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#0D3E02",
+    backgroundColor: "#F5F8F5",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -535,14 +524,14 @@ const styles = StyleSheet.create({
   tutorName: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.2,
   },
   ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#FFF8E1",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -552,15 +541,15 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   reviewsCountText: {
     fontSize: 10,
-    color: "#92400E",
+    color: appColors.icon,
     fontWeight: "600",
   },
   newBadge: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
@@ -568,17 +557,17 @@ const styles = StyleSheet.create({
   newBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   tutorDept: {
     fontSize: 11,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
     fontWeight: "500",
   },
   headline: {
     fontSize: 13,
-    color: "#334155",
+    color: appColors.textSecondary,
     lineHeight: 18,
     marginBottom: 12,
     fontWeight: "500",
@@ -590,43 +579,39 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   subjectBadge: {
-    backgroundColor: "#E8F5E9",
     paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
   },
   subjectBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   skillBadge: {
-    backgroundColor: "#FEF3C7",
     paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
   },
   skillBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#92400E",
+    color: appColors.icon,
   },
   cardFooter: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 12,
   },
   roleTagWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
@@ -634,12 +619,12 @@ const styles = StyleSheet.create({
   roleTagText: {
     fontSize: 11.5,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   bookButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -647,7 +632,7 @@ const styles = StyleSheet.create({
   bookButtonText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
 });
 

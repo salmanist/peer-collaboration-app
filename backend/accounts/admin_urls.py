@@ -1,4 +1,5 @@
 from django.urls import path
+from .admin_module_views import AdminModuleView
 
 from .admin_views import (
     AdminCatalogView,
@@ -11,6 +12,7 @@ from .admin_views import (
 )
 
 urlpatterns = [
+    path("modules/<str:module>/", AdminModuleView.as_view(), name="admin-module"),
     path("verify-password/", AdminVerifyPasswordView.as_view(), name="admin-verify-password"),
     path("overview/", AdminOverviewView.as_view(), name="admin-overview"),
     path("marketplace/", AdminMarketplaceView.as_view(), name="admin-marketplace"),

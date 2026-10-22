@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
@@ -7,8 +10,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -49,9 +50,9 @@ export default function SendPublicResourceOfferScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Fulfill Request</Text>
         <View style={{ width: 36 }} />
@@ -81,7 +82,7 @@ export default function SendPublicResourceOfferScreen() {
           textAlignVertical="top"
           maxLength={500}
           placeholder="For example: I have this textbook from last semester in great condition. I'm on campus every Tuesday and Thursday."
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
         />
 
         {errorMessage ? (
@@ -113,11 +114,11 @@ export default function SendPublicResourceOfferScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   container: {
     padding: 16,
@@ -146,30 +147,30 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 22,
     fontWeight: "800",
     letterSpacing: -0.3,
   },
   subtitle: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 13,
     marginTop: 4,
     lineHeight: 18,
   },
   label: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
     fontWeight: "700",
     marginTop: 6,
   },
   input: {
     backgroundColor: "#ffffff",
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     borderWidth: 1,
     padding: 12,
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 13,
   },
   messageInput: {
@@ -182,9 +183,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 14,
     minHeight: 48,
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.035,
     shadowRadius: 4,
     elevation: 3,
   },

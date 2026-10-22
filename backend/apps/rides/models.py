@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -64,10 +65,17 @@ class Ride(models.Model):
         return timezone.make_aware(naive) if timezone.is_naive(naive) else naive
 
 
+_LAST_EXPIRY_RUN = 0
+
+
 def expire_stale_rides():
-    # Lazy expiry, evaluated on read — no scheduled task. Cheap at this scale;
-    # ponytail: swap for a periodic sweep (celery beat / cron) if rides need
-    # to flip to "expired" without anyone hitting the API first.
+    # Lazy expiry, evaluated on read — throttled to at most once per 60 seconds
+    # to avoid repetitive round-trip queries on every GET request.
+    global _LAST_EXPIRY_RUN
+    now = time.time()
+    if now - _LAST_EXPIRY_RUN < 60:
+        return
+    _LAST_EXPIRY_RUN = now
     stale_cutoff = timezone.now() - datetime.timedelta(minutes=EXPIRY_GRACE_MINUTES)
     candidates = Ride.objects.filter(status=Ride.Status.OPEN, departure_date__lte=stale_cutoff.date())
     stale_ids = [ride.id for ride in candidates if ride.departure_datetime < stale_cutoff]

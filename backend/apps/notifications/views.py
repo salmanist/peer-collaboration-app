@@ -54,7 +54,7 @@ class StudentNotificationListView(APIView):
             if not is_popup_dismissed and not has_unseen_popup:
                 has_unseen_popup = True
                 latest_popup_notification = CampusNotificationSerializer(
-                    item, context={"request": request}
+                    item, context={"request": request, "user_states": user_states}
                 ).data
 
         return Response(
@@ -142,9 +142,13 @@ class AdminNotificationListCreateView(APIView):
                 {"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN
             )
 
-        notifications = CampusNotification.objects.all()
+        notifications = CampusNotification.objects.select_related("created_by").all()
+        user_states = {
+            s.notification_id: s
+            for s in UserNotificationState.objects.filter(user=request.user)
+        }
         serializer = CampusNotificationSerializer(
-            notifications, many=True, context={"request": request}
+            notifications, many=True, context={"request": request, "user_states": user_states}
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
 

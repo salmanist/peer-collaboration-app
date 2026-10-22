@@ -6,6 +6,8 @@ backend/venv/
 backend/.env
 backend/staticfiles/
 backend/media/
+backend/*.log
+*.log
 
 # Mobile (Expo/Node)
 mobile/node_modules/
@@ -14,6 +16,10 @@ mobile/dist/
 mobile/.env
 mobile/.env*.local
 mobile/*.log
+
+# Root Temporary Assets / Screenshots
+/*.png
+/*.jpg
 
 # Editor/OS
 .vscode/

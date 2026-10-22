@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -10,8 +12,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,7 +60,7 @@ export default function LostAndFoundFeedScreen() {
         label: "My Notices & Claims",
         subtitle: "Track your posted items & claims",
         icon: "clipboard-list-outline",
-        iconColor: "#0D3E02",
+        iconColor: appColors.primary,
         hasDot: hasNewClaims,
         onPress: () => router.push("/(app)/lost-and-found/my-notices" as any),
       },
@@ -161,7 +161,7 @@ export default function LostAndFoundFeedScreen() {
   return (
     <View style={styles.container}>
       {/* Compact Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
         <Text style={styles.compactNavTitle}>Lost & Found</Text>
         <ModuleOptionsMenu
           items={dropdownItems}
@@ -172,11 +172,11 @@ export default function LostAndFoundFeedScreen() {
       {/* Search Bar Row */}
       <View style={styles.actionSearchRow}>
         <View style={styles.searchBar}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
+          <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search items, student IDs, locations..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={appColors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={() => void loadItems(1)}
@@ -184,7 +184,7 @@ export default function LostAndFoundFeedScreen() {
           />
           {searchQuery ? (
             <Pressable onPress={() => { setSearchQuery(""); void loadItems(1); }}>
-              <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+              <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
             </Pressable>
           ) : null}
         </View>
@@ -208,7 +208,7 @@ export default function LostAndFoundFeedScreen() {
             <MaterialCommunityIcons
               name="magnify"
               size={14}
-              color={postTypeFilter === "lost" ? "#0D3E02" : "#475569"}
+              color={postTypeFilter === "lost" ? appColors.primary : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text style={[styles.segmentBtnText, postTypeFilter === "lost" && styles.segmentBtnTextActive]}>
@@ -224,7 +224,7 @@ export default function LostAndFoundFeedScreen() {
             <MaterialCommunityIcons
               name="package-variant"
               size={14}
-              color={postTypeFilter === "found" ? "#0D3E02" : "#475569"}
+              color={postTypeFilter === "found" ? appColors.primary : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text style={[styles.segmentBtnText, postTypeFilter === "found" && styles.segmentBtnTextActive]}>
@@ -297,14 +297,14 @@ export default function LostAndFoundFeedScreen() {
           removeClippedSubviews={Platform.OS === "android"}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="magnify-close" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="magnify-close" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No notices found</Text>
               <Text style={styles.emptySub}>
                 No lost or found items match your filters. Tap the + button to add one!
               </Text>
             </View>
           }
-          ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color="#0D3E02" style={{ marginVertical: 14 }} /> : null}
+          ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color={appColors.primary} style={{ marginVertical: 14 }} /> : null}
           renderItem={({ item }) => {
             const isLost = item.post_type === "lost";
             const imageUrl = getImageUrl(item.image);
@@ -322,7 +322,7 @@ export default function LostAndFoundFeedScreen() {
                       <MaterialCommunityIcons
                         name={isLost ? "help-circle-outline" : "package-variant-closed"}
                         size={28}
-                        color="#64748b"
+                        color={appColors.textSecondary}
                       />
                     </View>
                   )}
@@ -350,7 +350,7 @@ export default function LostAndFoundFeedScreen() {
                   </Text>
 
                   <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-                    <MaterialCommunityIcons name="map-marker" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                    <MaterialCommunityIcons name="map-marker" size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                     <Text style={styles.locationText} numberOfLines={1}>
                       {item.location || "LGU Campus"}
                     </Text>
@@ -358,7 +358,7 @@ export default function LostAndFoundFeedScreen() {
 
                   {item.date_lost_or_found ? (
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-                      <MaterialCommunityIcons name="calendar-outline" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                      <MaterialCommunityIcons name="calendar-outline" size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                       <Text style={styles.dateText}>
                         {item.date_lost_or_found}
                       </Text>
@@ -394,28 +394,30 @@ export default function LostAndFoundFeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 7,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EFF0EF",
   },
   myNoticesHeaderBtn: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#C8E6C9",
+    borderColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   hamburgerBtn: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 10,
     width: 38,
     height: 38,
@@ -423,18 +425,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   hamburgerLine: {
     width: 17,
     height: 2,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderRadius: 2,
   },
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.primary,
     letterSpacing: -0.3,
   },
   avatarBtn: {
@@ -446,7 +448,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -467,8 +469,8 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
@@ -480,11 +482,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: "#0F172A",
+    color: appColors.text,
     fontWeight: "500",
   },
   clearSearch: {
-    color: "#94a3b8",
+    color: appColors.textMuted,
     fontSize: 13,
     fontWeight: "700",
     padding: 4,
@@ -495,21 +497,21 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderWidth: 1.5,
-    borderColor: "#0D3E02",
+    borderColor: appColors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.035,
     shadowRadius: 6,
     elevation: 6,
     zIndex: 99,
   },
   segmentContainer: {
     flexDirection: "row",
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
     borderRadius: 14,
     marginHorizontal: 16,
     marginTop: 12,
@@ -526,17 +528,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.035,
     shadowRadius: 2,
     elevation: 2,
   },
   segmentBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#64748B",
+    color: appColors.textSecondary,
   },
   segmentBtnTextActive: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   categoriesSection: {
@@ -552,21 +554,21 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
   categoryBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   categoryBtnLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   categoryBtnLabelActive: {
     color: "#FDBF1E",
@@ -590,31 +592,31 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: "row",
+    minHeight: 160,
     backgroundColor: "#ffffff",
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   cardThumbContainer: {
     width: 110,
-    backgroundColor: "#F1F5F9",
+    flexShrink: 0,
+    backgroundColor: appColors.border,
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
   },
   cardThumbnail: {
-    width: "100%",
-    height: "100%",
+    ...StyleSheet.absoluteFill,
   },
   cardPlaceholder: {
-    width: "100%",
-    height: "100%",
+    ...StyleSheet.absoluteFill,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -622,7 +624,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEE2E2",
   },
   placeholderFound: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
   },
   placeholderEmoji: {
     fontSize: 32,
@@ -639,7 +641,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#DC2626",
   },
   tagFound: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
   },
   postTypeTagText: {
     color: "#ffffff",
@@ -660,10 +662,10 @@ const styles = StyleSheet.create({
   cardCategory: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   resolvedTag: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -671,34 +673,34 @@ const styles = StyleSheet.create({
   resolvedTagText: {
     fontSize: 9,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     lineHeight: 18,
     marginBottom: 4,
   },
   locationText: {
     fontSize: 11,
-    color: "#475569",
+    color: appColors.textSecondary,
     marginBottom: 2,
   },
   dateText: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginBottom: 6,
   },
   cardFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#F8FAF8",
+    borderTopColor: appColors.background,
     paddingTop: 6,
     marginTop: "auto",
   },
   posterText: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontWeight: "500",
   },
   messageBox: {
@@ -737,12 +739,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 4,
   },
   emptySub: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     lineHeight: 18,
   },

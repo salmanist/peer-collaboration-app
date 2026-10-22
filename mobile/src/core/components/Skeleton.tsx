@@ -247,6 +247,28 @@ export function CollaborationCardSkeleton() {
 /**
  * Skeleton placeholder for Public Resource Request Cards
  */
+/**
+ * Skeleton placeholder for Offered Trip Cards in My Offered Trips
+ */
+export function OfferedTripCardSkeleton() {
+  return (
+    <View style={styles.card}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <Skeleton width="65%" height={18} borderRadius={4} />
+        <Skeleton width={64} height={22} borderRadius={6} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 8, marginBottom: 14 }}>
+        <Skeleton width={140} height={24} borderRadius={8} />
+        <Skeleton width={88} height={24} borderRadius={8} />
+      </View>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 10 }}>
+        <Skeleton width={160} height={14} borderRadius={4} />
+        <Skeleton width={16} height={16} borderRadius={8} />
+      </View>
+    </View>
+  );
+}
+
 export function PublicRequestCardSkeleton() {
   return (
     <View style={styles.card}>

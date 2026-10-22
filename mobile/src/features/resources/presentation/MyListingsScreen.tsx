@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -9,7 +11,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,11 +53,11 @@ function getCategoryIconName(category: ResourceCategory): keyof typeof MaterialC
 
 function getCategoryBg(category: ResourceCategory): string {
   switch (category) {
-    case "books": return "#E8F5E9";
-    case "notes": return "#FEF3C7";
-    case "stationery": return "#E0F2FE";
+    case "books": return appColors.surfaceMuted;
+    case "notes": return appColors.surfaceMuted;
+    case "stationery": return appColors.surfaceMuted;
     case "lab_equipment": return "#FCE7F3";
-    default: return "#F1F5F9";
+    default: return appColors.border;
   }
 }
 
@@ -225,7 +226,7 @@ export default function MyListingsScreen() {
               <Image source={{ uri: thumb }} style={styles.cardThumb} resizeMode="cover" />
             ) : (
               <View style={[styles.cardThumbPlaceholder, { backgroundColor: getCategoryBg(listing.category) }]}>
-                <MaterialCommunityIcons name={getCategoryIconName(listing.category)} size={28} color="#64748b" />
+                <MaterialCommunityIcons name={getCategoryIconName(listing.category)} size={28} color={appColors.textSecondary} />
               </View>
             )}
 
@@ -249,15 +250,15 @@ export default function MyListingsScreen() {
 
               <View style={styles.metaRow}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name={getCategoryIconName(listing.category)} size={12} color="#64748b" style={{ marginRight: 3 }} />
+                  <MaterialCommunityIcons name={getCategoryIconName(listing.category)} size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                   <Text style={styles.categoryMetaText}>
                     {listing.category.replace("_", " ")}
                   </Text>
                 </View>
                 {listing.course ? (
                   <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 6 }}>
-                    <Text style={{ color: "#64748b", marginRight: 4 }}>•</Text>
-                    <MaterialCommunityIcons name="target" size={12} color="#64748b" style={{ marginRight: 2 }} />
+                    <Text style={{ color: appColors.textSecondary, marginRight: 4 }}>•</Text>
+                    <MaterialCommunityIcons name="target" size={12} color={appColors.textSecondary} style={{ marginRight: 2 }} />
                     <Text style={styles.courseMetaText} numberOfLines={1}>
                       {listing.course}
                     </Text>
@@ -274,7 +275,7 @@ export default function MyListingsScreen() {
               onPress={() => router.push(`/resources/edit/${listing.id}` as any)}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                 <Text style={styles.editBtnText}>Edit</Text>
               </View>
             </Pressable>
@@ -294,7 +295,7 @@ export default function MyListingsScreen() {
           <View style={styles.statusSection}>
             <Text style={styles.statusLabel}>Availability Status:</Text>
             {updatingListingId === listing.id ? (
-              <ActivityIndicator size="small" color="#0D3E02" />
+              <ActivityIndicator size="small" color={appColors.primary} />
             ) : (
               <View style={styles.statusPillsRow}>
                 {statusOptions.map((option) => {
@@ -370,7 +371,7 @@ export default function MyListingsScreen() {
 
           {request.course ? (
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-              <MaterialCommunityIcons name="target" size={13} color="#0D3E02" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="target" size={13} color={appColors.primary} style={{ marginRight: 4 }} />
               <Text style={styles.courseTag}>Course: {request.course}</Text>
             </View>
           ) : null}
@@ -385,10 +386,10 @@ export default function MyListingsScreen() {
                   disabled={updatingRequestId === request.id}
                 >
                   {updatingRequestId === request.id ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
+                    <ActivityIndicator size="small" color={appColors.primary} />
                   ) : (
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                      <MaterialCommunityIcons name="check-circle-outline" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                      <MaterialCommunityIcons name="check-circle-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                       <Text style={styles.fulfillBtnText}>Mark Fulfilled</Text>
                     </View>
                   )}
@@ -398,7 +399,7 @@ export default function MyListingsScreen() {
                   onPress={() => router.push(`/resources/wanted/edit/${request.id}` as any)}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                    <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                    <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                     <Text style={styles.editBtnText}>Edit</Text>
                   </View>
                 </Pressable>
@@ -428,7 +429,7 @@ export default function MyListingsScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>
           {activeTab === "listings" ? "My Shared Listings" : "My Resource Requests"}
@@ -446,7 +447,7 @@ export default function MyListingsScreen() {
             <MaterialCommunityIcons
               name="package-variant"
               size={16}
-              color={activeTab === "listings" ? "#FDBF1E" : "#475569"}
+              color={activeTab === "listings" ? "#FDBF1E" : appColors.textSecondary}
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.tabText, activeTab === "listings" && styles.activeTabText]}>
@@ -462,7 +463,7 @@ export default function MyListingsScreen() {
             <MaterialCommunityIcons
               name="hand-wave-outline"
               size={16}
-              color={activeTab === "requests" ? "#FDBF1E" : "#475569"}
+              color={activeTab === "requests" ? "#FDBF1E" : appColors.textSecondary}
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.tabText, activeTab === "requests" && styles.activeTabText]}>
@@ -503,7 +504,7 @@ export default function MyListingsScreen() {
             ]}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons name="package-variant-closed" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+                <MaterialCommunityIcons name="package-variant-closed" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
                 <Text style={styles.emptyTitle}>No Listings Yet</Text>
                 <Text style={styles.emptySub}>
                   You haven't listed any textbooks, notes, or gear yet.
@@ -537,7 +538,7 @@ export default function MyListingsScreen() {
             ]}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <MaterialCommunityIcons name="hand-wave-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+                <MaterialCommunityIcons name="hand-wave-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
                 <Text style={styles.emptyTitle}>No Requests Posted</Text>
                 <Text style={styles.emptySub}>
                   You haven't posted any resource requests yet.
@@ -555,11 +556,11 @@ export default function MyListingsScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -578,7 +579,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   navSpacer: {
     width: 36,
@@ -589,14 +590,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 30,
     gap: 8,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.035,
     shadowRadius: 8,
     elevation: 6,
     borderWidth: 1.5,
@@ -615,7 +616,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: "row",
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
     borderRadius: 14,
     marginHorizontal: 16,
     marginTop: 12,
@@ -638,17 +639,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.035,
     shadowRadius: 2,
     elevation: 2,
   },
   tabText: {
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
   },
   activeTabText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   centered: {
@@ -667,16 +668,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#ffffff",
-    borderColor: "#F1F5F9",
-    borderRadius: 20,
+    borderColor: appColors.border,
+    borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     gap: 10,
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -692,7 +693,7 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 12,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
   cardThumbPlaceholder: {
     width: 68,
@@ -724,12 +725,12 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   priceTagFree: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   priceTagPaid: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.surfaceMuted,
     borderColor: "#FDE68A",
     borderWidth: 1,
   },
@@ -740,13 +741,13 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   priceTagTextFree: {
-    color: "#15803D",
+    color: appColors.icon,
   },
   priceTagTextPaid: {
-    color: "#92400E",
+    color: appColors.icon,
   },
   conditionTag: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 7,
     paddingVertical: 4,
     borderRadius: 6,
@@ -755,7 +756,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   conditionTagText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 10,
     fontWeight: "700",
     textTransform: "capitalize",
@@ -765,7 +766,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     lineHeight: 20,
   },
   metaRow: {
@@ -775,13 +776,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   categoryMetaText: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 11,
     fontWeight: "600",
     textTransform: "capitalize",
   },
   courseMetaText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -789,19 +790,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 10,
   },
   fulfillBtn: {
     flex: 1,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: appColors.primary,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   fulfillBtnText: {
-    color: "#ffffff",
+    color: appColors.primary,
     fontSize: 12,
     fontWeight: "700",
     textAlign: "center",
@@ -809,16 +812,16 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     flex: 1,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: appColors.border,
   },
   editBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 12,
     fontWeight: "700",
     textAlign: "center",
@@ -843,12 +846,12 @@ const styles = StyleSheet.create({
   },
   statusSection: {
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 8,
     gap: 6,
   },
   statusLabel: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 11,
     fontWeight: "600",
   },
@@ -861,25 +864,26 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 8,
     borderRadius: 8,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   statusPillSelected: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
   },
   statusPillText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     includeFontPadding: false,
   },
   statusPillTextSelected: {
-    color: "#FDBF1E",
+    color: appColors.primary,
+    fontWeight: "800",
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -896,16 +900,16 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   statusOpen: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   statusOpenText: {
-    color: "#15803D",
+    color: appColors.icon,
   },
   statusFulfilled: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   statusFulfilledText: {
@@ -920,13 +924,13 @@ const styles = StyleSheet.create({
     color: "#DC2626",
   },
   descriptionText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontStyle: "italic",
     lineHeight: 16,
   },
   courseTag: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -953,17 +957,17 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 4,
   },
   emptySub: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     marginBottom: 16,
   },
   emptyAddBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,

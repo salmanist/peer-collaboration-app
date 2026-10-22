@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -6,8 +8,6 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -120,11 +120,11 @@ export function CollaborationBoardScreen() {
 
       {/* Search Input */}
       <View style={styles.searchContainer}>
-        <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
+        <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by project name, skills, or tech stack..."
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
           returnKeyType="search"
@@ -171,7 +171,7 @@ export function CollaborationBoardScreen() {
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="account-group-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="account-group-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No collaboration requests yet</Text>
               <Text style={styles.emptySubtitle}>
                 Looking for a teammate for your FYP or class assignment? Tap "Post Request" to find peers!
@@ -207,7 +207,7 @@ export function CollaborationBoardScreen() {
                     {item.required_skills.map((skill, idx) => (
                       <View key={idx} style={styles.skillChip}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <MaterialCommunityIcons name="lightning-bolt" size={12} color="#D97706" style={{ marginRight: 3 }} />
+                          <MaterialCommunityIcons name="lightning-bolt" size={12} color={appColors.icon} style={{ marginRight: 3 }} />
                           <Text style={styles.skillChipText}>{skill}</Text>
                         </View>
                       </View>
@@ -218,7 +218,7 @@ export function CollaborationBoardScreen() {
                 {/* Contact Footer */}
                 <View style={styles.cardFooter}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <MaterialCommunityIcons name="email-outline" size={13} color="#64748b" style={{ marginRight: 4 }} />
+                    <MaterialCommunityIcons name="email-outline" size={13} color={appColors.textSecondary} style={{ marginRight: 4 }} />
                     <Text style={styles.contactInfo}>
                       {item.contact_info || item.creator_email}
                     </Text>
@@ -253,7 +253,7 @@ export function CollaborationBoardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
   },
   header: {
     flexDirection: "row",
@@ -266,12 +266,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   postBtn: {
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   postBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -296,8 +296,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: "#0F172A",
+    color: appColors.text,
     fontWeight: "500",
   },
   categoriesRow: {
@@ -326,21 +326,21 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
   categoryPillActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   categoryPillText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   categoryPillTextActive: {
     color: "#FDBF1E",
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 14,
-    color: "#64748b",
+    color: appColors.textSecondary,
   },
   listContent: {
     paddingHorizontal: 20,
@@ -363,15 +363,15 @@ const styles = StyleSheet.create({
   },
   collabCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -382,16 +382,16 @@ const styles = StyleSheet.create({
   collabTitle: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.2,
   },
   creatorMeta: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginTop: 2,
   },
   categoryBadge: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -399,11 +399,11 @@ const styles = StyleSheet.create({
   categoryBadgeText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   description: {
     fontSize: 13,
-    color: "#334155",
+    color: appColors.textSecondary,
     lineHeight: 20,
     marginBottom: 10,
   },
@@ -417,20 +417,14 @@ const styles = StyleSheet.create({
   skillsLabel: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748b",
+    color: appColors.textSecondary,
     marginRight: 2,
   },
-  skillChip: {
-    backgroundColor: "#f0fdf4",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#bbf7d0",
-  },
+  skillChip: {    paddingHorizontal: 8,
+    paddingVertical: 3,  },
   skillChipText: {
     fontSize: 11,
-    color: "#16a34a",
+    color: appColors.icon,
     fontWeight: "500",
   },
   cardFooter: {
@@ -438,12 +432,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
+    borderTopColor: appColors.border,
     paddingTop: 10,
   },
   contactInfo: {
     fontSize: 12,
-    color: "#1d4ed8",
+    color: appColors.primary,
     fontWeight: "500",
   },
   ownerActions: {
@@ -456,15 +450,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   closeBtn: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: appColors.border,
   },
   reopenBtn: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: appColors.surfaceMuted,
   },
   statusToggleText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   deleteBtn: {
     paddingHorizontal: 10,
@@ -490,11 +484,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#0f172a",
+    color: appColors.text,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     marginTop: 4,
     lineHeight: 18,

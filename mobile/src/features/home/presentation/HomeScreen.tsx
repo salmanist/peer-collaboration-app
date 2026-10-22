@@ -1,7 +1,10 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  Image,
   ImageBackground,
   Modal,
   Platform,
@@ -10,7 +13,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -19,7 +21,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { FelloLogo } from "../../../core/components/FelloLogo";
 import { useCollapsibleHeader } from "../../../core/navigation/useCollapsibleHeader";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
+import { fetchParticipation, selectActivityModules, Participation, ACTIVITY_MODULES } from "../activity";
+import { getRecommendations } from "../recommendations";
 import { useModuleUsageStore } from "../../../core/store/useModuleUsageStore";
 import { useDataStore } from "../../../core/store/DataStoreContext";
 import { useResourceNotificationStore } from "../../resources/resourceNotifications";
@@ -30,7 +37,10 @@ import { fetchResourceListings } from "../../resources/data/resourcesApi";
 import { fetchTutors } from "../../tutoring/data/tutoringApi";
 import { fetchLostAndFoundItems } from "../../lost_and_found/data/lostAndFoundApi";
 
-const LGU_CAMPUS_IMAGE = require("../../../../assets/lgu_campus.png");
+const LGU_BANNER_IMAGE = require("../../../../assets/lgu_preview_clean.png");
+const STUDENTS_STUDY_IMAGE = require("../../../../assets/students_study.png");
+const LGU_BUILDING_IMAGE = require("../../../../assets/lgu_building.png");
+const CARNIVAL_IMAGE = require("../../../../assets/carnival_highlight.png");
 
 interface CampusSpotlightEvent {
   id: string;
@@ -46,25 +56,25 @@ interface CampusSpotlightEvent {
 
 const ALL_CAMPUS_EVENTS: CampusSpotlightEvent[] = [
   {
+    id: "evt-carnival",
+    tag: "Campus Spotlight",
+    icon: "party-popper",
+    title: "LGU Annual Winter Carnival",
+    eventDate: "2026-11-27T10:00:00",
+    dateTime: "Nov 27, 2026 · 10:00 AM",
+    venue: "Main Campus Grounds",
+    description: "The biggest annual winter festival is coming! Enjoy 30+ student food stalls, live acoustic music stage, e-gaming tournament, and startup showcases.",
+    ctaText: "View Details",
+  },
+  {
     id: "evt-tech-talk",
     tag: "Campus Spotlight",
     icon: "laptop-account",
     title: "Tech Talk: Building Scalable Systems",
     eventDate: "2026-10-10T11:00:00",
-    dateTime: "Oct 10, 2026 • 11:00 AM",
+    dateTime: "Oct 10, 2026 · 11:00 AM",
     venue: "LGU Auditorium",
     description: "Join industry leaders as they share architecture principles for engineering ultra-high-throughput systems and resilient microservices. Open to all students.",
-    ctaText: "View Details",
-  },
-  {
-    id: "evt-carnival",
-    tag: "Campus Spotlight",
-    icon: "party-popper",
-    title: "LGU Annual Winter Carnival & Food Fiesta 2026",
-    eventDate: "2026-11-27T10:00:00",
-    dateTime: "Nov 27, 2026 • 10:00 AM",
-    venue: "Main Campus Grounds",
-    description: "The biggest annual winter festival is coming! Enjoy 30+ student food stalls, live acoustic music stage, e-gaming tournament, and startup showcases.",
     ctaText: "View Details",
   },
   {
@@ -73,7 +83,7 @@ const ALL_CAMPUS_EVENTS: CampusSpotlightEvent[] = [
     icon: "file-document-edit-outline",
     title: "Fall 2026 Midterm Date Sheet & Hall Guidelines",
     eventDate: "2026-11-09T08:30:00",
-    dateTime: "Nov 09, 2026 • 08:30 AM",
+    dateTime: "Nov 09, 2026 · 08:30 AM",
     venue: "Examination Block A & C",
     description: "Official Midterm Date Sheet has been announced for all departments. Student ID cards are mandatory for examination entry.",
     ctaText: "View Details",
@@ -88,25 +98,37 @@ export default function HomeScreen() {
   const spotlightScrollRef = useRef<ScrollView>(null);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [serviceSearchOpen, setServiceSearchOpen] = useState(false);
+  const [serviceQuery, setServiceQuery] = useState("");
+  const [showAllActivity, setShowAllActivity] = useState(false);
 
   const upcomingEvents = ALL_CAMPUS_EVENTS;
-  const cardWidth = Math.max(width - 32, 280);
+  const cardWidth = Math.max(width - 40, 250);
 
   const [selectedEventForModal, setSelectedEventForModal] = useState<CampusSpotlightEvent | null>(null);
 
   const user = useSessionStore((state) => state.user);
   const accessToken = useSessionStore((state) => state.accessToken);
   const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
-  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 44);
+  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 34);
 
   const pendingTutoringRequests = useTutoringNotificationStore((state) => state.pendingRequestsCount);
   const hasNewLostClaims = useLostAndFoundNotificationStore((state) => state.hasNewClaims);
   const hasNewResources = useResourceNotificationStore((state) => state.hasNewResources);
 
-  const recordVisit = useModuleUsageStore((state) => state.recordVisit);
+  const [participationState, setParticipationState] = useState<{ userId: number; data: Participation } | null>(null);
+  useFocusEffect(useCallback(() => {
+    let mounted = true;
+    if (user?.id) void fetchParticipation().then(data => {
+      if (mounted) setParticipationState({ userId: user.id, data });
+    });
+    return () => { mounted = false; };
+  }, [user?.id]));
+  const visitCounts = useModuleUsageStore((state) => state.visitCounts);
+  const lastVisited = useModuleUsageStore((state) => state.lastVisited);
+  const notifications = useCampusNotificationStore((state) => state.notifications);
   const hydrateUsage = useModuleUsageStore((state) => state.hydrate);
 
-  // Data Store for Live Previews
   const {
     resourceListings,
     setResourceListings,
@@ -133,9 +155,7 @@ export default function HomeScreen() {
       if (lostData.status === "fulfilled" && lostData.value?.results) {
         setLostAndFoundItems(lostData.value.results);
       }
-    } catch {
-      // Gracefully ignore background load errors
-    }
+    } catch {}
   };
 
   const handleRefresh = async () => {
@@ -161,10 +181,32 @@ export default function HomeScreen() {
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    return "Good Evening";
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
   }, []);
+
+  const recommendations = useMemo(() => getRecommendations(
+    resourceListings || [], tutors || [], user?.skills || [], visitCounts, lastVisited, user?.id || 0,
+  ), [resourceListings, tutors, user?.skills, user?.id, visitCounts, lastVisited]);
+  const moduleNotice = (module: string) => {
+    const aliases: Record<string, string[]> = { tutoring: ["sessions", "tutoring"], resources: ["marketplace", "resources"], library: ["library"], "lost-and-found": ["lost_and_found", "lost-and-found"], rides: ["rides", "ride_sharing", "ondemand"], printing: ["printing"] };
+    const count = notifications.filter(n => !n.is_read && n.is_active && (aliases[module]?.includes(n.category) || (n.action_url || "").includes(`/${module}`))).length;
+    return count ? <View style={styles.moduleNotice}><MaterialCommunityIcons name="bell-outline" size={10} color="#68736C" /><Text style={styles.moduleNoticeText}>{count} {count === 1 ? "notice" : "notices"}</Text></View> : null;
+  };
+
+  const activityModules = useMemo(() => {
+    const active = selectActivityModules(
+      visitCounts,
+      lastVisited,
+      participationState?.userId === user?.id ? participationState?.data || {} : {},
+    );
+    const activeIds = new Set(active.map((m) => m.id));
+    const remaining = (ACTIVITY_MODULES as readonly (typeof ACTIVITY_MODULES[number])[]).filter(
+      (m) => !activeIds.has(m.id),
+    );
+    return [...active, ...remaining];
+  }, [visitCounts, lastVisited, participationState, user?.id]);
 
   if (!user) return null;
 
@@ -174,20 +216,45 @@ export default function HomeScreen() {
   const handlePrintCenterPress = () => router.push("/(app)/printing" as any);
   const handleDigitalLibraryPress = () => router.push("/(app)/library" as any);
 
+  const handleNextSpotlight = () => {
+    const nextIdx = (currentEventIndex + 1) % upcomingEvents.length;
+    spotlightScrollRef.current?.scrollTo({ x: nextIdx * (cardWidth + 12), animated: true });
+    setCurrentEventIndex(nextIdx);
+  };
+
+  const handleDotPress = (dotIdx: number) => {
+    spotlightScrollRef.current?.scrollTo({ x: dotIdx * (cardWidth + 12), animated: true });
+    setCurrentEventIndex(dotIdx);
+  };
+
+  const searchableServices = [
+    { label: "Tutoring", keywords: "tutor tutors study mentor mentors skills", icon: "school-outline" as const, route: "/(app)/tutoring" },
+    { label: "Marketplace", keywords: "buy sell share books resources", icon: "storefront-outline" as const, route: "/(app)/resources" },
+    { label: "Digital Library", keywords: "notes projects papers", icon: "book-open-variant" as const, route: "/(app)/library" },
+    { label: "Lost & Found", keywords: "missing items notices", icon: "magnify" as const, route: "/(app)/lost-and-found" },
+    { label: "Ride Sharing", keywords: "ride rides carpool driver transport trip trips cars", icon: "car-outline" as const, route: "/(app)/rides" },
+    { label: "Print Center", keywords: "printing printer documents", icon: "printer-outline" as const, route: "/(app)/printing" },
+  ].filter(item => `${item.label} ${item.keywords}`.toLowerCase().includes(serviceQuery.trim().toLowerCase()));
+
   return (
     <View style={styles.rootContainer}>
-      {/* Sleek Top Navigation Bar without Left Logo */}
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Top Header Bar matching Preview */}
       <Animated.View
         style={[
           styles.collapsibleTopBar,
           {
-            paddingTop: topOffset > 0 ? topOffset + 4 : 10,
+            paddingTop: (topOffset > 0 ? topOffset : 4) + 4,
             transform: [{ translateY: headerTranslateY }],
           },
         ]}
       >
         <View style={styles.topNavLeft}>
-          <Text style={styles.topNavBrand}>FELLOo</Text>
+          <FelloLogo size={20} variant="yellow" />
+          <View style={styles.brandTitleWrap}>
+            <Text style={styles.topNavBrand}>Fello</Text>
+          </View>
         </View>
 
         <View style={styles.topRightActions}>
@@ -198,8 +265,8 @@ export default function HomeScreen() {
           >
             <MaterialCommunityIcons
               name={unseenCount > 0 ? "bell-badge-outline" : "bell-outline"}
-              size={23}
-              color="#0D3E02"
+              size={22}
+              color="#0F172A"
             />
             {unseenCount > 0 && (
               <View style={styles.notificationBadgePill}>
@@ -215,13 +282,14 @@ export default function HomeScreen() {
             onPress={() => router.push("/(app)/profile" as any)}
             accessibilityLabel="My Profile"
           >
-            <MaterialCommunityIcons name="account-circle-outline" size={26} color="#0D3E02" />
+            <MaterialCommunityIcons name="account-outline" size={22} color="#0F172A" />
           </Pressable>
         </View>
       </Animated.View>
 
       <ScrollView
         style={styles.container}
+        showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
         refreshControl={
@@ -230,490 +298,360 @@ export default function HomeScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: topOffset + 68,
+            paddingTop: topOffset + 48,
             paddingBottom: Math.max(insets.bottom, 16) + 84,
           },
         ]}
       >
-        {/* Breathing Hero Greeting Section */}
+        {/* Good Morning & Syeda Zahra Ijaz Greeting */}
         <View style={styles.heroGreetingSection}>
-          {/* "Good Morning," in bold BLACK color */}
           <Text style={styles.heroGreetingSub}>{greeting},</Text>
-          {/* User Name in rich Emerald Green */}
           <Text style={styles.heroGreetingName} numberOfLines={1}>
             {displayName}
           </Text>
         </View>
 
-        {/* Global Search Bar */}
+        {/* LGU Campus Photo Banner (Zero text overlay) */}
+        <View style={styles.lguBannerContainer}>
+          <Image
+            source={LGU_BANNER_IMAGE}
+            style={styles.lguBannerImage}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Global Search Bar Under Picture */}
         <Pressable
           style={styles.searchBarContainer}
-          onPress={() => router.push("/(app)/resources" as any)}
+          onPress={() => { setServiceQuery(""); setServiceSearchOpen(true); }}
+          accessibilityRole="button"
+          accessibilityLabel="Search"
         >
           <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" style={{ marginRight: 8 }} />
-          <Text style={styles.searchPlaceholderText}>
-            Search tutors, resources, lost & found...
-          </Text>
+          <Text style={styles.searchPlaceholderText}>Search...</Text>
         </Pressable>
 
-        {/* Quick Action Chips Bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.quickActionsContainer}
-        >
-          <Pressable
-            style={styles.quickActionChip}
-            onPress={() => router.push("/(app)/resources/create" as any)}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: "#FEF3C7" }]}>
-              <MaterialCommunityIcons name="plus-box" size={16} color="#D97706" />
-            </View>
-            <Text style={styles.quickActionText}>Share Item</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.quickActionChip}
-            onPress={() => router.push("/(app)/lost-and-found/create" as any)}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: "#D1FAE5" }]}>
-              <MaterialCommunityIcons name="map-marker-plus" size={16} color="#059669" />
-            </View>
-            <Text style={styles.quickActionText}>Report Notice</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.quickActionChip}
-            onPress={() => router.push("/(app)/tutoring" as any)}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: "#DCFCE7" }]}>
-              <MaterialCommunityIcons name="account-search" size={16} color="#166534" />
-            </View>
-            <Text style={styles.quickActionText}>Find Tutor</Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.quickActionChip}
-            onPress={handleRideSharePress}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: "#FCE7F3" }]}>
-              <MaterialCommunityIcons name="car-multiple" size={16} color="#DB2777" />
-            </View>
-            <Text style={styles.quickActionText}>Ride Share</Text>
-          </Pressable>
-        </ScrollView>
-
-        {/* Live Notice Banner (if any) */}
-        {(pendingTutoringRequests > 0 || hasNewLostClaims || hasNewResources) && (
-          <View style={styles.alertNotice}>
-            <MaterialCommunityIcons name="bell-ring-outline" size={18} color="#B45309" />
-            <Text style={styles.alertNoticeText} numberOfLines={2}>
-              {pendingTutoringRequests > 0 ? `${pendingTutoringRequests} session request(s) waiting. ` : ""}
-              {hasNewLostClaims ? "New claim updates on lost notices. " : ""}
-              {hasNewResources ? "Fresh student ads posted." : ""}
-            </Text>
-          </View>
-        )}
-
-        {/* Campus Services Section */}
+        {/* Campus Services Section with Black Grid Lines */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeading}>Campus Services</Text>
+          <Text style={styles.sectionHeading}>Campus services</Text>
+        </View>
+
+        <View style={styles.servicesGridBox}>
+          {/* Row 1 */}
+          <View style={styles.servicesGridRow}>
+            {/* 1. Tutoring */}
+            <Pressable
+              style={styles.gridCell}
+              onPress={() => {
+                router.push("/(app)/tutoring" as any);
+              }}
+            >
+              <MaterialCommunityIcons name="school-outline" size={28} color="#364A41" />
+              <Text style={styles.gridCellTitle}>Tutoring</Text>
+            </Pressable>
+
+            <View style={styles.verticalDivider} />
+
+            {/* 2. Marketplace */}
+            <Pressable
+              style={styles.gridCell}
+              onPress={() => {
+                router.push("/(app)/resources" as any);
+              }}
+            >
+              <MaterialCommunityIcons name="storefront-outline" size={28} color="#364A41" />
+              <Text style={styles.gridCellTitle} numberOfLines={1}>Marketplace</Text>
+            </Pressable>
+
+            <View style={styles.verticalDivider} />
+
+            {/* 3. Digital Library */}
+            <Pressable
+              style={styles.gridCell}
+              onPress={handleDigitalLibraryPress}
+            >
+              <MaterialCommunityIcons name="bookshelf" size={28} color="#364A41" />
+              <Text style={styles.gridCellTitle} numberOfLines={1}>Digital Library</Text>
+            </Pressable>
+          </View>
+
+          {/* Horizontal Divider Line */}
+          <View style={styles.horizontalDivider} />
+
+          {/* Row 2 */}
+          <View style={styles.servicesGridRow}>
+            {/* 4. Lost & Found */}
+            <Pressable
+              style={styles.gridCell}
+              onPress={() => {
+                router.push("/(app)/lost-and-found" as any);
+              }}
+            >
+              <MaterialCommunityIcons name="magnify" size={28} color="#364A41" />
+              <Text style={styles.gridCellTitle}>Lost & Found</Text>
+            </Pressable>
+
+            <View style={styles.verticalDivider} />
+
+            {/* 5. Ride Sharing */}
+            <Pressable
+              style={styles.gridCell}
+              onPress={handleRideSharePress}
+            >
+              <MaterialCommunityIcons name="car-multiple" size={28} color="#364A41" />
+              <Text style={styles.gridCellTitle}>Ride Sharing</Text>
+            </Pressable>
+
+            <View style={styles.verticalDivider} />
+
+            {/* 6. Print Center */}
+            <Pressable
+              style={styles.gridCell}
+              onPress={handlePrintCenterPress}
+            >
+              <MaterialCommunityIcons name="printer-outline" size={28} color="#364A41" />
+              <Text style={styles.gridCellTitle}>Print Center</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Campus Highlights Section */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Campus Highlights</Text>
+          <Pressable onPress={handleNextSpotlight} hitSlop={8} accessibilityLabel="Next campus highlight">
+            <MaterialCommunityIcons name="chevron-right" size={22} color="#1E293B" />
+          </Pressable>
         </View>
 
         <ScrollView
+          ref={spotlightScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.topServicesHorizontalScroll}
+          decelerationRate="fast"
+          snapToInterval={cardWidth + 12}
+          snapToAlignment="start"
+          contentContainerStyle={styles.spotlightCarouselScroll}
+          onScroll={(e) => {
+            const offsetX = e.nativeEvent.contentOffset.x;
+            const index = Math.round(offsetX / (cardWidth + 12));
+            if (index >= 0 && index < upcomingEvents.length && index !== currentEventIndex) {
+              setCurrentEventIndex(index);
+            }
+          }}
+          onMomentumScrollEnd={(e) => {
+            const offsetX = e.nativeEvent.contentOffset.x;
+            const index = Math.round(offsetX / (cardWidth + 12));
+            if (index >= 0 && index < upcomingEvents.length && index !== currentEventIndex) {
+              setCurrentEventIndex(index);
+            }
+          }}
+          scrollEventThrottle={16}
         >
-          {/* 1. Tutoring */}
-          <Pressable
-            style={styles.topServiceCard}
-            onPress={() => {
-              router.push("/(app)/tutoring" as any);
-              recordVisit("tutoring");
-            }}
-          >
-            <View style={[styles.serviceBoxIconWrapper, { backgroundColor: "#F3E8FF" }]}>
-              <MaterialCommunityIcons name="school" size={24} color="#7C3AED" />
-              <View style={styles.serviceBoxBadge}>
-                <Text style={styles.serviceBoxBadgeText}>{pendingTutoringRequests > 0 ? pendingTutoringRequests : "2"}</Text>
-              </View>
-            </View>
-            <Text style={styles.topServiceTitle}>Tutoring</Text>
-            <Text style={styles.topServiceSub}>
-              {pendingTutoringRequests > 0 ? `${pendingTutoringRequests} new requests` : "2 new requests"}
-            </Text>
-          </Pressable>
-
-          {/* 2. Resources */}
-          <Pressable
-            style={styles.topServiceCard}
-            onPress={() => {
-              router.push("/(app)/resources" as any);
-              recordVisit("marketplace");
-            }}
-          >
-            <View style={[styles.serviceBoxIconWrapper, { backgroundColor: "#DCFCE7" }]}>
-              <MaterialCommunityIcons name="book-open-page-variant" size={24} color="#16A34A" />
-              <View style={styles.serviceBoxBadge}>
-                <Text style={styles.serviceBoxBadgeText}>{(resourceListings?.length && resourceListings.length > 0) ? resourceListings.length : "4"}</Text>
-              </View>
-            </View>
-            <Text style={styles.topServiceTitle}>Resources</Text>
-            <Text style={styles.topServiceSub}>
-              {(resourceListings?.length && resourceListings.length > 0) ? `${resourceListings.length} new listings` : "4 new listings"}
-            </Text>
-          </Pressable>
-
-          {/* 3. Digital Library */}
-          <Pressable
-            style={styles.topServiceCard}
-            onPress={handleDigitalLibraryPress}
-          >
-            <View style={[styles.serviceBoxIconWrapper, { backgroundColor: "#E0F2FE" }]}>
-              <MaterialCommunityIcons name="bookshelf" size={24} color="#0284C7" />
-            </View>
-            <Text style={styles.topServiceTitle}>Digital Library</Text>
-            <Text style={styles.topServiceSub}>Past papers & notes</Text>
-          </Pressable>
-
-          {/* 4. Lost & Found */}
-          <Pressable
-            style={styles.topServiceCard}
-            onPress={() => {
-              router.push("/(app)/lost-and-found" as any);
-              recordVisit("lost_and_found");
-            }}
-          >
-            <View style={[styles.serviceBoxIconWrapper, { backgroundColor: "#FEF9C3" }]}>
-              <MaterialCommunityIcons name="magnify" size={24} color="#D97706" />
-            </View>
-            <Text style={styles.topServiceTitle}>Lost & Found</Text>
-            <Text style={styles.topServiceSub}>1 new claim</Text>
-          </Pressable>
-
-          {/* 5. Ride Share */}
-          <Pressable
-            style={styles.topServiceCard}
-            onPress={handleRideSharePress}
-          >
-            <View style={[styles.serviceBoxIconWrapper, { backgroundColor: "#DBEAFE" }]}>
-              <MaterialCommunityIcons name="car" size={24} color="#2563EB" />
-              <View style={styles.serviceBoxBadge}>
-                <Text style={styles.serviceBoxBadgeText}>1</Text>
-              </View>
-            </View>
-            <Text style={styles.topServiceTitle}>Ride Share</Text>
-            <Text style={styles.topServiceSub}>1 new ride</Text>
-          </Pressable>
-
-          {/* 6. Print Center */}
-          <Pressable
-            style={styles.topServiceCard}
-            onPress={handlePrintCenterPress}
-          >
-            <View style={[styles.serviceBoxIconWrapper, { backgroundColor: "#FFE4E6" }]}>
-              <MaterialCommunityIcons name="printer" size={24} color="#E11D48" />
-            </View>
-            <Text style={styles.topServiceTitle}>Print Center</Text>
-            <Text style={styles.topServiceSub}>1 new request</Text>
-          </Pressable>
-        </ScrollView>
-
-        {/* Swipeable Campus Spotlight Banner Carousel */}
-        {upcomingEvents.length > 0 && (
-          <View style={styles.spotlightCarouselWrapper}>
-            <ScrollView
-              ref={spotlightScrollRef}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              decelerationRate="fast"
-              snapToInterval={cardWidth + 12}
-              snapToAlignment="center"
-              contentContainerStyle={{ gap: 12, paddingBottom: 4 }}
-              onScroll={(e) => {
-                const offsetX = e.nativeEvent.contentOffset.x;
-                const idx = Math.round(offsetX / (cardWidth + 12));
-                if (idx !== currentEventIndex && idx >= 0 && idx < upcomingEvents.length) {
-                  setCurrentEventIndex(idx);
-                }
-              }}
-              scrollEventThrottle={16}
-            >
-              {upcomingEvents.map((evt, idx) => (
-                <Pressable
-                  key={evt.id}
-                  style={[styles.spotlightBannerCard, { width: cardWidth }]}
-                  onPress={() => setSelectedEventForModal(evt)}
+          {upcomingEvents.map((evt, idx) => {
+            const evtImage = idx === 0 ? CARNIVAL_IMAGE : idx === 1 ? STUDENTS_STUDY_IMAGE : LGU_BUILDING_IMAGE;
+            return (
+              <Pressable
+                key={evt.id}
+                style={[styles.spotlightBannerCard, { width: cardWidth }]}
+                onPress={() => setSelectedEventForModal(evt)}
+              >
+                <ImageBackground
+                  source={evtImage}
+                  style={styles.spotlightBgImage}
+                  imageStyle={{ borderRadius: 16 }}
+                  resizeMode="cover"
                 >
-                  <ImageBackground
-                    source={LGU_CAMPUS_IMAGE}
-                    style={styles.spotlightBgImage}
-                    imageStyle={{ borderRadius: 20 }}
-                  >
-                    <View style={styles.spotlightDarkGradientOverlay}>
-                      <View style={styles.spotlightContentContainer}>
-                        {/* Top Pill */}
-                        <View style={styles.spotlightWhitePill}>
-                          <Text style={styles.spotlightWhitePillText}>{evt.tag}</Text>
-                        </View>
-
-                        {/* Event Title */}
-                        <Text style={styles.spotlightBannerTitle} numberOfLines={2}>
-                          {evt.title}
-                        </Text>
-
-                        {/* Meta 1: Date/Time */}
-                        <View style={styles.spotlightBannerMetaRow}>
-                          <MaterialCommunityIcons name="calendar-month-outline" size={13} color="#E2E8F0" style={{ marginRight: 5 }} />
-                          <Text style={styles.spotlightBannerMetaText}>{evt.dateTime}</Text>
-                        </View>
-
-                        {/* Meta 2: Location */}
-                        <View style={styles.spotlightBannerMetaRow}>
-                          <MaterialCommunityIcons name="map-marker-outline" size={13} color="#E2E8F0" style={{ marginRight: 5 }} />
-                          <Text style={styles.spotlightBannerMetaText}>{evt.venue}</Text>
-                        </View>
-
-                        {/* View Details Pill Button */}
-                        <View style={styles.spotlightViewDetailsPill}>
-                          <Text style={styles.spotlightViewDetailsText}>View Details ➔</Text>
-                        </View>
+                  <View style={styles.spotlightDarkGradientOverlay}>
+                    <View style={styles.spotlightContentContainer}>
+                      <View style={styles.spotlightWhitePill}>
+                        <Text style={styles.spotlightWhitePillText}>{evt.tag}</Text>
                       </View>
 
-                      {/* Pagination Dots at bottom right */}
-                      <View style={styles.spotlightDotsRow}>
-                        {upcomingEvents.map((_, dotIdx) => (
-                          <Pressable
-                            key={dotIdx}
-                            onPress={(e) => {
-                              e.stopPropagation?.();
-                              spotlightScrollRef.current?.scrollTo({
-                                x: dotIdx * (cardWidth + 12),
-                                animated: true,
-                              });
-                              setCurrentEventIndex(dotIdx);
-                            }}
+                      <Text style={styles.spotlightBannerTitle} numberOfLines={2}>
+                        {evt.title}
+                      </Text>
+
+                      <View style={styles.spotlightBannerMetaRow}>
+                        <MaterialCommunityIcons name="calendar-month-outline" size={13} color="#E2E8F0" style={{ marginRight: 5 }} />
+                        <Text style={styles.spotlightBannerMetaText}>{evt.dateTime}</Text>
+                      </View>
+
+                      <View style={styles.spotlightBannerMetaRow}>
+                        <MaterialCommunityIcons name="map-marker-outline" size={13} color="#E2E8F0" style={{ marginRight: 5 }} />
+                        <Text style={styles.spotlightBannerMetaText}>{evt.venue}</Text>
+                      </View>
+
+                      <View style={styles.spotlightViewDetailsPill}>
+                        <Text style={styles.spotlightViewDetailsText}>{evt.ctaText} →</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.spotlightDotsRow}>
+                      {upcomingEvents.map((_, dotIdx) => (
+                        <Pressable
+                          key={dotIdx}
+                          onPress={() => handleDotPress(dotIdx)}
+                          hitSlop={6}
+                        >
+                          <View
                             style={[
                               styles.spotlightDotIndicator,
                               currentEventIndex === dotIdx && styles.spotlightDotIndicatorActive,
                             ]}
                           />
-                        ))}
-                      </View>
+                        </Pressable>
+                      ))}
                     </View>
-                  </ImageBackground>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+                  </View>
+                </ImageBackground>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
         {/* Your Activity Section */}
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionHeading}>Your Activity</Text>
-          <Pressable onPress={() => router.push("/(app)/profile" as any)}>
-            <Text style={styles.sectionSeeAll}>View All ➔</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={showAllActivity ? "Show fewer activity modules" : "View all activity modules"}
+            accessibilityState={{ expanded: showAllActivity }}
+            onPress={() => setShowAllActivity((value) => !value)}
+            hitSlop={8}
+            style={styles.seeAllButton}
+          >
+            <Text style={styles.sectionSeeAll}>{showAllActivity ? "Show less" : "View all"}</Text>
+            <MaterialCommunityIcons
+              name={showAllActivity ? "chevron-up" : "arrow-right"}
+              size={14}
+              color="#475569"
+              style={{ marginLeft: 4 }}
+            />
           </Pressable>
         </View>
 
         <View style={styles.activityCardContainer}>
-          {/* Row 1: Tutoring */}
-          <Pressable
-            style={styles.activityRowItem}
-            onPress={() => router.push("/(app)/tutoring" as any)}
-          >
-            <View style={[styles.activityRowIconBox, { backgroundColor: "#F3E8FF" }]}>
-              <MaterialCommunityIcons name="school" size={20} color="#7C3AED" />
-            </View>
-            <View style={styles.activityRowInfo}>
-              <Text style={styles.activityRowTitle}>Tutoring</Text>
-              <Text style={styles.activityRowSub}>2 requests pending</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
-          </Pressable>
-
-          <View style={styles.activityDivider} />
-
-          {/* Row 2: Marketplace */}
-          <Pressable
-            style={styles.activityRowItem}
-            onPress={() => router.push("/(app)/resources" as any)}
-          >
-            <View style={[styles.activityRowIconBox, { backgroundColor: "#DCFCE7" }]}>
-              <MaterialCommunityIcons name="book-open-page-variant" size={20} color="#16A34A" />
-            </View>
-            <View style={styles.activityRowInfo}>
-              <Text style={styles.activityRowTitle}>Marketplace</Text>
-              <Text style={styles.activityRowSub}>Your listing has 4 views</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
-          </Pressable>
-
-          <View style={styles.activityDivider} />
-
-          {/* Row 3: Lost & Found */}
-          <Pressable
-            style={styles.activityRowItem}
-            onPress={() => router.push("/(app)/lost-and-found" as any)}
-          >
-            <View style={[styles.activityRowIconBox, { backgroundColor: "#FEF9C3" }]}>
-              <MaterialCommunityIcons name="magnify" size={20} color="#D97706" />
-            </View>
-            <View style={styles.activityRowInfo}>
-              <Text style={styles.activityRowTitle}>Lost & Found</Text>
-              <Text style={styles.activityRowSub}>Claim request accepted</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
-          </Pressable>
-
-          <View style={styles.activityDivider} />
-
-          {/* Row 4: Ride Share */}
-          <Pressable
-            style={styles.activityRowItem}
-            onPress={handleRideSharePress}
-          >
-            <View style={[styles.activityRowIconBox, { backgroundColor: "#DBEAFE" }]}>
-              <MaterialCommunityIcons name="car" size={20} color="#2563EB" />
-            </View>
-            <View style={styles.activityRowInfo}>
-              <Text style={styles.activityRowTitle}>Ride Share</Text>
-              <Text style={styles.activityRowSub}>Upcoming ride tomorrow</Text>
-            </View>
-            <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
-          </Pressable>
+          {activityModules.length ? (showAllActivity ? activityModules : activityModules.slice(0, 3)).map((module, index) => (
+            <React.Fragment key={module.id}>
+              {index > 0 && <View style={styles.activityDivider} />}
+              <Pressable style={styles.activityRowItem} onPress={() => router.push(module.route as any)}>
+                <MaterialCommunityIcons name={module.icon} size={24} color="#364A41" style={{ marginRight: 14 }} />
+                <View style={styles.activityRowInfo}><Text style={styles.activityRowTitle}>{module.title}</Text></View>
+                <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
+              </Pressable>
+            </React.Fragment>
+          )) : <Text style={{ color: appColors.textSecondary, paddingVertical: 16 }}>Your modules will appear here as you use them.</Text>}
         </View>
 
-        {/* Recommended for You Section */}
+        {/* Recommended for you Section (Real student photo, no AI pics) */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionHeading}>Recommended for You</Text>
-          <Pressable onPress={() => router.push("/(app)/resources" as any)}>
-            <Text style={styles.sectionSeeAll}>View All ➔</Text>
-          </Pressable>
+          <Text style={styles.sectionHeading}>Recommended for you</Text>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.recommendHorizontalScroll}
-        >
-          {/* 1. Tutoring Recommendation */}
-          <Pressable
-            style={styles.recommendCard}
-            onPress={() => router.push("/(app)/tutoring" as any)}
-          >
-            <View style={[styles.recommendTagBadge, { backgroundColor: "#F3E8FF" }]}>
-              <Text style={[styles.recommendTagText, { color: "#7C3AED" }]}>Tutoring</Text>
-            </View>
-            <View style={styles.recommendAvatarBox}>
-              <MaterialCommunityIcons name="account-circle" size={42} color="#0D3E02" />
-            </View>
-            <Text style={styles.recommendCardTitle} numberOfLines={1}>Calculus Tutor</Text>
-            <Text style={styles.recommendCardSub} numberOfLines={1}>Sarah Ahmed</Text>
-            <Text style={styles.recommendCardPrice}>⭐ 4.9 (32) • Rs. 800/hr</Text>
-          </Pressable>
-
-          {/* 2. Marketplace Recommendation */}
-          <Pressable
-            style={styles.recommendCard}
-            onPress={() => router.push("/(app)/resources" as any)}
-          >
-            <View style={[styles.recommendTagBadge, { backgroundColor: "#DCFCE7" }]}>
-              <Text style={[styles.recommendTagText, { color: "#16A34A" }]}>Marketplace</Text>
-            </View>
-            <View style={styles.recommendAvatarBox}>
-              <MaterialCommunityIcons name="calculator-variant" size={38} color="#0D3E02" />
-            </View>
-            <Text style={styles.recommendCardTitle} numberOfLines={1}>Scientific Calculator</Text>
-            <Text style={styles.recommendCardSub} numberOfLines={1}>Casio fx-991EX</Text>
-            <Text style={styles.recommendCardPrice}>Rs. 2,500</Text>
-          </Pressable>
-
-          {/* 3. Ride Share Recommendation */}
-          <Pressable
-            style={styles.recommendCard}
-            onPress={handleRideSharePress}
-          >
-            <View style={[styles.recommendTagBadge, { backgroundColor: "#DBEAFE" }]}>
-              <Text style={[styles.recommendTagText, { color: "#2563EB" }]}>Ride Share</Text>
-            </View>
-            <View style={styles.recommendAvatarBox}>
-              <MaterialCommunityIcons name="car-sports" size={38} color="#2563EB" />
-            </View>
-            <Text style={styles.recommendCardTitle} numberOfLines={1}>Johar Town ➔ Campus</Text>
-            <Text style={styles.recommendCardSub} numberOfLines={1}>Tomorrow • 8:00 AM</Text>
-            <Text style={styles.recommendCardPrice}>Rs. 150</Text>
-          </Pressable>
-
-          {/* 4. Lost & Found Recommendation */}
-          <Pressable
-            style={styles.recommendCard}
-            onPress={() => router.push("/(app)/lost-and-found" as any)}
-          >
-            <View style={[styles.recommendTagBadge, { backgroundColor: "#FFE4E6" }]}>
-              <Text style={[styles.recommendTagText, { color: "#E11D48" }]}>Lost & Found</Text>
-            </View>
-            <View style={styles.recommendAvatarBox}>
-              <MaterialCommunityIcons name="headphones" size={38} color="#E11D48" />
-            </View>
-            <Text style={styles.recommendCardTitle} numberOfLines={1}>iPhone / AirPods Found</Text>
-            <Text style={styles.recommendCardSub} numberOfLines={1}>Near Library</Text>
-            <Text style={styles.recommendCardPrice}>2 hours ago</Text>
-          </Pressable>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendHorizontalScroll}>
+          {recommendations.map(item => (
+            <Pressable key={item.id} style={styles.recommendedCard} onPress={() => router.push(item.route as any)}>
+              <MaterialCommunityIcons name={item.icon} size={30} color="#364A41" style={{ marginLeft: 14 }} />
+              <View style={styles.recommendedContent}>
+                <Text style={styles.recommendedTitle} numberOfLines={2}>{item.title}</Text>
+                <Text style={styles.recommendedSub}>{item.label}</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+            </Pressable>
+          ))}
         </ScrollView>
       </ScrollView>
 
-      {/* Campus Event Modal */}
+      {/* Search Modal */}
+      <Modal visible={serviceSearchOpen} transparent animationType="fade" onRequestClose={() => setServiceSearchOpen(false)}>
+        <View style={styles.searchModalBackdrop}>
+          <View style={styles.searchModalCard}>
+            <View style={styles.searchModalHeader}>
+              <Text style={styles.sectionHeading}>Campus services</Text>
+              <Pressable accessibilityLabel="Close search" hitSlop={10} onPress={() => setServiceSearchOpen(false)}>
+                <MaterialCommunityIcons name="close" size={22} color="#0F172A" />
+              </Pressable>
+            </View>
+            <View style={styles.searchModalInputRow}>
+              <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.searchModalInput}
+                placeholder="Search..."
+                placeholderTextColor="#94A3B8"
+                autoFocus
+                value={serviceQuery}
+                onChangeText={setServiceQuery}
+              />
+              {serviceQuery.length > 0 && (
+                <Pressable onPress={() => setServiceQuery("")}>
+                  <MaterialCommunityIcons name="close-circle" size={18} color="#94A3B8" />
+                </Pressable>
+              )}
+            </View>
+            <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
+              {searchableServices.map(item => (
+                <Pressable
+                  key={item.label}
+                  style={styles.searchResultItem}
+                  onPress={() => {
+                    setServiceSearchOpen(false);
+                    router.push(item.route as any);
+                  }}
+                >
+                  <MaterialCommunityIcons name={item.icon} size={22} color="#1E293B" style={{ marginRight: 12 }} />
+                  <Text style={styles.searchResultText}>{item.label}</Text>
+                  <MaterialCommunityIcons name="chevron-right" size={18} color="#94A3B8" />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Event Details Modal */}
       {selectedEventForModal && (
         <Modal
-          visible={Boolean(selectedEventForModal)}
+          visible={!!selectedEventForModal}
           transparent
           animationType="fade"
           onRequestClose={() => setSelectedEventForModal(null)}
         >
-          <View style={styles.eventModalOverlay}>
+          <View style={styles.eventModalBackdrop}>
             <View style={styles.eventModalCard}>
-              <View style={styles.eventModalHeader}>
-                <View style={styles.eventModalTagBadge}>
-                  <Text style={styles.eventModalTagText}>{selectedEventForModal.tag}</Text>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <View style={styles.eventModalPill}>
+                  <Text style={styles.eventModalPillText}>{selectedEventForModal.tag}</Text>
                 </View>
-                <Pressable
-                  style={styles.eventModalCloseBtn}
-                  onPress={() => setSelectedEventForModal(null)}
-                >
-                  <MaterialCommunityIcons name="close" size={18} color="#64748B" />
+                <Pressable onPress={() => setSelectedEventForModal(null)} hitSlop={10}>
+                  <MaterialCommunityIcons name="close" size={22} color="#64748B" />
                 </Pressable>
               </View>
 
               <Text style={styles.eventModalTitle}>{selectedEventForModal.title}</Text>
 
-              <View style={styles.eventModalMetaRow}>
-                <MaterialCommunityIcons name="calendar-clock" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
-                <Text style={styles.eventModalMetaText}>{selectedEventForModal.dateTime}</Text>
+              <View style={{ gap: 6, marginVertical: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons name="calendar-month-outline" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <Text style={styles.eventModalMeta}>{selectedEventForModal.dateTime}</Text>
+                </View>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons name="map-marker-outline" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <Text style={styles.eventModalMeta}>{selectedEventForModal.venue}</Text>
+                </View>
               </View>
 
-              <View style={styles.eventModalMetaRow}>
-                <MaterialCommunityIcons name="map-marker" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
-                <Text style={styles.eventModalMetaText}>{selectedEventForModal.venue}</Text>
-              </View>
-
-              <View style={styles.eventModalDescBox}>
-                <Text style={styles.eventModalDescText}>{selectedEventForModal.description}</Text>
-              </View>
+              <Text style={styles.eventModalDesc}>{selectedEventForModal.description}</Text>
 
               <Pressable
-                style={styles.eventModalDismissBtn}
+                style={styles.eventModalCtaBtn}
                 onPress={() => setSelectedEventForModal(null)}
               >
-                <Text style={styles.eventModalDismissBtnText}>Got it</Text>
+                <Text style={styles.eventModalCtaText}>Got It</Text>
               </Pressable>
             </View>
           </View>
         </Modal>
       )}
-
     </View>
   );
 }
@@ -721,13 +659,15 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    backgroundColor: "#FFFFFF",
   },
 
   // Top Bar
@@ -737,23 +677,30 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
-    paddingBottom: 6,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingBottom: 4,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EFF0EF",
   },
   topNavLeft: {
     flexDirection: "row",
     alignItems: "center",
-    height: 36,
+    height: 30,
+    gap: 6,
+  },
+  brandTitleWrap: {
+    justifyContent: "center",
   },
   topNavBrand: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "900",
     color: "#0D3E02",
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
+    lineHeight: 20,
   },
   topRightActions: {
     flexDirection: "row",
@@ -761,8 +708,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   notificationHeaderButton: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     justifyContent: "center",
     alignItems: "center",
     position: "relative",
@@ -772,118 +719,76 @@ const styles = StyleSheet.create({
     top: -2,
     right: -2,
     backgroundColor: "#EF4444",
-    borderRadius: 10,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 3,
+    borderRadius: 8,
+    minWidth: 14,
+    height: 14,
+    paddingHorizontal: 2,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: "#ffffff",
   },
   notificationBadgeText: {
     color: "#ffffff",
-    fontSize: 8,
+    fontSize: 7.5,
     fontWeight: "900",
     textAlign: "center",
   },
   profileHeaderButton: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     justifyContent: "center",
     alignItems: "center",
   },
 
   // Hero Greeting Section
   heroGreetingSection: {
-    paddingTop: 6,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 14,
   },
   heroGreetingSub: {
     fontSize: 15,
-    fontWeight: "800",
-    color: "#0F172A", // Black text
+    fontWeight: "600",
+    color: "#000000",
     marginBottom: 2,
   },
   heroGreetingName: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#0D3E02", // Dark green text
+    color: "#0D3E02",
     letterSpacing: -0.4,
   },
 
-  // Global Search Bar
+  // Global Search Bar matching exact preview
   searchBarContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
-    borderRadius: 22,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginBottom: 14,
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
+    borderRadius: 12,
+    height: 46,
+    paddingHorizontal: 14,
+    marginBottom: 14,
   },
   searchPlaceholderText: {
-    fontSize: 13,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "400",
     color: "#94A3B8",
   },
 
-  // Quick Action Chips
-  quickActionsContainer: {
-    flexDirection: "row",
-    gap: 8,
-    paddingBottom: 14,
+  // LGU Campus Banner (Photo with exact 2.03 aspect ratio framing, zero text overlay)
+  lguBannerContainer: {
+    width: "100%",
+    aspectRatio: 286 / 140,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 20,
+    backgroundColor: "#F1F5F9",
   },
-  quickActionChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 24,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  quickActionIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 6,
-  },
-  quickActionText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-
-  // Alert Notice Banner
-  alertNotice: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FEF3C7",
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "#FDE68A",
-    marginBottom: 14,
-    gap: 10,
-  },
-  alertNoticeText: {
-    flex: 1,
-    color: "#92400E",
-    fontSize: 12,
-    fontWeight: "700",
-    lineHeight: 16,
+  lguBannerImage: {
+    width: "100%",
+    height: "100%",
   },
 
   // Section Headers
@@ -892,160 +797,144 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
-    marginTop: 6,
+    marginTop: 4,
   },
   sectionHeading: {
-    fontSize: 16,
-    fontWeight: "900",
+    fontSize: 18,
+    fontWeight: "800",
     color: "#0F172A",
     letterSpacing: -0.3,
   },
+  seeAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
   sectionSeeAll: {
     fontSize: 12,
-    fontWeight: "800",
-    color: "#0D3E02",
+    fontWeight: "600",
+    color: "#475569",
   },
 
-  // Top Services Row
-  topServicesHorizontalScroll: {
-    flexDirection: "row",
-    gap: 10,
-    paddingBottom: 16,
-  },
-  topServiceCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: "center",
-    width: 90,
+  // Campus Services Grid with Soft Lines & Exact Preview Colors
+  servicesGridBox: {
+    width: "100%",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
+    borderColor: "#EFF0EF",
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden",
+    marginBottom: 24,
   },
-  serviceBoxIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: "center",
+  servicesGridRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
-    position: "relative",
   },
-  serviceBoxBadge: {
-    position: "absolute",
-    top: -3,
-    right: -3,
-    backgroundColor: "#EF4444",
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 3,
-    justifyContent: "center",
+  moduleNotice: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
+  moduleNoticeText: { fontSize: 10, color: "#68736C" },
+  gridCell: {
+    flex: 1,
+    height: 88,
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#ffffff",
+    justifyContent: "center",
+    paddingHorizontal: 4,
   },
-  serviceBoxBadgeText: {
-    color: "#ffffff",
-    fontSize: 8,
-    fontWeight: "900",
-  },
-  topServiceTitle: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#0F172A",
-    textAlign: "center",
-    marginBottom: 2,
-  },
-  topServiceSub: {
-    fontSize: 9,
+  gridCellTitle: {
+    fontSize: 12,
     fontWeight: "600",
-    color: "#64748B",
+    color: "#38404B",
+    marginTop: 6,
     textAlign: "center",
+  },
+  verticalDivider: {
+    width: 1,
+    height: "100%",
+    backgroundColor: "#EFF0EF",
+  },
+  horizontalDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "#EFF0EF",
   },
 
   // Campus Spotlight Carousel
-  spotlightCarouselWrapper: {
-    marginBottom: 18,
+  spotlightCarouselScroll: {
+    gap: 12,
+    marginBottom: 24,
   },
   spotlightBannerCard: {
-    borderRadius: 20,
+    borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#0D3E02",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 4,
   },
   spotlightBgImage: {
     width: "100%",
-    minHeight: 175,
-    justifyContent: "center",
+    height: 195,
   },
   spotlightDarkGradientOverlay: {
     flex: 1,
-    backgroundColor: "rgba(10, 48, 8, 0.78)", // Dark Forest Green Overlay highlighting LGU
+    backgroundColor: "rgba(15, 23, 42, 0.42)",
     padding: 16,
-    borderRadius: 20,
     justifyContent: "space-between",
+    borderRadius: 16,
   },
   spotlightContentContainer: {
-    maxWidth: "80%",
+    flex: 1,
+    justifyContent: "center",
   },
   spotlightWhitePill: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
     alignSelf: "flex-start",
-    marginBottom: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 6,
   },
   spotlightWhitePillText: {
+    color: "#ffffff",
     fontSize: 10,
-    fontWeight: "800",
-    color: "#0D3E02",
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   spotlightBannerTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "900",
     color: "#ffffff",
-    lineHeight: 20,
+    letterSpacing: -0.3,
     marginBottom: 6,
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   spotlightBannerMetaRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 2,
+    marginBottom: 3,
   },
   spotlightBannerMetaText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "600",
-    color: "rgba(255, 255, 255, 0.95)",
+    color: "#E2E8F0",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   spotlightViewDetailsPill: {
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    alignSelf: "flex-start",
     marginTop: 8,
   },
   spotlightViewDetailsText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: "#ffffff",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   spotlightDotsRow: {
-    position: "absolute",
-    bottom: 14,
-    right: 14,
     flexDirection: "row",
-    gap: 6,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 5,
   },
   spotlightDotIndicator: {
     width: 6,
@@ -1056,192 +945,180 @@ const styles = StyleSheet.create({
   spotlightDotIndicatorActive: {
     backgroundColor: "#ffffff",
     width: 14,
+    borderRadius: 3,
   },
 
-  // Your Activity List Card
+  // Your Activity Section
   activityCardContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    paddingVertical: 4,
-    paddingHorizontal: 14,
-    marginBottom: 18,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    marginBottom: 24,
   },
   activityRowItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-  },
-  activityRowIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    paddingVertical: 14,
   },
   activityRowInfo: {
     flex: 1,
   },
   activityRowTitle: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#0F172A",
-    marginBottom: 1,
-  },
-  activityRowSub: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#64748B",
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1E293B",
   },
   activityDivider: {
     height: 1,
     backgroundColor: "#F1F5F9",
   },
 
-  // Recommended for You Cards
+  // Recommended for you
   recommendHorizontalScroll: {
-    flexDirection: "row",
+    paddingBottom: 8,
     gap: 12,
-    paddingBottom: 20,
   },
-  recommendCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 12,
-    width: 145,
+  recommendedCard: {
+    width: 290,
+    height: 84,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-    alignItems: "center",
+    overflow: "hidden",
   },
-  recommendTagBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    alignSelf: "flex-start",
-    marginBottom: 8,
+  recommendedImage: {
+    width: 95,
+    height: "100%",
   },
-  recommendTagText: {
-    fontSize: 9,
-    fontWeight: "800",
-  },
-  recommendAvatarBox: {
-    width: 48,
-    height: 48,
+  recommendedContent: {
+    flex: 1,
+    paddingHorizontal: 12,
     justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 4,
   },
-  recommendCardTitle: {
-    fontSize: 12,
+  recommendedTitle: {
+    fontSize: 13,
     fontWeight: "800",
     color: "#0F172A",
-    textAlign: "center",
-    marginTop: 2,
+    lineHeight: 18,
   },
-  recommendCardSub: {
-    fontSize: 10,
+  recommendedSub: {
+    fontSize: 11,
     fontWeight: "600",
     color: "#64748B",
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  recommendCardPrice: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#0D3E02",
-    textAlign: "center",
+    marginTop: 3,
   },
 
-  // Modal
-  eventModalOverlay: {
+  // Modals
+  searchModalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  searchModalCard: {
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  searchModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  searchModalInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  searchModalInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#0F172A",
+    padding: 0,
+    outlineStyle: "none" as any,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  searchResultText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+  eventModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
   eventModalCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
-    padding: 20,
     width: "100%",
     maxWidth: 400,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-  eventModalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  eventModalTagBadge: {
-    backgroundColor: "#DCFCE7",
-    paddingHorizontal: 10,
+  eventModalPill: {
+    backgroundColor: "#E8F5E9",
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
-  eventModalTagText: {
+  eventModalPillText: {
     fontSize: 11,
-    fontWeight: "800",
-    color: "#166534",
-  },
-  eventModalCloseBtn: {
-    padding: 4,
+    fontWeight: "700",
+    color: "#0D3E02",
   },
   eventModalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "900",
     color: "#0F172A",
-    marginBottom: 12,
-    lineHeight: 22,
   },
-  eventModalMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  eventModalMetaText: {
+  eventModalMeta: {
     fontSize: 12,
     fontWeight: "600",
     color: "#475569",
   },
-  eventModalDescBox: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+  eventModalDesc: {
+    fontSize: 13,
+    color: "#475569",
+    lineHeight: 20,
+    marginTop: 6,
+    marginBottom: 18,
   },
-  eventModalDescText: {
-    fontSize: 12,
-    color: "#334155",
-    lineHeight: 18,
-  },
-  eventModalDismissBtn: {
+  eventModalCtaBtn: {
     backgroundColor: "#0D3E02",
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: "center",
   },
-  eventModalDismissBtnText: {
+  eventModalCtaText: {
     color: "#ffffff",
     fontSize: 13,
     fontWeight: "800",

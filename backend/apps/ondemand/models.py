@@ -105,6 +105,87 @@ class OnDemandRide(models.Model):
         return f"{self.pickup_label} -> {self.drop_label} ({self.status})"
 
 
+class PeerRideRequest(models.Model):
+    """A student who needs a ride OR is leaving right now posts this.
+    Any peer can see it and join or offer to take them. A real-time instant lift-share board."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        ACCEPTED = "accepted", "Accepted"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Kind(models.TextChoices):
+        NEED_RIDE = "need_ride", "Need a Ride Now"
+        OFFERING = "offering", "Leaving Now (Offering Lift)"
+
+    OPEN_STATUSES = [Status.OPEN]
+    # Auto-expire OPEN requests that nobody accepts within this many minutes.
+    EXPIRE_MINUTES = 30
+
+    poster = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="peer_ride_requests",
+    )
+    # The peer who responded ("I can take you" or "I want to join"); any logged-in student.
+    responder = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="peer_ride_responses",
+    )
+    kind = models.CharField(max_length=12, choices=Kind.choices, default=Kind.NEED_RIDE)
+    seats = models.PositiveSmallIntegerField(default=1)
+    departure_time = models.CharField(max_length=60, default="Right now", blank=True)
+    pickup_label = models.CharField(max_length=150)
+    drop_label = models.CharField(max_length=150)
+    pickup_lat = models.FloatField(default=31.5204)
+    pickup_lng = models.FloatField(default=74.3587)
+    drop_lat = models.FloatField(default=31.5204)
+    drop_lng = models.FloatField(default=74.3587)
+    note = models.CharField(max_length=200, blank=True, help_text="Optional short note from the poster.")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.kind}] {self.pickup_label} → {self.drop_label} ({self.status})"
+
+
+class PeerRideChatMessage(models.Model):
+    request = models.ForeignKey(
+        PeerRideRequest,
+        on_delete=models.CASCADE,
+        related_name="chat_messages",
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="peer_ride_chat_messages",
+    )
+    body = models.TextField(max_length=1500, blank=True, default="")
+    image = models.ImageField(
+        upload_to="peer_ride_chat_images/",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Msg {self.id} on PeerRideRequest {self.request_id} by {self.sender_id}"
+
+
 def reset_to_rider(profile):
     """Turn a profile back into a plain rider: no vehicle, not approved, offline."""
     profile.role = RideProfile.Role.RIDER

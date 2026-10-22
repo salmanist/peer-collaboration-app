@@ -2,7 +2,21 @@ from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import StudentRoster, User
+from .models import PersonalProfile, StudentRoster, User
+
+
+class PersonalProfileSerializer(serializers.ModelSerializer):
+    skills = serializers.ListField(child=serializers.CharField(max_length=100), required=False)
+    gender = serializers.CharField(max_length=10, required=False, allow_blank=True)
+
+    class Meta:
+        model = PersonalProfile
+        fields = ["bio", "skills", "gender"]
+
+    def to_internal_value(self, data):
+        if set(data.keys()) - set(self.fields):
+            raise serializers.ValidationError({"detail": "University and account details cannot be edited here."})
+        return super().to_internal_value(data)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -49,6 +63,15 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    bio = serializers.SerializerMethodField()
+    phone_number = serializers.CharField(read_only=True)
+    skills = serializers.SerializerMethodField()
+
+    def get_bio(self, obj):
+        return getattr(getattr(obj, "personal_profile", None), "bio", "")
+
+    def get_skills(self, obj):
+        return getattr(getattr(obj, "personal_profile", None), "skills", [])
     full_name = serializers.CharField(read_only=True)
     display_name = serializers.CharField(read_only=True)
     roll_number = serializers.CharField(read_only=True)
@@ -57,10 +80,12 @@ class UserSerializer(serializers.ModelSerializer):
     dept_name = serializers.CharField(read_only=True)
     dept_id = serializers.IntegerField(read_only=True)
     enrollment_year = serializers.CharField(read_only=True)
+    gender = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
         fields = [
+            "bio", "phone_number", "skills",
             "id",
             "email",
             "full_name",
@@ -71,6 +96,7 @@ class UserSerializer(serializers.ModelSerializer):
             "dept_name",
             "dept_id",
             "enrollment_year",
+            "gender",
             "role",
             "is_email_verified",
             "created_at",
@@ -86,6 +112,7 @@ class UserSerializer(serializers.ModelSerializer):
             "dept_name",
             "dept_id",
             "enrollment_year",
+            "gender",
             "role",
             "is_email_verified",
             "created_at",

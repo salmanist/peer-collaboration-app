@@ -77,9 +77,11 @@ def create_user_notification(
     priority: str = "normal",
     sender=None,
     action_url: str = "",
+    category: str = "general",
 ) -> CampusNotification:
     """Helper to dispatch a personal in-app alert & notification to a student."""
     return CampusNotification.objects.create(
+        category=category,
         target_user=recipient,
         created_by=sender,
         title=title,

@@ -4,7 +4,11 @@ import type { AuthedUser } from "../../../core/auth/session";
 export interface RegisterPayload {
   email: string;
   password: string;
+  full_name?: string;
+  department?: string;
+  enrollment_year?: string;
 }
+
 
 export interface LoginResponse {
   access: string;
@@ -12,10 +16,17 @@ export interface LoginResponse {
   user: AuthedUser;
 }
 
+export interface RegisterResponse {
+  detail: string;
+  phone_number?: string;
+  debug_otp?: string;
+}
+
 export async function register(payload: RegisterPayload) {
-  const { data } = await apiClient.post<{ detail: string }>("/auth/register/", payload);
+  const { data } = await apiClient.post<RegisterResponse>("/auth/register/", payload);
   return data;
 }
+
 
 export async function verifyEmail(email: string, code: string) {
   const { data } = await apiClient.post<{ detail: string }>("/auth/verify-email/", { email, code });
@@ -32,8 +43,19 @@ export async function fetchMe() {
   return data;
 }
 
+export async function updateMe(patch: Partial<Pick<AuthedUser, "bio" | "skills" | "gender">>) {
+  const { data } = await apiClient.patch<AuthedUser>("/auth/me/", patch);
+  return data;
+}
+
+export interface ForgotPasswordResponse {
+  detail: string;
+  phone_number?: string;
+  debug_otp?: string;
+}
+
 export async function forgotPassword(email: string) {
-  const { data } = await apiClient.post<{ detail: string; phone_number?: string; debug_otp?: string }>("/auth/forgot-password/", { email });
+  const { data } = await apiClient.post<ForgotPasswordResponse>("/auth/forgot-password/", { email });
   return data;
 }
 

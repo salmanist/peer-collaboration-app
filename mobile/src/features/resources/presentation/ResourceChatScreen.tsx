@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,8 +14,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -229,16 +230,16 @@ export default function ResourceChatScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <View style={styles.navTitleWrap}>
           <Text style={styles.topNavTitle} numberOfLines={1}>
             {resourceTitle || "Resource Chat"}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MaterialCommunityIcons name="circle" size={8} color={isConnected ? "#22C55E" : "#94a3b8"} style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="circle" size={8} color={isConnected ? "#22C55E" : appColors.textMuted} style={{ marginRight: 4 }} />
             <Text style={styles.topNavSub}>
               {isConnected ? "Connected Live" : "Offline Sync"}
             </Text>
@@ -286,12 +287,12 @@ export default function ResourceChatScreen() {
       {/* Composer */}
       <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom + 8, 14) }]}>
         <Pressable style={styles.attachButton} onPress={() => setIsImagePickerOpen(true)}>
-          <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="camera-outline" size={20} color={appColors.primary} />
         </Pressable>
         <TextInput
           style={styles.composerInput}
           placeholder={selectedImage ? "Add a caption (optional)" : "Write a message..."}
-          placeholderTextColor="#94a3b8"
+          placeholderTextColor={appColors.textMuted}
           value={draft}
           onChangeText={setDraft}
           multiline
@@ -336,12 +337,12 @@ export default function ResourceChatScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#F9FAFC",
+    backgroundColor: appColors.background,
     flex: 1,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -363,12 +364,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   topNavTitle: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 15,
     fontWeight: "800",
   },
   topNavSub: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontSize: 10,
     marginTop: 2,
   },
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyText: {
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     fontSize: 13,
   },
@@ -405,16 +406,16 @@ const styles = StyleSheet.create({
   },
   myMessage: {
     alignSelf: "flex-end",
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
   },
   otherMessage: {
     alignSelf: "flex-start",
     backgroundColor: "#ffffff",
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   senderName: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 11,
     fontWeight: "800",
     marginBottom: 4,
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   otherMessageText: {
-    color: "#070D1F",
+    color: appColors.text,
   },
   captionText: {
     marginTop: 6,
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   otherMessageTime: {
-    color: "#94a3b8",
+    color: appColors.textMuted,
   },
   bubbleImage: {
     width: 220,
@@ -453,10 +454,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderTopColor: "#E2E8F0",
+    borderTopColor: appColors.border,
     borderTopWidth: 1,
   },
   attachThumb: {
@@ -475,15 +476,15 @@ const styles = StyleSheet.create({
   composer: {
     alignItems: "flex-end",
     backgroundColor: "#ffffff",
-    borderTopColor: "#E2E8F0",
+    borderTopColor: appColors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 8,
     padding: 10,
   },
   attachButton: {
-    backgroundColor: "#F1F5F9",
-    borderColor: "#CBD5E1",
+    backgroundColor: appColors.border,
+    borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 10,
     width: 44,
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   composerInput: {
-    borderColor: "#CBD5E1",
+    borderColor: appColors.border,
     borderRadius: 10,
     borderWidth: 1,
     flex: 1,
@@ -503,8 +504,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: "#F8FAFC",
-    color: "#070D1F",
+    backgroundColor: appColors.background,
+    color: appColors.text,
   },
   sendButton: {
     backgroundColor: "#FDBF1E",
@@ -515,7 +516,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: "#CBD5E1",
+    backgroundColor: appColors.border,
   },
   sendButtonText: {
     color: "#000000",

@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -10,8 +13,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -137,7 +138,7 @@ export default function LostAndFoundDetailScreen() {
     const doDelete = async () => {
       try {
         await deleteLostAndFoundItem(itemId);
-        router.back();
+        goBack("/(app)/lost-and-found");
       } catch {
         setErrorMessage("Could not delete notice.");
       }
@@ -158,9 +159,9 @@ export default function LostAndFoundDetailScreen() {
   if (isLoading && !item) {
     return (
       <View style={styles.container}>
-        <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/lost-and-found")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.compactNavTitle}>Details</Text>
           <View style={{ width: 36 }} />
@@ -173,9 +174,9 @@ export default function LostAndFoundDetailScreen() {
   if (!item) {
     return (
       <View style={styles.container}>
-        <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-          <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+        <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/lost-and-found")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.compactNavTitle}>Details</Text>
           <View style={{ width: 36 }} />
@@ -198,9 +199,9 @@ export default function LostAndFoundDetailScreen() {
   return (
     <View style={styles.container}>
       {/* Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-        <Pressable style={styles.navBackBtn} onPress={() => router.back()}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/lost-and-found")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.compactNavTitle}>Details</Text>
         {isOwner ? (
@@ -208,7 +209,7 @@ export default function LostAndFoundDetailScreen() {
             style={styles.editHeaderBtn}
             onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}`)}
           >
-            <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" />
+            <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} />
             <Text style={styles.editHeaderBtnText}>Edit</Text>
           </Pressable>
         ) : (
@@ -245,7 +246,7 @@ export default function LostAndFoundDetailScreen() {
               <MaterialCommunityIcons
                 name={isLost ? "help-circle-outline" : "cube-scan"}
                 size={34}
-                color={isLost ? "#DC2626" : "#0D3E02"}
+                color={isLost ? "#DC2626" : appColors.primary}
               />
             </View>
             <Text style={styles.graphicTitle}>{isLost ? "Reported Lost Item" : "Reported Found Item"}</Text>
@@ -261,7 +262,7 @@ export default function LostAndFoundDetailScreen() {
               <MaterialCommunityIcons
                 name={isLost ? "alert-circle" : "check-decagram"}
                 size={12}
-                color={isLost ? "#B91C1C" : "#047857"}
+                color={isLost ? "#B91C1C" : appColors.primary}
                 style={{ marginRight: 4 }}
               />
               <Text style={[styles.typeBadgeText, isLost ? styles.typeBadgeTextLost : styles.typeBadgeTextFound]}>
@@ -281,12 +282,12 @@ export default function LostAndFoundDetailScreen() {
           {/* Meta Info Pills */}
           <View style={styles.metaRow}>
             <View style={styles.metaPill}>
-              <MaterialCommunityIcons name="map-marker" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="map-marker" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
               <Text style={styles.metaLocation}>{item.location}</Text>
             </View>
             {item.date_lost_or_found ? (
               <View style={styles.metaPill}>
-                <MaterialCommunityIcons name="calendar-clock" size={14} color="#64748B" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="calendar-clock" size={14} color={appColors.textSecondary} style={{ marginRight: 4 }} />
                 <Text style={styles.metaDate}>{item.date_lost_or_found}</Text>
               </View>
             ) : null}
@@ -302,7 +303,7 @@ export default function LostAndFoundDetailScreen() {
           <Text style={styles.sectionHeading}>Reported By</Text>
           <View style={styles.posterCard}>
             <View style={styles.posterAvatar}>
-              <MaterialCommunityIcons name="account" size={24} color="#0D3E02" />
+              <MaterialCommunityIcons name="account" size={24} color={appColors.primary} />
             </View>
             <View style={styles.posterInfo}>
               <Text style={styles.posterName}>
@@ -323,12 +324,12 @@ export default function LostAndFoundDetailScreen() {
             <View style={styles.ownerActionsColumn}>
               {item.status === "open" ? (
                 <Pressable style={styles.resolveBtn} onPress={() => void handleStatusChange("resolved")}>
-                  <MaterialCommunityIcons name="check-circle-outline" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="check-circle-outline" size={18} color={appColors.primary} style={{ marginRight: 6 }} />
                   <Text style={styles.resolveBtnText}>Mark as Resolved / Handed Over</Text>
                 </Pressable>
               ) : (
                 <Pressable style={styles.reopenBtn} onPress={() => void handleStatusChange("open")}>
-                  <MaterialCommunityIcons name="refresh" size={18} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="refresh" size={18} color={appColors.primary} style={{ marginRight: 6 }} />
                   <Text style={styles.reopenBtnText}>Re-open Notice</Text>
                 </Pressable>
               )}
@@ -365,7 +366,7 @@ export default function LostAndFoundDetailScreen() {
                         })
                       }
                     >
-                      <MaterialCommunityIcons name="chat-outline" size={16} color="#0D3E02" style={{ marginRight: 6 }} />
+                      <MaterialCommunityIcons name="chat-outline" size={16} color={appColors.primary} style={{ marginRight: 6 }} />
                       <Text style={styles.chatActionBtnText}>Open Live Handover Chat</Text>
                     </Pressable>
                   ) : null}
@@ -378,14 +379,14 @@ export default function LostAndFoundDetailScreen() {
           <View style={styles.actionsCard}>
             {item.status !== "open" ? (
               <View style={styles.resolvedNotice}>
-                <MaterialCommunityIcons name="check-circle" size={20} color="#047857" style={{ marginRight: 8 }} />
+                <MaterialCommunityIcons name="check-circle" size={20} color={appColors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.resolvedNoticeText}>
                   This notice has been marked as resolved.
                 </Text>
               </View>
             ) : item.has_user_claimed ? (
               <View style={styles.claimedNotice}>
-                <MaterialCommunityIcons name="clock-check-outline" size={20} color="#0D3E02" style={{ marginRight: 8 }} />
+                <MaterialCommunityIcons name="clock-check-outline" size={20} color={appColors.primary} style={{ marginRight: 8 }} />
                 <Text style={styles.claimedNoticeText}>
                   You have submitted a claim/inquiry for this item. Check "My Notices" to view status or chat.
                 </Text>
@@ -395,7 +396,7 @@ export default function LostAndFoundDetailScreen() {
                 <MaterialCommunityIcons
                   name={isLost ? "information-outline" : "hand-wave-outline"}
                   size={18}
-                  color="#0D3E02"
+                  color={appColors.primary}
                   style={{ marginRight: 8 }}
                 />
                 <Text style={styles.primaryClaimBtnText}>
@@ -416,7 +417,7 @@ export default function LostAndFoundDetailScreen() {
                 {isLost ? "Contact Finder / Owner" : "Submit Item Claim"}
               </Text>
               <Pressable onPress={() => setIsClaimModalVisible(false)} style={styles.modalCloseBtn}>
-                <MaterialCommunityIcons name="close" size={20} color="#0F172A" />
+                <MaterialCommunityIcons name="close" size={20} color={appColors.text} />
               </Pressable>
             </View>
 
@@ -431,7 +432,7 @@ export default function LostAndFoundDetailScreen() {
             <TextInput
               style={styles.claimInput}
               placeholder="Type your message, verification details, or handover instructions..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={appColors.textMuted}
               value={claimMessage}
               onChangeText={setClaimMessage}
               multiline
@@ -451,7 +452,7 @@ export default function LostAndFoundDetailScreen() {
                 disabled={isSubmittingClaim}
               >
                 {isSubmittingClaim ? (
-                  <ActivityIndicator size="small" color="#0D3E02" />
+                  <ActivityIndicator size="small" color={appColors.primary} />
                 ) : (
                   <Text style={styles.modalSubmitText}>Submit Claim</Text>
                 )}
@@ -480,15 +481,17 @@ export default function LostAndFoundDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EFF0EF",
     zIndex: 10,
   },
   navBackBtn: {
@@ -504,7 +507,7 @@ const styles = StyleSheet.create({
   compactNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.primary,
     letterSpacing: -0.3,
   },
   ownerHeaderActions: {
@@ -522,7 +525,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   editHeaderBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
     fontSize: 12,
   },
@@ -555,16 +558,16 @@ const styles = StyleSheet.create({
   photoBannerCard: {
     marginHorizontal: 16,
     height: 240,
-    borderRadius: 24,
+    borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#0F172A",
+    backgroundColor: appColors.text,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.035,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 1,
   },
   photoBanner: {
     width: "100%",
@@ -590,48 +593,48 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     paddingVertical: 28,
     paddingHorizontal: 20,
-    borderRadius: 24,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 1,
   },
   noPhotoLost: {
     backgroundColor: "#FFF5F5",
     borderColor: "#FED7D7",
   },
   noPhotoFound: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.surfaceMuted,
   },
   graphicIconCircle: {
     width: 68,
     height: 68,
-    borderRadius: 34,
+
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
   iconCircleLost: {
-    backgroundColor: "#FEE2E2",
+
   },
   iconCircleFound: {
-    backgroundColor: "#DCFCE7",
+
   },
   graphicTitle: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.2,
   },
   graphicSubtitle: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 3,
     fontWeight: "500",
   },
@@ -639,15 +642,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     marginHorizontal: 16,
     marginTop: 14,
-    borderRadius: 24,
+    borderRadius: 16,
     padding: 20,
-    borderColor: "#F1F5F9",
+    borderColor: appColors.border,
     borderWidth: 1,
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   tagsRow: {
     flexDirection: "row",
@@ -665,7 +668,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEE2E2",
   },
   typeBadgeFound: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: appColors.surfaceMuted,
   },
   typeBadgeText: {
     fontSize: 11,
@@ -676,7 +679,7 @@ const styles = StyleSheet.create({
     color: "#B91C1C",
   },
   typeBadgeTextFound: {
-    color: "#047857",
+    color: appColors.primary,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -684,25 +687,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   statusOpen: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
   statusClosed: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
   },
   statusBadgeText: {
     fontSize: 11,
     fontWeight: "800",
   },
   statusOpenText: {
-    color: "#0284C7",
+    color: appColors.icon,
   },
   statusClosedText: {
-    color: "#64748B",
+    color: appColors.textSecondary,
   },
   itemTitle: {
     fontSize: 22,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.3,
     marginTop: 12,
   },
@@ -715,57 +718,57 @@ const styles = StyleSheet.create({
   metaPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   metaLocation: {
     fontSize: 12,
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
   },
   metaDate: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   sectionHeading: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     marginTop: 18,
     marginBottom: 6,
     letterSpacing: -0.2,
   },
   descriptionText: {
     fontSize: 14,
-    color: "#334155",
+    color: appColors.textSecondary,
     lineHeight: 22,
     fontWeight: "400",
   },
   divider: {
     height: 1,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     marginVertical: 18,
   },
   posterCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: appColors.border,
   },
   posterAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -780,11 +783,11 @@ const styles = StyleSheet.create({
   posterName: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
   },
   posterMeta: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 2,
     fontWeight: "500",
   },
@@ -792,20 +795,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     marginHorizontal: 16,
     marginTop: 14,
-    borderRadius: 24,
+    borderRadius: 16,
     padding: 20,
-    borderColor: "#F1F5F9",
+    borderColor: appColors.border,
     borderWidth: 1,
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   actionsTitle: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.2,
     marginBottom: 12,
   },
@@ -821,7 +824,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   resolveBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
     fontSize: 13,
   },
@@ -829,12 +832,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingVertical: 13,
     borderRadius: 14,
   },
   reopenBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
     fontSize: 13,
   },
@@ -855,16 +858,16 @@ const styles = StyleSheet.create({
   },
   noClaimsText: {
     fontSize: 13,
-    color: "#94A3B8",
+    color: appColors.textMuted,
     fontStyle: "italic",
     marginTop: 6,
   },
   claimItem: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     padding: 14,
     borderRadius: 14,
     marginTop: 10,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   claimTopRow: {
@@ -875,7 +878,7 @@ const styles = StyleSheet.create({
   claimantName: {
     fontWeight: "800",
     fontSize: 13,
-    color: "#0F172A",
+    color: appColors.text,
   },
   claimStatusBadge: {
     backgroundColor: "#E0E7FF",
@@ -890,7 +893,7 @@ const styles = StyleSheet.create({
   },
   claimMessage: {
     fontSize: 13,
-    color: "#475569",
+    color: appColors.textSecondary,
     marginTop: 6,
     lineHeight: 18,
   },
@@ -905,7 +908,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   chatActionBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
     fontSize: 12,
   },
@@ -918,26 +921,26 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     shadowColor: "#FDBF1E",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.035,
     shadowRadius: 6,
     elevation: 3,
   },
   primaryClaimBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
     fontSize: 15,
   },
   resolvedNotice: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ECFDF5",
+    backgroundColor: appColors.surfaceMuted,
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#A7F3D0",
+    borderColor: appColors.border,
   },
   resolvedNoticeText: {
-    color: "#047857",
+    color: appColors.primary,
     fontWeight: "700",
     fontSize: 13,
     flex: 1,
@@ -945,14 +948,14 @@ const styles = StyleSheet.create({
   claimedNotice: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: appColors.surfaceMuted,
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#DCFCE7",
+    borderColor: appColors.surfaceMuted,
   },
   claimedNoticeText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
     fontSize: 13,
     flex: 1,
@@ -977,7 +980,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.3,
   },
   modalCloseBtn: {
@@ -985,21 +988,21 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     fontSize: 13,
-    color: "#64748B",
+    color: appColors.textSecondary,
     marginTop: 6,
     marginBottom: 14,
     lineHeight: 18,
   },
   claimInput: {
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
     minHeight: 100,
     textAlignVertical: "top",
     fontSize: 14,
-    color: "#0F172A",
-    backgroundColor: "#F8FAFC",
+    color: appColors.text,
+    backgroundColor: appColors.background,
   },
   modalActions: {
     flexDirection: "row",
@@ -1013,7 +1016,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalCancelText: {
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontWeight: "800",
   },
   modalSubmitBtn: {
@@ -1023,7 +1026,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalSubmitText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
   },
   btnDisabled: {
@@ -1071,7 +1074,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   retryBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 18,
     paddingVertical: 9,
     borderRadius: 10,

@@ -1,75 +1,296 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import { FelloLogo } from "../../../core/components/FelloLogo";
+import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { Badge, Button, Card, ScreenContainer, TextField, colors, font, spacing, typography } from "../../../core/ui";
 import { register } from "../data/authApi";
 
+function getRegisterErrorMessage(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return "Something went wrong. Please try again.";
+  }
+
+  if (!error.response) {
+    return "Cannot reach the server. Confirm backend is running.";
+  }
+
+  const detail = error.response.data;
+  if (typeof detail === "string") {
+    return detail;
+  }
+  if (typeof detail === "object" && detail !== null) {
+    return Object.values(detail).flat().join(" ");
+  }
+
+  return "Registration failed. Please check your email and password.";
+}
+
 export default function RegisterScreen() {
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+
   const handleSubmit = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setError("Please provide both your LGU email and password.");
+      return;
+    }
+
     setError(null);
     setIsSubmitting(true);
     try {
-      await register({ email: email.trim().toLowerCase(), password });
-      router.push({ pathname: "/(auth)/verify-email", params: { email: email.trim().toLowerCase() } });
-    } catch (err: any) {
-      const detail = err?.response?.data;
-      setError(typeof detail === "object" ? Object.values(detail).flat().join(" ") : "Registration failed.");
+      const res = await register({
+        email: cleanEmail,
+        password,
+      });
+
+      router.push({
+        pathname: "/(auth)/verify-email",
+        params: {
+          email: cleanEmail,
+          phone: res?.phone_number ?? "",
+        },
+      });
+    } catch (err: unknown) {
+      setError(getRegisterErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <ScreenContainer scroll center back="/(auth)/login">
-      <View style={styles.header}>
-        <Badge label="Join the crew" tone="warning" />
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.hint}>
-          Use your <Text style={styles.hintStrong}>@lgu.edu.pk</Text> email — your name, department, and enrollment
-          year all come straight from the official student roster.
-        </Text>
-      </View>
+    <KeyboardAvoidingView
+      style={styles.rootContainer}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: topOffset + 24,
+            paddingBottom: Math.max(insets.bottom + 24, 36),
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Brand Banner */}
+        <View style={styles.brandBox}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+            <FelloLogo size={42} />
+            <Text style={styles.brandTitle}>Fello</Text>
+          </View>
+          <Text style={styles.brandSub}>Lahore Garrison University</Text>
+        </View>
 
-      <Card style={styles.card}>
-        <TextField
-          label="Email"
-          placeholder="you@lgu.edu.pk"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextField label="Password" placeholder="••••••••" value={password} onChangeText={setPassword} secureTextEntry />
+        {/* Full-Screen Form Container (No floating dialog box) */}
+        <View style={styles.formContainer}>
+          <Text style={styles.formHeading}>Create Your Account</Text>
+          <Text style={styles.formDesc}>
+            Enter your official university email and choose a password to get started.
+          </Text>
 
-        {error && <Text style={styles.error}>{error}</Text>}
+          {error ? (
+            <View style={styles.errorBannerRow}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" />
+              <Text style={styles.errorBanner}>{error}</Text>
+            </View>
+          ) : null}
 
-        <Button label="Register" onPress={handleSubmit} loading={isSubmitting} style={styles.submit} />
-      </Card>
+          <TextInput
+            style={styles.input}
+            placeholder="LGU Student Email (you@lgu.edu.pk)"
+            placeholderTextColor={appColors.textMuted}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <Text style={styles.fieldHint}>Must end with @lgu.edu.pk</Text>
 
-      <Text style={styles.footer}>
-        Already have an account?{" "}
-        <Text style={styles.link} onPress={() => router.push("/(auth)/login")}>
-          Log in
-        </Text>
-      </Text>
-    </ScreenContainer>
+          <TextInput
+            style={[styles.input, { marginTop: 12 }]}
+            placeholder="Password (at least 8 characters)"
+            placeholderTextColor={appColors.textMuted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+
+          <Pressable
+            style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#000000" size="small" />
+            ) : (
+              <View style={styles.submitBtnContent}>
+                <Text style={styles.submitBtnText}>Create Account</Text>
+                <MaterialCommunityIcons name="arrow-right" size={18} color="#000000" />
+              </View>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={styles.switchAuthBtn}
+            onPress={() => router.push("/(auth)/login")}
+          >
+            <Text style={styles.switchAuthText}>
+              Already have an account? <Text style={styles.switchAuthHighlight}>Log In</Text>
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: "center", gap: spacing.sm, marginBottom: spacing.xl },
-  title: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink, marginTop: spacing.sm, textAlign: "center" },
-  hint: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textMuted, lineHeight: 20, textAlign: "center" },
-  hintStrong: { color: colors.ink, fontFamily: font.familyMedium },
-  card: { gap: spacing.md },
-  submit: { marginTop: spacing.xs },
-  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
-  footer: { textAlign: "center", color: colors.textSecondary, fontFamily: font.familyRegular, marginTop: spacing.xl, fontSize: typography.size.sm },
-  link: { color: colors.primary, fontFamily: font.familyMedium },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#ffffff", // Pure white full-screen background
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    flexGrow: 1,
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+  brandBox: {
+    alignItems: "center",
+    marginBottom: 28,
+  },
+  brandTitle: {
+    fontSize: 34,
+    fontWeight: "900",
+    color: appColors.primary,
+    letterSpacing: -0.5,
+  },
+  brandSub: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: appColors.icon,
+    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  formContainer: {
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
+  },
+  formHeading: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: appColors.text,
+    marginBottom: 6,
+    textAlign: "center",
+    letterSpacing: -0.3,
+  },
+  formDesc: {
+    fontSize: 13,
+    color: appColors.textSecondary,
+    marginBottom: 20,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  errorBannerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FEE2E2",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  errorBanner: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: appColors.text,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  fieldHint: {
+    color: appColors.textMuted,
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  input: {
+    backgroundColor: appColors.background,
+    borderColor: appColors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: appColors.text,
+  },
+  submitBtn: {
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 22,
+    shadowColor: "#FDBF1E",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.035,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  submitBtnDisabled: {
+    opacity: 0.6,
+  },
+  submitBtnContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  submitBtnText: {
+    color: "#000000",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  switchAuthBtn: {
+    marginTop: 24,
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  switchAuthText: {
+    color: appColors.textSecondary,
+    fontSize: 14,
+  },
+  switchAuthHighlight: {
+    color: appColors.primary,
+    fontWeight: "800",
+  },
 });

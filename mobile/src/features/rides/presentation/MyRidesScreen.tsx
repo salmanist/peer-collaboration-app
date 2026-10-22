@@ -1,102 +1,320 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Badge, Card, EmptyState, ScreenContainer, Skeleton, colors, font, spacing, typography, NavClearance } from "../../../core/ui";
+import { OfferedTripCardSkeleton, SkeletonList } from "../../../core/components/Skeleton";
 import { formatTime12h, listMyRides, type Ride } from "../data/ridesApi";
 
 function rideStatus(ride: Ride) {
-  if (ride.status === "cancelled") return { label: "Cancelled", tone: "danger" as const };
-  if (ride.status === "expired") return { label: "Expired", tone: "neutral" as const };
-  if (ride.status === "in_progress") return { label: "In progress", tone: "primary" as const };
-  if (ride.status === "completed") return { label: "Completed", tone: "success" as const };
-  if (ride.seats_available <= 0) return { label: "Full", tone: "tertiary" as const };
-  return { label: "Open", tone: "success" as const };
-}
-
-function RideSkeletonCard() {
-  return (
-    <Card style={styles.rideCard}>
-      <Skeleton style={styles.skeletonTitle} />
-      <Skeleton style={styles.skeletonLine} />
-      <Skeleton style={styles.skeletonLineShort} />
-    </Card>
-  );
+  if (ride.status === "cancelled") return { label: "Cancelled", bg: "#FEF2F2", text: "#DC2626" };
+  if (ride.status === "expired") return { label: "Expired", bg: appColors.border, text: appColors.textSecondary };
+  if (ride.status === "in_progress") return { label: "In Progress", bg: appColors.surfaceMuted, text: appColors.primary };
+  if (ride.status === "completed") return { label: "Completed", bg: appColors.surfaceMuted, text: appColors.primary };
+  if (ride.seats_available <= 0) return { label: "Full", bg: "#FFFBEB", text: "#B45309" };
+  return { label: "Open", bg: appColors.surfaceMuted, text: appColors.primary };
 }
 
 export default function MyRidesScreen() {
+  const insets = useSafeAreaInsets();
   const [rides, setRides] = useState<Ride[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
 
   const load = useCallback(async () => {
     setIsLoading(true);
+    setLoadError("");
     try {
       const data = await listMyRides();
       setRides(data.results);
+    } catch {
+      setLoadError("Couldn't load your trips. The server may be reconnecting. Please retry.");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   return (
-    <ScreenContainer style={styles.screen} back="/(app)/rides">
+    <View style={styles.rootContainer}>
+      {/* Top Nav Bar */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/rides")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+        </Pressable>
+        <Text style={styles.topNavTitle}>My Offered Trips</Text>
+        <View style={{ width: 36 }} />
+      </View>
+
       <FlatList
-        ListFooterComponent={NavClearance}
         data={rides}
         keyExtractor={(ride) => String(ride.id)}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={<Text style={styles.title}>My Rides</Text>}
+        ListHeaderComponent={loadError ? (
+          <View style={{ padding: 16, gap: 10 }}>
+            <Text style={{ color: appColors.textSecondary }}>{loadError}</Text>
+            <Pressable accessibilityRole="button" onPress={() => { void load(); }}>
+              <Text style={{ color: appColors.primary, fontWeight: "700" }}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        contentContainerStyle={[
+          rides.length === 0 ? styles.emptyList : styles.list,
+          { paddingBottom: Math.max(insets.bottom + 20, 40) },
+        ]}
         ListEmptyComponent={
           isLoading ? (
-            <View style={styles.skeletonList}>
-              <RideSkeletonCard />
-              <RideSkeletonCard />
-              <RideSkeletonCard />
+            <SkeletonList
+              count={3}
+              renderItem={() => <OfferedTripCardSkeleton />}
+              contentContainerStyle={{ padding: 16 }}
+            />
+          ) : loadError ? null : (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="car-multiple" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyTitle}>No Trips Offered Yet</Text>
+              <Text style={styles.emptySub}>
+                Carpools and scheduled trips you offer to other students will be tracked here.
+              </Text>
+              <Pressable
+                style={styles.offerBtn}
+                onPress={() => router.push("/(app)/rides/offer" as any)}
+              >
+                <MaterialCommunityIcons name="plus" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.offerBtnText}>Offer a Trip</Text>
+              </Pressable>
             </View>
-          ) : (
-            <EmptyState icon="briefcase-outline" title="No rides posted yet" subtitle="Rides you offer will show up here." />
           )
         }
         renderItem={({ item }) => {
           const status = rideStatus(item);
           return (
-            <Pressable onPress={() => router.push(`/(app)/rides/${item.id}`)}>
-              <Card style={styles.rideCard}>
-                <View style={styles.rideRow}>
-                  <Text style={styles.rideRoute}>{item.departure} → {item.destination}</Text>
-                  <Badge label={status.label} tone={status.tone} />
+            <Pressable
+              style={styles.card}
+              onPress={() => router.push(`/(app)/rides/${item.id}`)}
+            >
+              <View style={styles.cardHeader}>
+                <View style={styles.routeWrap}>
+                  <View style={styles.dotStart} />
+                  <Text style={styles.routeText} numberOfLines={1}>
+                    {item.departure}
+                  </Text>
+                  <MaterialCommunityIcons name="arrow-right" size={14} color={appColors.textSecondary} style={{ marginHorizontal: 4 }} />
+                  <View style={styles.dotEnd} />
+                  <Text style={styles.routeText} numberOfLines={1}>
+                    {item.destination}
+                  </Text>
                 </View>
-                <View style={styles.metaRow}>
-                  <MaterialCommunityIcons name="calendar-outline" size={14} color={colors.textSecondary} />
-                  <Text style={styles.rideMeta}>{item.departure_date} · {formatTime12h(item.departure_time)}</Text>
+
+                <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+                  <Text style={[styles.statusBadgeText, { color: status.text }]}>{status.label}</Text>
                 </View>
-                <View style={styles.metaRow}>
-                  <MaterialCommunityIcons name="seat-outline" size={14} color={colors.textSecondary} />
-                  <Text style={styles.rideMeta}>{item.seats_available}/{item.seats_total} seats left</Text>
+              </View>
+
+              <View style={styles.metaRow}>
+                <View style={styles.chip}>
+                  <MaterialCommunityIcons name="calendar-clock" size={13} color={appColors.primary} style={{ marginRight: 4 }} />
+                  <Text style={styles.chipText}>
+                    {item.departure_date} · {formatTime12h(item.departure_time)}
+                  </Text>
                 </View>
-              </Card>
+
+                <View style={[styles.chip, styles.seatsChip]}>
+                  <MaterialCommunityIcons name="seat-passenger" size={13} color="#B45309" style={{ marginRight: 4 }} />
+                  <Text style={[styles.chipText, styles.seatsText]}>
+                    {item.seats_available}/{item.seats_total} seats
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.footerRow}>
+                <Text style={styles.manageHint}>Tap to view passenger join requests</Text>
+                <MaterialCommunityIcons name="chevron-right" size={16} color={appColors.primary} />
+              </View>
             </Pressable>
           );
         }}
       />
-    </ScreenContainer>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { padding: 0 },
-  listContent: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
-  title: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink, marginBottom: spacing.xs },
-  rideCard: { gap: spacing.xs },
-  rideRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
-  rideRoute: { fontSize: typography.size.base, fontFamily: font.familyMedium, color: colors.ink, flexShrink: 1 },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  rideMeta: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textSecondary },
-  skeletonList: { gap: spacing.md },
-  skeletonTitle: { width: "70%", height: 16 },
-  skeletonLine: { width: "55%", height: 12, marginTop: spacing.xs },
-  skeletonLineShort: { width: "40%", height: 12 },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: appColors.background,
+  },
+  topNavBar: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: appColors.border,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(13, 62, 2, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  list: {
+    padding: 16,
+    gap: 12,
+  },
+  emptyList: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: appColors.text,
+    marginBottom: 6,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: appColors.textSecondary,
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  offerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: appColors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  offerBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    gap: 10,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  routeWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dotStart: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#10B981",
+    marginRight: 6,
+  },
+  dotEnd: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
+    marginRight: 6,
+  },
+  routeText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: appColors.text,
+    maxWidth: "40%",
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  metaRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: appColors.surfaceMuted,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: appColors.primary,
+  },
+  seatsChip: {
+    backgroundColor: "#FFFBEB",
+  },
+  seatsText: {
+    color: "#B45309",
+  },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: appColors.border,
+    paddingTop: 8,
+    marginTop: 2,
+  },
+  manageHint: {
+    fontSize: 12,
+    color: appColors.textSecondary,
+    fontWeight: "500",
+  },
 });

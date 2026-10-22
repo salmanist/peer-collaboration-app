@@ -1,5 +1,6 @@
+import { Text } from "./AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { SoftBlock } from "./SoftBlock";
 import { colors, font, spacing, typography } from "./theme";

@@ -4,7 +4,7 @@ export interface CampusNotificationItem {
   id: string;
   title: string;
   message: string;
-  category: "general" | "enrollment" | "results" | "sessions" | "events" | "urgent";
+  category: "general" | "enrollment" | "results" | "sessions" | "events" | "urgent" | "rides";
   priority: "normal" | "high" | "urgent";
   action_url?: string | null;
   image?: string | null;

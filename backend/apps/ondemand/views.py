@@ -1,9 +1,14 @@
 import datetime
+import time
 
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import generics, permissions, status
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from rest_framework import generics, parsers, permissions, status
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -11,12 +16,15 @@ from common.geo import haversine_km
 from common.notifications import notify
 
 from .fare import route_between
-from .models import OnDemandRide, Place, RideProfile, get_rate_per_km, reset_to_rider
+from .models import OnDemandRide, PeerRideChatMessage, PeerRideRequest, Place, RideProfile, get_rate_per_km, reset_to_rider
 from .serializers import (
     DriverApplicationSerializer,
     DriverStatusSerializer,
     FareQuoteSerializer,
     OnDemandRideSerializer,
+    PeerRideChatMessageSerializer,
+    PeerRideRequestCreateSerializer,
+    PeerRideRequestSerializer,
     PlaceSerializer,
     RideProfileSerializer,
     RideRequestSerializer,
@@ -109,15 +117,23 @@ def _ride_queryset():
     return OnDemandRide.objects.select_related("rider", "driver", "driver__ride_profile")
 
 
+_LAST_ON_DEMAND_EXPIRY = 0
+
+
 def _expire_unanswered():
-    # Lazy, like the trip board: checked whenever someone asks, no scheduled job.
+    # Lazy, like the trip board: checked on read, throttled to at most once per 30 seconds
+    # to avoid repetitive write queries on every poll.
+    global _LAST_ON_DEMAND_EXPIRY
+    now = time.time()
+    if now - _LAST_ON_DEMAND_EXPIRY < 30:
+        return
+    _LAST_ON_DEMAND_EXPIRY = now
     cutoff = timezone.now() - datetime.timedelta(seconds=NO_DRIVER_AFTER_SECONDS)
     OnDemandRide.objects.filter(status=Status.REQUESTED, created_at__lt=cutoff).update(status=Status.NO_DRIVER)
 
 
 def _active_ride(user):
-    active = _ride_queryset().filter(status__in=OnDemandRide.ACTIVE_STATUSES)
-    return active.filter(rider=user).first() or active.filter(driver=user).first()
+    return _ride_queryset().filter(status__in=OnDemandRide.ACTIVE_STATUSES).filter(Q(rider=user) | Q(driver=user)).first()
 
 
 def _profile(user, role):
@@ -332,3 +348,184 @@ class RideRetryView(APIView):
             ride.created_at = timezone.now()
             ride.save(update_fields=["status", "created_at"])
         return Response(OnDemandRideSerializer(_ride_queryset().get(pk=ride.pk)).data)
+
+
+# ---------------------------------------------------------------- peer ride requests (lift-share board)
+
+_LAST_PEER_EXPIRY = 0
+
+
+def _expire_peer_requests():
+    """Throttled: marks OPEN requests older than EXPIRE_MINUTES as cancelled (no responder)."""
+    global _LAST_PEER_EXPIRY
+    now = time.time()
+    if now - _LAST_PEER_EXPIRY < 60:
+        return
+    _LAST_PEER_EXPIRY = now
+    cutoff = timezone.now() - datetime.timedelta(minutes=PeerRideRequest.EXPIRE_MINUTES)
+    PeerRideRequest.objects.filter(status=PeerRideRequest.Status.OPEN, created_at__lt=cutoff).exclude(
+        poster__email__startswith="fello."
+    ).update(status=PeerRideRequest.Status.CANCELLED)
+
+
+def _peer_qs():
+    return PeerRideRequest.objects.select_related("poster", "responder")
+
+
+class PeerRideRequestListCreateView(APIView):
+    """
+    GET  – list all OPEN peer ride requests (visible to everyone).
+    POST – post a new immediate lift-share request.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        _expire_peer_requests()
+        qs = _peer_qs().filter(status=PeerRideRequest.Status.OPEN).order_by("-created_at")
+        return Response(PeerRideRequestSerializer(qs, many=True).data)
+
+    def post(self, request):
+        _expire_peer_requests()
+        # A student can't have more than one OPEN request at a time.
+        if PeerRideRequest.objects.filter(poster=request.user, status=PeerRideRequest.Status.OPEN).exists():
+            return _error("You already have an open ride request. Cancel it before posting another.")
+        serializer = PeerRideRequestCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        obj = PeerRideRequest.objects.create(
+            poster=request.user,
+            kind=data.get("kind", PeerRideRequest.Kind.NEED_RIDE),
+            seats=data.get("seats", 1),
+            departure_time=data.get("departure_time", "Right now"),
+            pickup_label=data["pickup_label"],
+            pickup_lat=data["pickup_lat"],
+            pickup_lng=data["pickup_lng"],
+            drop_label=data["drop_label"],
+            drop_lat=data["drop_lat"],
+            drop_lng=data["drop_lng"],
+            note=data.get("note", ""),
+        )
+        return Response(PeerRideRequestSerializer(_peer_qs().get(pk=obj.pk)).data, status=status.HTTP_201_CREATED)
+
+
+class PeerRideRequestDetailView(APIView):
+    """
+    GET    – fetch one request (poster or responder only).
+    DELETE – poster cancels their own OPEN request.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_obj(self, pk):
+        return get_object_or_404(_peer_qs(), pk=pk)
+
+    def get(self, request, pk):
+        obj = self._get_obj(pk)
+        if request.user.id not in (obj.poster_id, obj.responder_id):
+            return _error("This isn't your request.", status.HTTP_403_FORBIDDEN)
+        return Response(PeerRideRequestSerializer(obj).data)
+
+    def delete(self, request, pk):
+        obj = self._get_obj(pk)
+        if obj.poster_id != request.user.id:
+            return _error("Only the poster can cancel this request.", status.HTTP_403_FORBIDDEN)
+        if obj.status != PeerRideRequest.Status.OPEN:
+            return _error("Only OPEN requests can be cancelled.")
+        obj.status = PeerRideRequest.Status.CANCELLED
+        obj.save(update_fields=["status"])
+        return Response(PeerRideRequestSerializer(obj).data)
+
+
+class PeerRideRequestRespondView(APIView):
+    """Any peer (not the poster) can respond to say 'I'll take you'."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        with transaction.atomic():
+            obj = get_object_or_404(PeerRideRequest.objects.select_for_update(), pk=pk)
+            if obj.poster_id == request.user.id:
+                return _error("You can't respond to your own request.")
+            if obj.status != PeerRideRequest.Status.OPEN:
+                return _error("This request is no longer open.", status.HTTP_409_CONFLICT)
+            obj.responder = request.user
+            obj.status = PeerRideRequest.Status.ACCEPTED
+            obj.accepted_at = timezone.now()
+            obj.save(update_fields=["responder", "status", "accepted_at"])
+        notify(obj.poster, f"{request.user.full_name or request.user.email} can take you to {obj.drop_label}!", target=obj)
+        return Response(PeerRideRequestSerializer(_peer_qs().get(pk=obj.pk)).data)
+
+
+class PeerRideRequestCompleteView(APIView):
+    """Poster marks the ride as completed once they've reached their destination."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        obj = get_object_or_404(_peer_qs(), pk=pk)
+        if obj.poster_id != request.user.id:
+            return _error("Only the poster can mark this ride as completed.", status.HTTP_403_FORBIDDEN)
+        if obj.status != PeerRideRequest.Status.ACCEPTED:
+            return _error("Only an accepted ride can be marked completed.")
+        obj.status = PeerRideRequest.Status.COMPLETED
+        obj.save(update_fields=["status"])
+        return Response(PeerRideRequestSerializer(obj).data)
+
+
+class PeerRideChatMessageListView(generics.ListCreateAPIView):
+    serializer_class = PeerRideChatMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+
+    def get_ride_request(self):
+        req = get_object_or_404(
+            PeerRideRequest.objects.select_related("poster", "responder"),
+            pk=self.kwargs["request_id"],
+        )
+        is_participant = self.request.user.id in {req.poster_id, req.responder_id}
+        if not is_participant:
+            raise PermissionDenied("You are not a participant in this ride.")
+        return req
+
+    def get_queryset(self):
+        req = self.get_ride_request()
+        return PeerRideChatMessage.objects.select_related("sender").filter(request=req)
+
+    def perform_create(self, serializer):
+        req = self.get_ride_request()
+        body = self.request.data.get("body", "")
+        if isinstance(body, str):
+            body = body.strip()
+        image = self.request.FILES.get("image")
+        if not body and not image:
+            raise ValidationError({"detail": "Message must contain text or an image."})
+
+        message = serializer.save(
+            request=req,
+            sender=self.request.user,
+            body=body,
+            image=image,
+        )
+
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            group_name = f"peer_ride_chat_{req.id}"
+            image_url = None
+            if message.image:
+                image_url = message.image.url
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                {
+                    "type": "chat.message",
+                    "message": {
+                        "id": message.id,
+                        "request": req.id,
+                        "sender_id": self.request.user.id,
+                        "sender_name": self.request.user.display_name,
+                        "body": message.body,
+                        "image": image_url,
+                        "created_at": message.created_at.isoformat(),
+                    },
+                },
+            )

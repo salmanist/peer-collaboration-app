@@ -1,22 +1,38 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, Card, DepartmentPicker, ScreenContainer, TextField, colors, font, spacing, typography } from "../../../core/ui";
-import { usePersistentCache } from "../../../core/data/PersistentCache";
-import { listDepartments, type Department } from "../../../core/network/departmentsApi";
+import { DepartmentDropdown } from "../../../core/components/DepartmentDropdown";
 import { getLibraryProject, updateLibraryProject, type LibraryProjectLevel } from "../data/libraryApi";
-import { LevelPicker } from "./LevelPicker";
+
+const LEVELS: { value: LibraryProjectLevel; label: string }[] = [
+  { value: "simple", label: "Simple Project" },
+  { value: "semester", label: "Semester Project" },
+  { value: "fyp", label: "Final Year Project (FYP)" },
+];
 
 export default function EditProjectScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const projectId = Number(id);
 
-  const { data: departments } = usePersistentCache<Department[]>("departments", listDepartments);
-
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState<Department | null>(null);
-  const [departmentCode, setDepartmentCode] = useState<string | null>(null);
+  const [departmentName, setDepartmentName] = useState("");
+  const [departmentShort, setDepartmentShort] = useState("");
   const [abstract, setAbstract] = useState("");
   const [githubLink, setGithubLink] = useState("");
   const [level, setLevel] = useState<LibraryProjectLevel>("simple");
@@ -24,33 +40,24 @@ export default function EditProjectScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetches the project exactly once - department resolution below is a separate
-  // effect so it doesn't matter which of the two (project fetch vs. the persistent
-  // departments cache) finishes loading first, and the project never gets re-fetched
-  // just because the department list happened to arrive later.
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
+
   useEffect(() => {
     getLibraryProject(projectId)
       .then((project) => {
         setTitle(project.title);
         setAbstract(project.abstract);
-        setGithubLink(project.github_link);
+        setGithubLink(project.github_link || "");
         setLevel(project.level);
-        // Wire format is a plain short_name string (e.g. "CS") - resolved against
-        // the canonical list below once both pieces are available.
-        setDepartmentCode(project.department);
+        setDepartmentShort(project.department);
+        setDepartmentName(project.department);
       })
       .catch(() => setError("Couldn't load this project."))
       .finally(() => setIsLoading(false));
   }, [projectId]);
 
-  useEffect(() => {
-    if (!departmentCode || !departments) return;
-    const match = departments.find((d) => d.short_name === departmentCode);
-    if (match) setDepartment(match);
-  }, [departmentCode, departments]);
-
   const handleSave = async () => {
-    if (!title.trim() || !department || !abstract.trim()) {
+    if (!title.trim() || !departmentShort || !abstract.trim()) {
       setError("Please fill in every field.");
       return;
     }
@@ -59,7 +66,7 @@ export default function EditProjectScreen() {
     try {
       await updateLibraryProject(projectId, {
         title: title.trim(),
-        department: department.short_name,
+        department: departmentShort,
         abstract: abstract.trim(),
         githubLink: githubLink.trim(),
         level,
@@ -75,52 +82,291 @@ export default function EditProjectScreen() {
 
   if (isLoading) {
     return (
-      <ScreenContainer center back="/(app)/library/my-projects">
-        <ActivityIndicator color={colors.primary} />
-      </ScreenContainer>
+      <View style={styles.rootContainer}>
+        <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+          <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          </Pressable>
+          <Text style={styles.topNavTitle}>Edit Project</Text>
+          <View style={{ width: 36 }} />
+        </View>
+        <View style={styles.centerContainer}>
+          <LoadingSkeleton variant="form" />
+        </View>
+      </View>
     );
   }
 
   return (
-    <ScreenContainer scroll back="/(app)/library/my-projects">
-      <Text style={styles.title}>Edit Project</Text>
+    <View style={styles.rootContainer}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+        </Pressable>
+        <Text style={styles.topNavTitle}>Edit Project</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-      <Card contentStyle={styles.card}>
-        <TextField label="Title" placeholder="Project title" value={title} onChangeText={setTitle} />
-        <DepartmentPicker label="Department" value={department} onChange={setDepartment} />
-        <TextField
-          label="Abstract"
-          placeholder="Summarize the project in a few sentences"
-          value={abstract}
-          onChangeText={setAbstract}
-          multiline
-          numberOfLines={4}
-          style={styles.abstractInput}
-        />
-        <TextField
-          label="GitHub Repo Link (optional)"
-          placeholder="https://github.com/your-username/your-project"
-          value={githubLink}
-          onChangeText={setGithubLink}
-          autoCapitalize="none"
-          keyboardType="url"
-        />
-        <LevelPicker label="Project Level" value={level} onChange={setLevel} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+      >
+        <View style={styles.formContainer}>
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={styles.input}
+              placeholder="Project Title"
+              placeholderTextColor={appColors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+            />
+          </View>
 
-        <Text style={styles.hint}>Saving sends this project back to moderation for re-review.</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Department *</Text>
+            <DepartmentDropdown
+              selectedDepartment={departmentName}
+              onSelectDepartment={(deptName, deptObj) => {
+                setDepartmentName(deptName);
+                setDepartmentShort(deptObj?.short_name || deptName);
+              }}
+              placeholder="Select Department"
+            />
+          </View>
 
-        {error && <Text style={styles.error}>{error}</Text>}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Project Level</Text>
+            <View style={styles.levelPillsRow}>
+              {LEVELS.map((lvl) => {
+                const isSelected = level === lvl.value;
+                return (
+                  <Pressable
+                    key={lvl.value}
+                    style={[styles.levelPill, isSelected && styles.levelPillActive]}
+                    onPress={() => setLevel(lvl.value)}
+                  >
+                    <Text style={[styles.levelPillText, isSelected && styles.levelPillTextActive]}>
+                      {lvl.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
-        <Button label="Save Changes" onPress={handleSave} loading={isSaving} />
-      </Card>
-    </ScreenContainer>
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Abstract / Summary"
+              placeholderTextColor={appColors.textMuted}
+              value={abstract}
+              onChangeText={setAbstract}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.iconInputRow}>
+              <MaterialCommunityIcons name="github" size={20} color={appColors.textSecondary} style={{ marginLeft: 12 }} />
+              <TextInput
+                style={[styles.input, styles.iconInputField]}
+                placeholder="GitHub Repository Link (https://github.com/...)"
+                placeholderTextColor={appColors.textMuted}
+                value={githubLink}
+                onChangeText={setGithubLink}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+            </View>
+          </View>
+
+          <View style={styles.verifiedBox}>
+            <MaterialCommunityIcons name="information-outline" size={18} color="#B45309" style={{ marginRight: 8 }} />
+            <Text style={styles.verifiedText}>
+              Saving changes sends this project back to moderation queue for verification.
+            </Text>
+          </View>
+
+          {error && (
+            <View style={styles.errorBox}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.primaryBtn, isSaving && styles.primaryBtnDisabled]}
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <ActivityIndicator color="#000000" size="small" />
+            ) : (
+              <Text style={styles.primaryBtnText}>Save Changes</Text>
+            )}
+          </Pressable>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink, marginBottom: spacing.md },
-  card: { gap: spacing.lg },
-  abstractInput: { height: 100, paddingTop: spacing.sm, textAlignVertical: "top" },
-  hint: { fontSize: typography.size.xs, fontFamily: font.familyRegular, color: colors.textMuted, lineHeight: 18 },
-  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavBar: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: appColors.border,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(13, 62, 2, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  formContainer: {
+    width: "100%",
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: appColors.text,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 12 : 9,
+    fontSize: 14,
+    color: appColors.text,
+  },
+  textArea: {
+    minHeight: 90,
+  },
+  iconInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+
+
+
+
+  },
+  iconInputField: {
+    flex: 1,
+
+
+  },
+  levelPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  levelPill: {
+    backgroundColor: appColors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: appColors.border,
+  },
+  levelPillActive: {
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
+  },
+  levelPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: appColors.textSecondary,
+  },
+  levelPillTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  verifiedBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  verifiedText: {
+    flex: 1,
+    fontSize: 12,
+    color: appColors.icon,
+    fontWeight: "500",
+    lineHeight: 17,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#DC2626",
+    fontWeight: "600",
+  },
+  primaryBtn: {
+    backgroundColor: "#FDBF1E",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  primaryBtnDisabled: {
+    opacity: 0.6,
+  },
+  primaryBtnText: {
+    color: "#000000",
+    fontSize: 14,
+    fontWeight: "800",
+  },
 });

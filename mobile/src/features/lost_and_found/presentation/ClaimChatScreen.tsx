@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,8 +14,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -212,10 +213,10 @@ export default function ClaimChatScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8F5E9", borderWidth: 1, borderColor: "#A5D6A7", alignItems: "center", justifyContent: "center" }}
-            onPress={() => router.back()}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: appColors.surfaceMuted, borderWidth: 1, borderColor: appColors.border, alignItems: "center", justifyContent: "center" }}
+            onPress={() => goBack("/(app)/lost-and-found")}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Handover Live Chat</Text>
@@ -234,10 +235,10 @@ export default function ClaimChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8F5E9", borderWidth: 1, borderColor: "#A5D6A7", alignItems: "center", justifyContent: "center" }}
-          onPress={() => router.back()}
+          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: appColors.surfaceMuted, borderWidth: 1, borderColor: appColors.border, alignItems: "center", justifyContent: "center" }}
+          onPress={() => goBack("/(app)/lost-and-found")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Handover Live Chat</Text>
@@ -297,7 +298,7 @@ export default function ClaimChatScreen() {
 
       <View style={styles.composer}>
         <Pressable style={styles.attachButton} onPress={() => setIsImagePickerOpen(true)}>
-          <MaterialCommunityIcons name="camera-outline" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="camera-outline" size={20} color={appColors.primary} />
         </Pressable>
         <TextInput
           style={styles.composerInput}
@@ -345,43 +346,43 @@ export default function ClaimChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: "#f8fafc", flex: 1, paddingTop: 56 },
+  container: { backgroundColor: appColors.background, flex: 1, paddingTop: 56 },
   centered: { alignItems: "center", flex: 1, justifyContent: "center" },
   header: {
     alignItems: "center",
-    borderBottomColor: "#e2e8f0",
+    borderBottomColor: appColors.border,
     borderBottomWidth: 1,
     flexDirection: "row",
     gap: 16,
     paddingHorizontal: 20,
     paddingBottom: 14,
   },
-  backLink: { color: "#1d4ed8", fontWeight: "700" },
-  title: { color: "#0f172a", fontSize: 18, fontWeight: "700" },
-  summary: { color: "#475569", fontSize: 12, marginTop: 2 },
-  connection: { color: "#64748b", fontSize: 11, marginTop: 1 },
+  backLink: { color: appColors.primary, fontWeight: "700" },
+  title: { color: appColors.text, fontSize: 18, fontWeight: "700" },
+  summary: { color: appColors.textSecondary, fontSize: 12, marginTop: 2 },
+  connection: { color: appColors.textSecondary, fontSize: 11, marginTop: 1 },
   errorText: { color: "#b91c1c", paddingHorizontal: 20, paddingTop: 10, fontSize: 13 },
   messageList: { padding: 16, gap: 10 },
   emptyList: { alignItems: "center", flexGrow: 1, justifyContent: "center", padding: 24 },
-  emptyText: { color: "#64748b", textAlign: "center", fontSize: 13 },
+  emptyText: { color: appColors.textSecondary, textAlign: "center", fontSize: 13 },
   messageBubble: { borderRadius: 12, maxWidth: "80%", padding: 10 },
-  myMessage: { alignSelf: "flex-end", backgroundColor: "#1d4ed8" },
-  otherMessage: { alignSelf: "flex-start", backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderWidth: 1 },
-  senderName: { color: "#64748b", fontSize: 12, fontWeight: "700", marginBottom: 3 },
-  messageText: { color: "#0f172a", fontSize: 14 },
+  myMessage: { alignSelf: "flex-end", backgroundColor: appColors.primary },
+  otherMessage: { alignSelf: "flex-start", backgroundColor: "#ffffff", borderColor: appColors.border, borderWidth: 1 },
+  senderName: { color: appColors.textSecondary, fontSize: 12, fontWeight: "700", marginBottom: 3 },
+  messageText: { color: appColors.text, fontSize: 14 },
   myMessageText: { color: "#ffffff" },
   captionText: { marginTop: 6 },
-  messageTime: { color: "#64748b", fontSize: 11, marginTop: 4 },
-  myMessageTime: { color: "#dbeafe" },
+  messageTime: { color: appColors.textSecondary, fontSize: 11, marginTop: 4 },
+  myMessageTime: { color: appColors.surfaceMuted },
   bubbleImage: { width: 220, height: 160, borderRadius: 8 },
   attachPreview: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderTopColor: "#e2e8f0",
+    borderTopColor: appColors.border,
     borderTopWidth: 1,
   },
   attachThumb: { width: 48, height: 48, borderRadius: 6 },
@@ -390,15 +391,15 @@ const styles = StyleSheet.create({
   composer: {
     alignItems: "flex-end",
     backgroundColor: "#ffffff",
-    borderTopColor: "#e2e8f0",
+    borderTopColor: appColors.border,
     borderTopWidth: 1,
     flexDirection: "row",
     gap: 8,
     padding: 12,
   },
   attachButton: {
-    backgroundColor: "#f1f5f9",
-    borderColor: "#cbd5e1",
+    backgroundColor: appColors.border,
+    borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 8,
     width: 44,
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
   },
   attachButtonText: { fontSize: 20 },
   composerInput: {
-    borderColor: "#cbd5e1",
+    borderColor: appColors.border,
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
@@ -417,14 +418,14 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   sendButton: {
-    backgroundColor: "#1d4ed8",
+    backgroundColor: appColors.primary,
     borderRadius: 8,
     paddingHorizontal: 14,
     minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
   },
-  sendButtonDisabled: { backgroundColor: "#94a3b8" },
+  sendButtonDisabled: { backgroundColor: appColors.textMuted },
   sendButtonText: { color: "#ffffff", fontWeight: "700" },
   modalBackdrop: {
     flex: 1,

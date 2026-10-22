@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -9,7 +12,6 @@ import {
   RefreshControl,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -131,9 +133,9 @@ export default function MyLostAndFoundScreen() {
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable
           style={styles.navBackBtn}
-          onPress={() => router.back()}
+          onPress={() => goBack("/(app)/lost-and-found")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Notices & Claims</Text>
         <View style={{ width: 36 }} />
@@ -149,7 +151,7 @@ export default function MyLostAndFoundScreen() {
             <MaterialCommunityIcons
               name="bullhorn-outline"
               size={15}
-              color={activeTab === "my_notices" ? "#0D3E02" : "#475569"}
+              color={activeTab === "my_notices" ? appColors.primary : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text style={[styles.tabText, activeTab === "my_notices" && styles.tabTextActive]}>
@@ -165,7 +167,7 @@ export default function MyLostAndFoundScreen() {
             <MaterialCommunityIcons
               name="inbox-arrow-down-outline"
               size={15}
-              color={activeTab === "incoming_claims" ? "#0D3E02" : "#475569"}
+              color={activeTab === "incoming_claims" ? appColors.primary : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text style={[styles.tabText, activeTab === "incoming_claims" && styles.tabTextActive]}>
@@ -181,7 +183,7 @@ export default function MyLostAndFoundScreen() {
             <MaterialCommunityIcons
               name="send-outline"
               size={15}
-              color={activeTab === "my_claims" ? "#0D3E02" : "#475569"}
+              color={activeTab === "my_claims" ? appColors.primary : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text style={[styles.tabText, activeTab === "my_claims" && styles.tabTextActive]}>
@@ -213,7 +215,7 @@ export default function MyLostAndFoundScreen() {
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="package-variant" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="package-variant" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No notices posted yet</Text>
               <Text style={styles.emptySubtitle}>
                 Notices you post about lost or found campus items will appear here.
@@ -239,7 +241,7 @@ export default function MyLostAndFoundScreen() {
                       <MaterialCommunityIcons
                         name={isLost ? "help-circle-outline" : "package-variant-closed"}
                         size={24}
-                        color="#64748b"
+                        color={appColors.textSecondary}
                       />
                     </View>
                   )}
@@ -281,13 +283,13 @@ export default function MyLostAndFoundScreen() {
                       {item.title}
                     </Text>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
-                      <MaterialCommunityIcons name="map-marker" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                      <MaterialCommunityIcons name="map-marker" size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                       <Text style={styles.cardLocation} numberOfLines={1}>
                         {item.location}
                       </Text>
                     </View>
                     <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-                      <MaterialCommunityIcons name="chat-processing-outline" size={12} color="#64748b" style={{ marginRight: 3 }} />
+                      <MaterialCommunityIcons name="chat-processing-outline" size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                       <Text style={styles.claimsCountText}>
                         {item.claims_count} claim inquiry{item.claims_count === 1 ? "" : "s"}
                       </Text>
@@ -305,7 +307,7 @@ export default function MyLostAndFoundScreen() {
                       <MaterialCommunityIcons
                         name={item.status === "open" ? "check-circle-outline" : "refresh"}
                         size={14}
-                        color="#0D3E02"
+                        color={appColors.primary}
                         style={{ marginRight: 4 }}
                       />
                       <Text style={styles.statusActionBtnText}>
@@ -319,7 +321,7 @@ export default function MyLostAndFoundScreen() {
                     onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}` as any)}
                   >
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
-                      <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                      <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                       <Text style={styles.editActionBtnText}>Edit</Text>
                     </View>
                   </Pressable>
@@ -347,7 +349,7 @@ export default function MyLostAndFoundScreen() {
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="inbox-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="inbox-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No incoming claims</Text>
               <Text style={styles.emptySubtitle}>
                 When peers reach out about items you reported found or lost, they will show up here.
@@ -360,7 +362,7 @@ export default function MyLostAndFoundScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.claimNoticeTitle}>Re: {item.item_title}</Text>
                   <Text style={styles.claimantDetails}>
-                    Claimant: <Text style={{ fontWeight: "700", color: "#070D1F" }}>{item.claimant_name}</Text> ({item.claimant_department || "LGU Student"})
+                    Claimant: <Text style={{ fontWeight: "700", color: appColors.text }}>{item.claimant_name}</Text> ({item.claimant_department || "LGU Student"})
                   </Text>
                 </View>
                 <View
@@ -430,7 +432,7 @@ export default function MyLostAndFoundScreen() {
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="send-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="send-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No claims sent</Text>
               <Text style={styles.emptySubtitle}>
                 Inquiries and claims you submit on posted notices will be tracked here.
@@ -443,7 +445,7 @@ export default function MyLostAndFoundScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.claimNoticeTitle}>{item.item_title}</Text>
                   <Text style={styles.claimantDetails}>
-                    Posted by: <Text style={{ fontWeight: "700", color: "#070D1F" }}>{item.poster_name}</Text>
+                    Posted by: <Text style={{ fontWeight: "700", color: appColors.text }}>{item.poster_name}</Text>
                   </Text>
                 </View>
                 <View
@@ -489,11 +491,11 @@ export default function MyLostAndFoundScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { flex: 1, backgroundColor: appColors.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -512,60 +514,60 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
-  tabBar: { flexDirection: "row", padding: 4, marginHorizontal: 16, marginVertical: 12, backgroundColor: "#E2E8F0", borderRadius: 14 },
+  tabBar: { flexDirection: "row", padding: 4, marginHorizontal: 16, marginVertical: 12, backgroundColor: appColors.border, borderRadius: 14 },
   tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  tabActive: { backgroundColor: "#ffffff", shadowColor: "#000000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.08, shadowRadius: 2, elevation: 2 },
-  tabText: { fontSize: 12, fontWeight: "700", color: "#64748B", textAlign: "center", includeFontPadding: false },
-  tabTextActive: { color: "#0D3E02", fontWeight: "800" },
+  tabActive: { backgroundColor: "#ffffff", shadowColor: "#000000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.035, shadowRadius: 2, elevation: 2 },
+  tabText: { fontSize: 12, fontWeight: "700", color: appColors.textSecondary, textAlign: "center", includeFontPadding: false },
+  tabTextActive: { color: appColors.primary, fontWeight: "800" },
   errorBanner: { flexDirection: "row", alignItems: "center", backgroundColor: "#fee2e2", marginHorizontal: 16, marginVertical: 6, padding: 10, borderRadius: 8 },
   errorText: { color: "#b91c1c", fontSize: 13, flex: 1 },
   list: { padding: 16, gap: 14 },
   emptyContainer: { alignItems: "center", maxWidth: 300, alignSelf: "center", marginTop: 40 },
-  emptyTitle: { fontSize: 17, fontWeight: "900", color: "#0F172A", letterSpacing: -0.3 },
-  emptySubtitle: { fontSize: 13, color: "#64748B", textAlign: "center", marginTop: 4, lineHeight: 18 },
-  card: { backgroundColor: "#ffffff", borderRadius: 20, borderColor: "#F1F5F9", borderWidth: 1, padding: 16, shadowColor: "#0F172A", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+  emptyTitle: { fontSize: 17, fontWeight: "900", color: appColors.text, letterSpacing: -0.3 },
+  emptySubtitle: { fontSize: 13, color: appColors.textSecondary, textAlign: "center", marginTop: 4, lineHeight: 18 },
+  card: { backgroundColor: "#ffffff", borderRadius: 16, borderColor: appColors.border, borderWidth: 1, padding: 16, shadowColor: appColors.text, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 1 },
   cardHeader: { flexDirection: "row", gap: 14 },
   cardThumb: { width: 88, height: 88, borderRadius: 14 },
   cardThumbPlaceholder: { width: 88, height: 88, borderRadius: 14, justifyContent: "center", alignItems: "center" },
   placeholderLost: { backgroundColor: "#FEE2E2" },
-  placeholderFound: { backgroundColor: "#ECFDF5" },
+  placeholderFound: { backgroundColor: appColors.surfaceMuted },
   placeholderEmoji: { fontSize: 26 },
   cardInfo: { flex: 1, justifyContent: "space-between" },
   badgeRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   typeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignItems: "center", justifyContent: "center" },
   typeBadgeLost: { backgroundColor: "#FEE2E2" },
-  typeBadgeFound: { backgroundColor: "#D1FAE5" },
+  typeBadgeFound: { backgroundColor: appColors.surfaceMuted },
   typeBadgeText: { fontSize: 10, fontWeight: "900", textAlign: "center", includeFontPadding: false },
   typeBadgeTextLost: { color: "#B91C1C" },
-  typeBadgeTextFound: { color: "#047857" },
+  typeBadgeTextFound: { color: appColors.primary },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignItems: "center", justifyContent: "center" },
-  statusOpen: { backgroundColor: "#F1F5F9" },
-  statusClosed: { backgroundColor: "#E2E8F0" },
-  statusAccepted: { backgroundColor: "#D1FAE5" },
+  statusOpen: { backgroundColor: appColors.border },
+  statusClosed: { backgroundColor: appColors.border },
+  statusAccepted: { backgroundColor: appColors.surfaceMuted },
   statusBadgeText: { fontSize: 10, fontWeight: "800", textAlign: "center", includeFontPadding: false },
-  statusOpenText: { color: "#0284c7" },
-  statusClosedText: { color: "#64748B" },
-  cardTitle: { fontSize: 15, fontWeight: "900", color: "#0F172A", letterSpacing: -0.2, marginTop: 2 },
-  cardLocation: { fontSize: 12, color: "#0D3E02", fontWeight: "700", marginTop: 1 },
-  claimsCountText: { fontSize: 11, color: "#64748B", fontWeight: "600", marginTop: 2 },
-  cardActions: { flexDirection: "row", gap: 8, marginTop: 14, paddingTop: 12, borderTopColor: "#F1F5F9", borderTopWidth: 1 },
-  statusActionBtn: { flex: 1, backgroundColor: "#F8FAFC", paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E2E8F0" },
-  statusActionBtnText: { color: "#334155", fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
-  editActionBtn: { paddingHorizontal: 14, backgroundColor: "#F1F5F9", paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  editActionBtnText: { color: "#334155", fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
+  statusOpenText: { color: appColors.icon },
+  statusClosedText: { color: appColors.textSecondary },
+  cardTitle: { fontSize: 15, fontWeight: "900", color: appColors.text, letterSpacing: -0.2, marginTop: 2 },
+  cardLocation: { fontSize: 12, color: appColors.primary, fontWeight: "700", marginTop: 1 },
+  claimsCountText: { fontSize: 11, color: appColors.textSecondary, fontWeight: "600", marginTop: 2 },
+  cardActions: { flexDirection: "row", gap: 8, marginTop: 14, paddingTop: 12, borderTopColor: appColors.border, borderTopWidth: 1 },
+  statusActionBtn: { flex: 1, backgroundColor: appColors.background, paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: appColors.border },
+  statusActionBtnText: { color: appColors.textSecondary, fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
+  editActionBtn: { paddingHorizontal: 14, backgroundColor: appColors.border, paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  editActionBtnText: { color: appColors.textSecondary, fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
   deleteActionBtn: { paddingHorizontal: 12, backgroundColor: "#FEE2E2", paddingVertical: 9, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   deleteActionBtnText: { color: "#B91C1C", fontWeight: "800", fontSize: 12, textAlign: "center", includeFontPadding: false },
   claimItemHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  claimNoticeTitle: { fontSize: 15, fontWeight: "900", color: "#0F172A", letterSpacing: -0.2 },
-  claimantDetails: { fontSize: 12, color: "#64748B", marginTop: 2, fontWeight: "500" },
-  claimBodyText: { fontSize: 13, color: "#475569", backgroundColor: "#F8FAFC", padding: 12, borderRadius: 10, marginTop: 8, fontStyle: "italic", borderWidth: 1, borderColor: "#F1F5F9" },
+  claimNoticeTitle: { fontSize: 15, fontWeight: "900", color: appColors.text, letterSpacing: -0.2 },
+  claimantDetails: { fontSize: 12, color: appColors.textSecondary, marginTop: 2, fontWeight: "500" },
+  claimBodyText: { fontSize: 13, color: appColors.textSecondary, backgroundColor: appColors.background, padding: 12, borderRadius: 10, marginTop: 8, fontStyle: "italic", borderWidth: 1, borderColor: appColors.border },
   claimActionsRow: { flexDirection: "row", gap: 10, marginTop: 12 },
-  acceptBtn: { flex: 1, backgroundColor: "#0D3E02", paddingVertical: 9, borderRadius: 10, alignItems: "center" },
+  acceptBtn: { flex: 1, backgroundColor: appColors.primary, paddingVertical: 9, borderRadius: 10, alignItems: "center" },
   acceptBtnText: { color: "#FDBF1E", fontWeight: "900", fontSize: 12 },
-  declineBtn: { paddingHorizontal: 14, backgroundColor: "#F1F5F9", paddingVertical: 9, borderRadius: 10, alignItems: "center" },
-  declineBtnText: { color: "#64748B", fontWeight: "800", fontSize: 12 },
-  chatBtn: { width: "100%", backgroundColor: "#0D3E02", paddingVertical: 10, borderRadius: 10, alignItems: "center" },
+  declineBtn: { paddingHorizontal: 14, backgroundColor: appColors.border, paddingVertical: 9, borderRadius: 10, alignItems: "center" },
+  declineBtnText: { color: appColors.textSecondary, fontWeight: "800", fontSize: 12 },
+  chatBtn: { width: "100%", backgroundColor: appColors.primary, paddingVertical: 10, borderRadius: 10, alignItems: "center" },
   chatBtnText: { color: "#FDBF1E", fontWeight: "900", fontSize: 13 },
 });

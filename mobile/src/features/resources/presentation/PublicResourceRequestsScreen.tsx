@@ -1,6 +1,8 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useSessionStore } from "../../../core/auth/session";
@@ -133,7 +135,7 @@ export default function PublicResourceRequestsScreen() {
         removeClippedSubviews={Platform.OS === "android"}
         contentContainerStyle={requests.length === 0 ? styles.emptyList : styles.list}
         ListEmptyComponent={<Text style={styles.emptyText}>No open resource requests yet.</Text>}
-        ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color="#1d4ed8" style={{ marginVertical: 12 }} /> : null}
+        ListFooterComponent={isLoadingMore ? <ActivityIndicator size="small" color={appColors.primary} style={{ marginVertical: 12 }} /> : null}
         renderItem={renderItem}
       />
         </>
@@ -143,25 +145,25 @@ export default function PublicResourceRequestsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: "#f8fafc", flex: 1, padding: 20, paddingTop: 56, paddingBottom: 20 },
+  container: { backgroundColor: appColors.background, flex: 1, padding: 20, paddingTop: 56, paddingBottom: 20 },
   centered: { alignItems: "center", flex: 1, justifyContent: "center" },
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
-  title: { color: "#0f172a", fontSize: 26, fontWeight: "700" },
-  subtitle: { color: "#64748b", marginTop: 4 },
-  addButton: { backgroundColor: "#1d4ed8", borderRadius: 8, paddingHorizontal: 13, paddingVertical: 10 },
+  title: { color: appColors.text, fontSize: 26, fontWeight: "700" },
+  subtitle: { color: appColors.textSecondary, marginTop: 4 },
+  addButton: { backgroundColor: appColors.primary, borderRadius: 8, paddingHorizontal: 13, paddingVertical: 10 },
   addButtonText: { color: "#ffffff", fontWeight: "700" },
   list: { paddingBottom: 24 },
   emptyList: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
-  card: { backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 12, padding: 16 },
-  cardTitle: { color: "#0f172a", fontSize: 17, fontWeight: "700" },
-  exchange: { color: "#1d4ed8", fontWeight: "700", textTransform: "capitalize" },
-  description: { color: "#475569", lineHeight: 20 },
-  meta: { color: "#64748b", textTransform: "capitalize" },
-  ownRequest: { color: "#64748b", fontWeight: "700" },
-  offerSent: { color: "#047857", fontWeight: "700", textTransform: "capitalize" },
-  offerButton: { alignSelf: "flex-start", backgroundColor: "#047857", borderRadius: 7, paddingHorizontal: 12, paddingVertical: 9 },
+  card: { backgroundColor: "#ffffff", borderColor: appColors.border, borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 12, padding: 16 },
+  cardTitle: { color: appColors.text, fontSize: 17, fontWeight: "700" },
+  exchange: { color: appColors.primary, fontWeight: "700", textTransform: "capitalize" },
+  description: { color: appColors.textSecondary, lineHeight: 20 },
+  meta: { color: appColors.textSecondary, textTransform: "capitalize" },
+  ownRequest: { color: appColors.textSecondary, fontWeight: "700" },
+  offerSent: { color: appColors.primary, fontWeight: "700", textTransform: "capitalize" },
+  offerButton: { alignSelf: "flex-start", backgroundColor: appColors.primary, borderRadius: 7, paddingHorizontal: 12, paddingVertical: 9 },
   offerButtonText: { color: "#ffffff", fontWeight: "700" },
-  emptyText: { color: "#64748b", textAlign: "center" },
+  emptyText: { color: appColors.textSecondary, textAlign: "center" },
   errorText: { color: "#b91c1c", marginBottom: 12 },
 });
 

@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Text } from "../../../core/ui/AppText";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { Badge, colors, font, spacing, typography } from "../../../core/ui";
 import type { LibraryProjectLevel } from "../data/libraryApi";

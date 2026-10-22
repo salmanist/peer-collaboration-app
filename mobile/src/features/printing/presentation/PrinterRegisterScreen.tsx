@@ -1,12 +1,26 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { StyleSheet, Text } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, Card, ScreenContainer, TextField, spacing } from "../../../core/ui";
 import { deleteMyPrinterProfile, getMyPrinterProfile, saveMyPrinterProfile } from "../data/printingApi";
-import { SwitchRow, printStyles } from "./printUi";
 
 export default function PrinterRegisterScreen() {
+  const insets = useSafeAreaInsets();
   const [isPrinter, setIsPrinter] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [locationNote, setLocationNote] = useState("");
@@ -14,6 +28,8 @@ export default function PrinterRegisterScreen() {
   const [supportsDoubleSided, setSupportsDoubleSided] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
+
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
 
   useFocusEffect(
     useCallback(() => {
@@ -62,28 +78,282 @@ export default function PrinterRegisterScreen() {
     }
   };
 
+  if (!isLoaded && !error) {
+    return <View style={styles.rootContainer}>
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} /></Pressable>
+        <Text style={styles.topNavTitle}>Printer Setup</Text><View style={{ width: 36 }} />
+      </View>
+      <LoadingSkeleton variant="form" />
+    </View>;
+  }
+
   return (
-    <ScreenContainer scroll back="/(app)/printing">
-      <Text style={[printStyles.title, styles.title]}>{!isLoaded ? " " : isPrinter ? "Printer settings" : "Register as printer"}</Text>
-      <Text style={[printStyles.subtitle, styles.title]}>
-        Other students will see your name, department and these details, and can send print requests to you.
-      </Text>
+    <View style={styles.rootContainer}>
+      {/* Top Nav Bar */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+        </Pressable>
+        <Text style={styles.topNavTitle}>
+          {!isLoaded ? "Printer Setup" : isPrinter ? "Printer Settings" : "Register as Printer"}
+        </Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-      <Card contentStyle={styles.card}>
-        <TextField label="Where do you print or hand over?" placeholder="e.g. Library, Hostel B" value={locationNote} onChangeText={setLocationNote} />
-        <SwitchRow label="Colour printing" hint="Turn on if your printer can print in colour." value={supportsColor} onChange={setSupportsColor} />
-        <SwitchRow label="Double-sided" hint="Turn on if your printer can print on both sides." value={supportsDoubleSided} onChange={setSupportsDoubleSided} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+      >
+        {/* Info Banner */}
+        <View style={styles.bannerBox}>
+          <View style={styles.bannerIconCircle}>
+            <MaterialCommunityIcons name="printer-check" size={24} color={appColors.primary} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.bannerTitle}>Earn by Printing on Campus</Text>
+            <Text style={styles.bannerSub}>
+              Students will see your name, department, location, and supported printing features.
+            </Text>
+          </View>
+        </View>
 
-        {error && <Text style={printStyles.error}>{error}</Text>}
+        {/* Location note */}
+          <View style={styles.inputGroup}>
+            <TextInput
+              style={styles.input}
+              placeholder="Handover Location / Room (e.g. CS Dept Floor 2)"
+              placeholderTextColor={appColors.textMuted}
+              value={locationNote}
+              onChangeText={setLocationNote}
+            />
+          </View>
 
-        <Button label={isPrinter ? "Save changes" : "Register as printer"} onPress={handleSave} loading={isBusy} />
-        {isPrinter && <Button label="Stop being a printer" variant="ghost" onPress={handleStop} disabled={isBusy} />}
-      </Card>
-    </ScreenContainer>
+          {/* Feature toggles */}
+          <View style={styles.switchGroup}>
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.switchLabel}>Colour Printing</Text>
+                <Text style={styles.switchSub}>Turn on if your printer can print in colour.</Text>
+              </View>
+              <Switch
+                value={supportsColor}
+                onValueChange={setSupportsColor}
+                trackColor={{ true: appColors.primary, false: appColors.border }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={styles.switchLabel}>Double-Sided Printing</Text>
+                <Text style={styles.switchSub}>Turn on if your printer can duplex print.</Text>
+              </View>
+              <Switch
+                value={supportsDoubleSided}
+                onValueChange={setSupportsDoubleSided}
+                trackColor={{ true: appColors.primary, false: appColors.border }}
+                thumbColor="#FFFFFF"
+              />
+            </View>
+          </View>
+
+          {error && (
+            <View style={styles.errorBox}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.primaryBtn, isBusy && styles.primaryBtnDisabled]}
+            onPress={handleSave}
+            disabled={isBusy}
+          >
+            {isBusy ? (
+              <ActivityIndicator color="#000000" size="small" />
+            ) : (
+              <Text style={styles.primaryBtnText}>
+                {isPrinter ? "Save Changes" : "Register as Campus Printer"}
+              </Text>
+            )}
+          </Pressable>
+
+          {isPrinter && (
+            <Pressable
+              style={styles.stopBtn}
+              onPress={handleStop}
+              disabled={isBusy}
+            >
+              <MaterialCommunityIcons name="printer-off" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <Text style={styles.stopBtnText}>Deactivate Printer Profile</Text>
+            </Pressable>
+          )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { marginBottom: spacing.md },
-  card: { gap: spacing.lg },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: appColors.background,
+  },
+  topNavBar: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: appColors.border,
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(13, 62, 2, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 16,
+  },
+  bannerBox: {
+    backgroundColor: appColors.surfaceMuted,
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    gap: 12,
+  },
+  bannerIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bannerTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  bannerSub: {
+    fontSize: 12,
+    color: appColors.primary,
+    lineHeight: 17,
+  },
+  inputGroup: {
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: appColors.text,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 12 : 9,
+    fontSize: 14,
+    color: appColors.text,
+  },
+  switchGroup: {
+    backgroundColor: appColors.surfaceMuted,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    gap: 12,
+  },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  switchLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: appColors.text,
+  },
+  switchSub: {
+    fontSize: 11,
+    color: appColors.textSecondary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: appColors.border,
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "600",
+    flex: 1,
+  },
+  primaryBtn: {
+    backgroundColor: "#FDBF1E",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  primaryBtnDisabled: {
+    opacity: 0.6,
+  },
+  primaryBtnText: {
+    color: "#000000",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  stopBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    marginTop: 8,
+  },
+  stopBtnText: {
+    color: "#DC2626",
+    fontSize: 13,
+    fontWeight: "700",
+  },
 });

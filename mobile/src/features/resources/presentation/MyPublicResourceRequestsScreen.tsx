@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -8,7 +10,6 @@ import {
   Pressable,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -141,7 +142,7 @@ export default function MyPublicResourceRequestsScreen() {
 
           {request.course ? (
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
-              <MaterialCommunityIcons name="target" size={13} color="#0D3E02" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="target" size={13} color={appColors.primary} style={{ marginRight: 4 }} />
               <Text style={styles.courseTag}>Course: {request.course}</Text>
             </View>
           ) : null}
@@ -156,10 +157,10 @@ export default function MyPublicResourceRequestsScreen() {
                   disabled={updatingId === request.id}
                 >
                   {updatingId === request.id ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
+                    <ActivityIndicator size="small" color={appColors.primary} />
                   ) : (
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                      <MaterialCommunityIcons name="check-circle-outline" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                      <MaterialCommunityIcons name="check-circle-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                       <Text style={styles.fulfillBtnText}>Mark Fulfilled</Text>
                     </View>
                   )}
@@ -169,7 +170,7 @@ export default function MyPublicResourceRequestsScreen() {
                   onPress={() => router.push(`/resources/wanted/edit/${request.id}` as any)}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                    <MaterialCommunityIcons name="pencil-outline" size={14} color="#0D3E02" style={{ marginRight: 4 }} />
+                    <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} style={{ marginRight: 4 }} />
                     <Text style={styles.editBtnText}>Edit</Text>
                   </View>
                 </Pressable>
@@ -199,7 +200,7 @@ export default function MyPublicResourceRequestsScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color="#0D3E02" />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Requests</Text>
         <Pressable
@@ -207,7 +208,7 @@ export default function MyPublicResourceRequestsScreen() {
           onPress={() => router.push("/(app)/resources/wanted/create" as any)}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MaterialCommunityIcons name="plus" size={14} color="#0D3E02" style={{ marginRight: 2 }} />
+            <MaterialCommunityIcons name="plus" size={14} color={appColors.primary} style={{ marginRight: 2 }} />
             <Text style={styles.navActionBtnText}>Request</Text>
           </View>
         </Pressable>
@@ -238,7 +239,7 @@ export default function MyPublicResourceRequestsScreen() {
           ]}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="hand-wave-outline" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="hand-wave-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No Requests Posted</Text>
               <Text style={styles.emptySub}>
                 You haven't posted any resource requests yet.
@@ -264,11 +265,11 @@ export default function MyPublicResourceRequestsScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "transparent",
-    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
     paddingBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.primary,
     letterSpacing: -0.3,
   },
   navActionBtn: {
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   navActionBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "900",
     fontSize: 12,
   },
@@ -317,16 +318,16 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#ffffff",
-    borderColor: "#F1F5F9",
-    borderRadius: 20,
+    borderColor: appColors.border,
+    borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     gap: 8,
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   cardHeaderRow: {
     flexDirection: "row",
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   cardTitle: {
-    color: "#070D1F",
+    color: appColors.text,
     fontSize: 15,
     fontWeight: "700",
     flex: 1,
@@ -351,16 +352,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   statusOpen: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   statusOpenText: {
-    color: "#15803D",
+    color: appColors.icon,
   },
   statusFulfilled: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
     borderWidth: 1,
   },
   statusFulfilledText: {
@@ -375,13 +376,13 @@ const styles = StyleSheet.create({
     color: "#DC2626",
   },
   descriptionText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontStyle: "italic",
     lineHeight: 16,
   },
   courseTag: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -389,34 +390,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 10,
     marginTop: 4,
   },
   fulfillBtn: {
     flex: 1,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: appColors.primary,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   fulfillBtnText: {
-    color: "#ffffff",
+    color: appColors.primary,
     fontSize: 12,
     fontWeight: "700",
   },
   editBtn: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: appColors.border,
   },
   editBtnText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -457,17 +460,17 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 4,
   },
   emptySub: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     marginBottom: 16,
   },
   emptyAddBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,

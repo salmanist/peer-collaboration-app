@@ -23,8 +23,7 @@ class LibraryProject(models.Model):
     abstract = models.TextField()
     github_link = models.URLField(blank=True, default="")
     level = models.CharField(max_length=10, choices=Level.choices, default=Level.SIMPLE)
-    # No custom admin panel per the project's moderation decision — a moderator
-    # flips this via Django admin's built-in list actions.
+    # Moderated through the in-app Admin Center or Django admin.
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -1,3 +1,5 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -9,8 +11,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -103,15 +103,15 @@ function getCategoryIconName(category: string): keyof typeof MaterialCommunityIc
 function getCategoryBg(category: string) {
   switch (category) {
     case "books":
-      return "#EFF6FF";
+      return appColors.surfaceMuted;
     case "notes":
       return "#FFFBEB";
     case "lab_equipment":
-      return "#ECFDF5";
+      return appColors.surfaceMuted;
     case "stationery":
       return "#FDF4FF";
     default:
-      return "#F8FAFC";
+      return appColors.background;
   }
 }
 
@@ -155,7 +155,7 @@ export default function ResourceFeedScreen() {
         label: "My Listings & Requests",
         subtitle: "Manage your posted items",
         icon: "format-list-bulleted",
-        iconColor: "#0D3E02",
+        iconColor: appColors.primary,
         onPress: () => router.push("/(app)/resources/my-listings" as any),
       },
       {
@@ -163,7 +163,7 @@ export default function ResourceFeedScreen() {
         label: "Interest Requests",
         subtitle: "Buyer requests for your items",
         icon: "hand-coin-outline",
-        iconColor: "#D97706",
+        iconColor: appColors.icon,
         hasDot: hasNewInterestRequests,
         onPress: () => router.push("/(app)/resources/requests" as any),
       },
@@ -275,8 +275,8 @@ export default function ResourceFeedScreen() {
               {thumbUrl ? (
                 <Image source={{ uri: thumbUrl }} style={styles.cardThumb} resizeMode="cover" />
               ) : (
-                <View style={[styles.cardThumbPlaceholder, { backgroundColor: getCategoryBg(item.category) }]}>
-                  <MaterialCommunityIcons name={getCategoryIconName(item.category)} size={28} color="#64748b" />
+                <View style={styles.cardThumbPlaceholder}>
+                  <MaterialCommunityIcons name={getCategoryIconName(item.category)} size={28} color={appColors.textSecondary} />
                 </View>
               )}
 
@@ -309,15 +309,15 @@ export default function ResourceFeedScreen() {
                 {/* Category & Course Tag */}
                 <View style={styles.metaRow}>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <MaterialCommunityIcons name={getCategoryIconName(item.category)} size={12} color="#64748b" style={{ marginRight: 3 }} />
+                    <MaterialCommunityIcons name={getCategoryIconName(item.category)} size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                     <Text style={styles.categoryMetaText}>
                       {item.category.replace("_", " ")}
                     </Text>
                   </View>
                   {item.course ? (
                     <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 6 }}>
-                      <Text style={{ color: "#64748b", marginRight: 4 }}>•</Text>
-                      <MaterialCommunityIcons name="target" size={12} color="#0D3E02" style={{ marginRight: 2 }} />
+                      <Text style={{ color: appColors.textSecondary, marginRight: 4 }}>•</Text>
+                      <MaterialCommunityIcons name="target" size={12} color={appColors.primary} style={{ marginRight: 2 }} />
                       <Text style={styles.courseMetaText} numberOfLines={1}>
                         {item.course}
                       </Text>
@@ -331,7 +331,7 @@ export default function ResourceFeedScreen() {
             <View style={styles.cardFooter}>
               <View style={styles.ownerWrap}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="account-outline" size={13} color="#0D3E02" style={{ marginRight: 4 }} />
+                  <MaterialCommunityIcons name="account-outline" size={13} color={appColors.primary} style={{ marginRight: 4 }} />
                   <Text style={styles.ownerName} numberOfLines={1}>
                     {item.owner_name || "LGU Student"}
                     {item.owner_department
@@ -354,8 +354,8 @@ export default function ResourceFeedScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             {/* Category Placeholder Icon */}
-            <View style={[styles.cardThumbPlaceholder, { backgroundColor: getCategoryBg(request.category) }]}>
-              <MaterialCommunityIcons name={getCategoryIconName(request.category)} size={28} color="#64748b" />
+            <View style={styles.cardThumbPlaceholder}>
+              <MaterialCommunityIcons name={getCategoryIconName(request.category)} size={28} color={appColors.textSecondary} />
             </View>
 
             {/* Right Content */}
@@ -377,15 +377,15 @@ export default function ResourceFeedScreen() {
               {/* Category & Course */}
               <View style={styles.metaRow}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name={getCategoryIconName(request.category)} size={12} color="#64748b" style={{ marginRight: 3 }} />
+                  <MaterialCommunityIcons name={getCategoryIconName(request.category)} size={12} color={appColors.textSecondary} style={{ marginRight: 3 }} />
                   <Text style={styles.categoryMetaText}>
                     {request.category.replace("_", " ")}
                   </Text>
                 </View>
                 {request.course ? (
                   <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 6 }}>
-                    <Text style={{ color: "#64748b", marginRight: 4 }}>•</Text>
-                    <MaterialCommunityIcons name="target" size={12} color="#0D3E02" style={{ marginRight: 2 }} />
+                    <Text style={{ color: appColors.textSecondary, marginRight: 4 }}>•</Text>
+                    <MaterialCommunityIcons name="target" size={12} color={appColors.primary} style={{ marginRight: 2 }} />
                     <Text style={styles.courseMetaText} numberOfLines={1}>
                       {request.course}
                     </Text>
@@ -406,7 +406,7 @@ export default function ResourceFeedScreen() {
           <View style={styles.cardFooter}>
             <View style={styles.ownerWrap}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="account-outline" size={13} color="#0D3E02" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="account-outline" size={13} color={appColors.primary} style={{ marginRight: 4 }} />
                 <Text style={styles.ownerName} numberOfLines={1}>
                   {request.requester_name || "LGU Student"}
                   {request.requester_department
@@ -422,14 +422,14 @@ export default function ResourceFeedScreen() {
             {isMine ? (
               <View style={styles.ownRequestTag}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="pin-outline" size={13} color="#92400E" style={{ marginRight: 3 }} />
+                  <MaterialCommunityIcons name="pin-outline" size={13} color={appColors.icon} style={{ marginRight: 3 }} />
                   <Text style={styles.ownRequestTagText}>Your Posted Request</Text>
                 </View>
               </View>
             ) : existingOffer ? (
               <View style={styles.offerSentTag}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="check-circle" size={13} color="#0D3E02" style={{ marginRight: 3 }} />
+                  <MaterialCommunityIcons name="check-circle" size={13} color={appColors.primary} style={{ marginRight: 3 }} />
                   <Text style={styles.offerSentTagText}>
                     Offer Sent: {existingOffer.status.toUpperCase()}
                   </Text>
@@ -456,7 +456,7 @@ export default function ResourceFeedScreen() {
   return (
     <View style={styles.container}>
       {/* Compact Top App Bar */}
-      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
         <Text style={styles.compactNavTitle}>Marketplace</Text>
         <ModuleOptionsMenu
           items={dropdownItems}
@@ -467,11 +467,11 @@ export default function ResourceFeedScreen() {
       {/* Search Bar Row */}
       <View style={styles.actionSearchRow}>
         <View style={styles.searchBar}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#64748b" style={styles.searchIcon} />
+          <MaterialCommunityIcons name="magnify" size={18} color={appColors.textSecondary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search textbooks, notes, gear, requests..."
-            placeholderTextColor="#94a3b8"
+            placeholderTextColor={appColors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={handleSearchSubmit}
@@ -484,7 +484,7 @@ export default function ResourceFeedScreen() {
                 void loadData(selectedCategory, "");
               }}
             >
-              <MaterialCommunityIcons name="close-circle" size={16} color="#94a3b8" />
+              <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
             </Pressable>
           ) : null}
         </View>
@@ -508,7 +508,7 @@ export default function ResourceFeedScreen() {
                 <MaterialCommunityIcons
                   name={cat.icon}
                   size={14}
-                  color={isSelected ? "#FDBF1E" : "#64748b"}
+                  color={isSelected ? "#FDBF1E" : appColors.textSecondary}
                   style={{ marginRight: 4 }}
                 />
                 <Text style={[styles.categoryBtnLabel, isSelected && styles.categoryBtnLabelActive]}>
@@ -549,7 +549,7 @@ export default function ResourceFeedScreen() {
           ]}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="package-variant-closed" size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <MaterialCommunityIcons name="package-variant-closed" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No Marketplace Items Found</Text>
               <Text style={styles.emptySub}>
                 {selectedCategory !== "all" || searchQuery
@@ -579,28 +579,30 @@ export default function ResourceFeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 7,
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EFF0EF",
   },
   myListingsHeaderBtn: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#C8E6C9",
+    borderColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   hamburgerBtn: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 10,
     width: 38,
     height: 38,
@@ -608,18 +610,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   hamburgerLine: {
     width: 17,
     height: 2,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderRadius: 2,
   },
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.primary,
     letterSpacing: -0.3,
   },
   avatarBtn: {
@@ -631,7 +633,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -652,8 +654,8 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
     gap: 8,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
@@ -665,11 +667,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    color: "#0F172A",
+    color: appColors.text,
     fontWeight: "500",
   },
   clearSearch: {
-    color: "#94a3b8",
+    color: appColors.textMuted,
     fontSize: 13,
     fontWeight: "700",
     padding: 4,
@@ -680,21 +682,21 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderWidth: 1.5,
-    borderColor: "#0D3E02",
+    borderColor: appColors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#0D3E02",
+    shadowColor: appColors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.035,
     shadowRadius: 6,
     elevation: 6,
     zIndex: 99,
   },
   modeTabsContainer: {
     flexDirection: "row",
-    backgroundColor: "#E2E8F0",
+    backgroundColor: appColors.border,
     borderRadius: 14,
     marginHorizontal: 16,
     marginTop: 12,
@@ -716,19 +718,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.035,
     shadowRadius: 2,
     elevation: 2,
   },
   modeTabText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#64748B",
+    color: appColors.textSecondary,
     textAlign: "center",
     includeFontPadding: false,
   },
   modeTabTextActive: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "800",
   },
   categoriesSection: {
@@ -747,17 +749,17 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     gap: 6,
-    shadowColor: "#0F172A",
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
   categoryBtnActive: {
-    backgroundColor: "#0D3E02",
-    borderColor: "#0D3E02",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   categoryBtnIcon: {
     fontSize: 12,
@@ -765,7 +767,7 @@ const styles = StyleSheet.create({
   categoryBtnLabel: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
     textAlign: "center",
     includeFontPadding: false,
   },
@@ -791,15 +793,15 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#F1F5F9",
-    shadowColor: "#0F172A",
+    borderColor: appColors.border,
+    shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: "row",
@@ -809,7 +811,7 @@ const styles = StyleSheet.create({
     width: 92,
     height: 92,
     borderRadius: 14,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
   },
   cardThumbPlaceholder: {
     width: 92,
@@ -837,12 +839,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   priceTagFree: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#86EFAC",
+    borderColor: appColors.border,
   },
   priceTagPaid: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
     borderColor: "#FDE68A",
   },
@@ -851,18 +853,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   priceTagTextFree: {
-    color: "#15803D",
+    color: appColors.icon,
   },
   priceTagTextPaid: {
-    color: "#92400E",
+    color: appColors.icon,
   },
   wantedBadge: {
-    backgroundColor: "#EFF6FF",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#BFDBFE",
+    borderColor: appColors.border,
   },
   wantedBadgeText: {
     color: "#1E40AF",
@@ -870,7 +872,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   conditionTag: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -878,12 +880,12 @@ const styles = StyleSheet.create({
   conditionTagText: {
     fontSize: 9,
     fontWeight: "700",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#070D1F",
+    color: appColors.text,
     lineHeight: 18,
     marginTop: 2,
   },
@@ -895,21 +897,21 @@ const styles = StyleSheet.create({
   },
   categoryMetaText: {
     fontSize: 11,
-    color: "#64748b",
+    color: appColors.textSecondary,
     fontWeight: "600",
     textTransform: "capitalize",
   },
   courseMetaText: {
     fontSize: 11,
-    color: "#0D3E02",
+    color: appColors.primary,
     fontWeight: "700",
     flex: 1,
   },
   requestDescription: {
     fontSize: 12,
-    color: "#475569",
+    color: appColors.textSecondary,
     fontStyle: "italic",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     padding: 10,
     borderRadius: 8,
     marginTop: 10,
@@ -920,7 +922,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
+    borderTopColor: appColors.border,
     paddingTop: 8,
     marginTop: 10,
   },
@@ -930,19 +932,19 @@ const styles = StyleSheet.create({
   },
   ownerName: {
     fontSize: 11,
-    color: "#475569",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   verifiedBadge: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: "#A5D6A7",
+    borderColor: appColors.border,
   },
   verifiedBadgeText: {
-    color: "#0D3E02",
+    color: appColors.primary,
     fontSize: 9,
     fontWeight: "800",
   },
@@ -950,29 +952,29 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   ownRequestTag: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
   },
   ownRequestTagText: {
-    color: "#475569",
+    color: appColors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
   },
   offerSentTag: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: appColors.surfaceMuted,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
   },
   offerSentTagText: {
-    color: "#15803D",
+    color: appColors.icon,
     fontSize: 12,
     fontWeight: "800",
   },
   fulfillBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     paddingVertical: 9,
     borderRadius: 8,
     alignItems: "center",
@@ -1019,12 +1021,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#070D1F",
+    color: appColors.text,
     marginBottom: 4,
   },
   emptySub: {
     fontSize: 12,
-    color: "#64748b",
+    color: appColors.textSecondary,
     textAlign: "center",
     lineHeight: 18,
   },

@@ -1,3 +1,6 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text } from "../../../core/ui/AppText";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import React from "react";
 import {
   Modal,
@@ -5,17 +8,21 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useCampusNotificationStore } from "../useCampusNotificationStore";
+import {
+  navigateToNotification,
+  resolveNotificationTarget,
+} from "../notificationNavigation";
 
 export default function CampusNotificationCenterModal() {
   const isCenterOpen = useCampusNotificationStore((state) => state.isCenterOpen);
   const closeCenter = useCampusNotificationStore((state) => state.closeCenter);
   const notifications = useCampusNotificationStore((state) => state.notifications);
+  const isLoading = useCampusNotificationStore((state) => state.isLoading);
   const fetchNotifications = useCampusNotificationStore((state) => state.fetchNotifications);
   const markAsRead = useCampusNotificationStore((state) => state.markAsRead);
   const markAllAsRead = useCampusNotificationStore((state) => state.markAllAsRead);
@@ -57,13 +64,13 @@ export default function CampusNotificationCenterModal() {
             <View style={styles.headerActionRow}>
               {unseenCount > 0 && (
                 <Pressable style={styles.markAllBtn} onPress={markAllAsRead}>
-                  <MaterialCommunityIcons name="check-all" size={14} color="#0D3E02" />
+                  <MaterialCommunityIcons name="check-all" size={14} color={appColors.primary} />
                   <Text style={styles.markAllBtnText}>Mark all read</Text>
                 </Pressable>
               )}
 
               <Pressable style={styles.closeBtn} onPress={closeCenter}>
-                <MaterialCommunityIcons name="close" size={18} color="#64748B" />
+                <MaterialCommunityIcons name="close" size={18} color={appColors.textSecondary} />
               </Pressable>
             </View>
           </View>
@@ -74,13 +81,13 @@ export default function CampusNotificationCenterModal() {
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
           >
-            {notifications.length === 0 ? (
+            {isLoading && notifications.length === 0 ? <LoadingSkeleton variant="list" /> : notifications.length === 0 ? (
               <View style={styles.emptyWrap}>
                 <View style={styles.emptyIconBox}>
                   <MaterialCommunityIcons
                     name="bell-check-outline"
                     size={36}
-                    color="#0D3E02"
+                    color={appColors.primary}
                   />
                 </View>
                 <Text style={styles.emptyTitle}>You're all caught up!</Text>
@@ -100,28 +107,34 @@ export default function CampusNotificationCenterModal() {
                   }
                 );
 
+                const target = resolveNotificationTarget(item);
+
                 return (
                   <Pressable
                     key={item.id}
-                    style={[
+                    style={({ pressed }) => [
                       styles.itemCard,
                       !item.is_read && styles.itemCardUnread,
+                      pressed && styles.itemCardPressed,
                     ]}
                     onPress={() => {
                       if (!item.is_read) {
-                        markAsRead(item.id);
+                        void markAsRead(item.id);
                       }
+                      void navigateToNotification(target, closeCenter);
                     }}
                   >
                     <View style={styles.itemTopRow}>
-                      <View style={styles.noticeIconWrap}>
+                      <View style={[styles.noticeIconWrap, { backgroundColor: target.badgeBg }]}>
                         <MaterialCommunityIcons
-                          name="bell-ring-outline"
-                          size={14}
-                          color="#0D3E02"
-                          style={{ marginRight: 4 }}
+                          name={target.icon as any}
+                          size={13}
+                          color={target.accentColor}
+                          style={{ marginRight: 5 }}
                         />
-                        <Text style={styles.noticeTagText}>Notice</Text>
+                        <Text style={[styles.noticeTagText, { color: target.accentColor }]}>
+                          {target.categoryLabel}
+                        </Text>
                       </View>
 
                       <View style={styles.itemTimeRow}>
@@ -137,6 +150,17 @@ export default function CampusNotificationCenterModal() {
                       <Text style={styles.itemAuthor}>
                         Posted by {item.created_by_name}
                       </Text>
+
+                      <View style={styles.actionPill}>
+                        <Text style={[styles.actionPillText, { color: target.accentColor }]}>
+                          {target.actionLabel}
+                        </Text>
+                        <MaterialCommunityIcons
+                          name="arrow-right"
+                          size={12}
+                          color={target.accentColor}
+                        />
+                      </View>
                     </View>
                   </Pressable>
                 );
@@ -167,14 +191,14 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.035,
     shadowRadius: 12,
     elevation: 8,
   },
   handleBar: {
     width: 40,
     height: 4,
-    backgroundColor: "#CBD5E1",
+    backgroundColor: appColors.border,
     borderRadius: 2,
     alignSelf: "center",
     marginTop: 10,
@@ -187,7 +211,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: appColors.border,
   },
   sheetTitleRow: {
     flexDirection: "row",
@@ -197,7 +221,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.3,
   },
   unreadCountPill: {
@@ -219,7 +243,7 @@ const styles = StyleSheet.create({
   markAllBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.surfaceMuted,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 8,
@@ -228,13 +252,13 @@ const styles = StyleSheet.create({
   markAllBtnText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   closeBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -250,11 +274,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   itemCardUnread: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#A7F3D0",
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.border,
   },
   itemTopRow: {
     flexDirection: "row",
@@ -265,15 +289,15 @@ const styles = StyleSheet.create({
   noticeIconWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+
   },
   noticeTagText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
@@ -290,30 +314,46 @@ const styles = StyleSheet.create({
   },
   itemTimeText: {
     fontSize: 11,
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontWeight: "500",
   },
   itemTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
     marginBottom: 4,
   },
   itemMessage: {
     fontSize: 12,
-    color: "#475569",
+    color: appColors.textSecondary,
     lineHeight: 18,
     fontWeight: "500",
     marginBottom: 8,
   },
+  itemCardPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.99 }],
+  },
   itemFooter: {
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.05)",
-    paddingTop: 6,
+    paddingTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  actionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  actionPillText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   itemAuthor: {
     fontSize: 10,
-    color: "#64748B",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   emptyWrap: {
@@ -324,8 +364,8 @@ const styles = StyleSheet.create({
   emptyIconBox: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: "#E8F5E9",
+
+
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
@@ -333,12 +373,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.text,
     marginBottom: 4,
   },
   emptySub: {
     fontSize: 12,
-    color: "#64748B",
+    color: appColors.textSecondary,
     textAlign: "center",
     paddingHorizontal: 30,
   },

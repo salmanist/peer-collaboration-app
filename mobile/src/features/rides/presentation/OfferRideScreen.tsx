@@ -1,14 +1,25 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { goBack } from "../../../core/navigation/goBack";
+import { Text, TextInput } from "../../../core/ui/AppText";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, Switch, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../../../core/auth/session";
-import { Badge, Button, Card, ScreenContainer, TextField, colors, font, spacing, typography } from "../../../core/ui";
+import { fetchMe } from "../../auth/data/authApi";
 import { createRide, type RideLocation } from "../data/ridesApi";
 import { LocationAutocomplete } from "./LocationAutocomplete";
 
-// Local YYYY-MM-DD, not toISOString() — that shifts to UTC and can land on
-// the wrong day near midnight.
 const dateStr = (offsetDays: number) => {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
@@ -16,12 +27,17 @@ const dateStr = (offsetDays: number) => {
 };
 
 const MERIDIEMS = ["AM", "PM"] as const;
+const SEAT_OPTIONS = ["1", "2", "3", "4", "5"];
 
 export default function OfferRideScreen() {
+  const insets = useSafeAreaInsets();
   const user = useSessionStore((state) => state.user);
+  const updateUser = useSessionStore((state) => state.updateUser);
 
-  // Computed on each mount, not at module load — a module-level constant
-  // would freeze "Today" to whenever the JS bundle first evaluated this file.
+  useState(() => {
+    fetchMe().then(updateUser).catch(() => {});
+  });
+
   const datePresets = [
     { label: "Today", value: dateStr(0) },
     { label: "Tomorrow", value: dateStr(1) },
@@ -30,19 +46,21 @@ export default function OfferRideScreen() {
 
   const [departure, setDeparture] = useState<RideLocation | null>(null);
   const [destination, setDestination] = useState<RideLocation | null>(null);
-  const [departureDate, setDepartureDate] = useState("");
-  const [hour, setHour] = useState("");
-  const [minute, setMinute] = useState("");
+  const [departureDate, setDepartureDate] = useState(dateStr(0));
+  const [hour, setHour] = useState("08");
+  const [minute, setMinute] = useState("30");
   const [meridiem, setMeridiem] = useState<(typeof MERIDIEMS)[number]>("AM");
-  const [seatsTotal, setSeatsTotal] = useState("1");
+  const [seatsTotal, setSeatsTotal] = useState("3");
   const [sameGenderOnly, setSameGenderOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
+
   const handleSubmit = async () => {
     setError(null);
     if (!departure || !destination) {
-      setError("Pick both a departure and destination from the suggestions.");
+      setError("Pick both a departure and destination location.");
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(departureDate.trim())) {
@@ -59,7 +77,7 @@ export default function OfferRideScreen() {
 
     const [year, month, day] = departureDate.trim().split("-").map(Number);
     if (new Date(year, month - 1, day, hour24, m) < new Date()) {
-      setError("Departure time can't be in the past.");
+      setError("Departure time cannot be in the past.");
       return;
     }
 
@@ -83,78 +101,351 @@ export default function OfferRideScreen() {
   };
 
   return (
-    <ScreenContainer scroll back="/(app)/rides">
-      <Text style={styles.title}>Offer a ride</Text>
-      <Text style={styles.subtitle}>Share your route and let other students request a seat</Text>
+    <View style={styles.rootContainer}>
+      {/* Top Navigation Bar with Back Button */}
+      <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/rides")}>
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+        </Pressable>
+        <Text style={styles.topNavTitle}>Offer a Ride</Text>
+        <View style={{ width: 36 }} />
+      </View>
 
-      <Card style={styles.card}>
-        <View style={styles.row}>
-          <LocationAutocomplete label="Departure" placeholder="DHA Phase 5" value={departure} onChange={setDeparture} containerStyle={styles.flex1} />
-          <LocationAutocomplete label="Destination" placeholder="LGU Campus" value={destination} onChange={setDestination} containerStyle={styles.flex1} />
-        </View>
-        <TextField label="Date" placeholder="YYYY-MM-DD" value={departureDate} onChangeText={setDepartureDate} />
-        <View style={styles.chipRow}>
-          {datePresets.map((preset) => (
-            <Pressable key={preset.label} onPress={() => setDepartureDate(preset.value)}>
-              <Badge label={preset.label} tone={departureDate === preset.value ? "primary" : "neutral"} />
-            </Pressable>
-          ))}
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: Math.max(insets.bottom + 40, 60) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header Title & Subtitle */}
+        <View style={styles.header}>
+          <Text style={styles.title}>List an Available Ride</Text>
+          <Text style={styles.subtitle}>
+            Share your route, departure time, and carpool with peers on campus.
+          </Text>
         </View>
 
-        <Text style={styles.fieldLabel}>Time</Text>
-        <View style={styles.timeRow}>
-          <TextField placeholder="07" value={hour} onChangeText={setHour} keyboardType="number-pad" maxLength={2} containerStyle={styles.timeInput} />
-          <Text style={styles.colon}>:</Text>
-          <TextField placeholder="30" value={minute} onChangeText={setMinute} keyboardType="number-pad" maxLength={2} containerStyle={styles.timeInput} />
-          <View style={styles.chipRow}>
-            {MERIDIEMS.map((m) => (
-              <Pressable key={m} onPress={() => setMeridiem(m)}>
-                <Badge label={m} tone={meridiem === m ? "primary" : "neutral"} />
+        {/* Departure Location */}
+        <LocationAutocomplete
+          placeholder="Departure Location (e.g. DHA Phase 5, Lahore)"
+          value={departure}
+          onChange={setDeparture}
+        />
+
+        {/* Destination Location */}
+        <LocationAutocomplete
+          placeholder="Destination (e.g. LGU Campus Main Gate)"
+          value={destination}
+          onChange={setDestination}
+        />
+
+        {/* Departure Date */}
+        <TextInput
+          style={styles.input}
+          placeholder="Departure Date (YYYY-MM-DD)"
+          placeholderTextColor={appColors.textMuted}
+          value={departureDate}
+          onChangeText={setDepartureDate}
+        />
+
+        {/* Date Presets Pills */}
+        <View style={styles.optionsWrap}>
+          {datePresets.map((preset) => {
+            const isSelected = departureDate === preset.value;
+            return (
+              <Pressable
+                key={preset.label}
+                style={[styles.optionPill, isSelected && styles.optionPillSelected]}
+                onPress={() => setDepartureDate(preset.value)}
+              >
+                <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                  {preset.label}
+                </Text>
               </Pressable>
-            ))}
+            );
+          })}
+        </View>
+
+        {/* Departure Time */}
+        <Text style={styles.label}>Departure Time *</Text>
+        <View style={styles.timeInputRow}>
+          <TextInput
+            style={[styles.input, styles.timeBox]}
+            placeholder="08"
+            placeholderTextColor={appColors.textMuted}
+            value={hour}
+            onChangeText={setHour}
+            keyboardType="number-pad"
+            maxLength={2}
+          />
+          <Text style={styles.colon}>:</Text>
+          <TextInput
+            style={[styles.input, styles.timeBox]}
+            placeholder="30"
+            placeholderTextColor={appColors.textMuted}
+            value={minute}
+            onChangeText={setMinute}
+            keyboardType="number-pad"
+            maxLength={2}
+          />
+
+          <View style={styles.optionsWrap}>
+            {MERIDIEMS.map((m) => {
+              const isSelected = meridiem === m;
+              return (
+                <Pressable
+                  key={m}
+                  style={[styles.optionPill, isSelected && styles.optionPillSelected, { paddingHorizontal: 16 }]}
+                  onPress={() => setMeridiem(m)}
+                >
+                  <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                    {m}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        <TextField label="Seats available" placeholder="1–8" value={seatsTotal} onChangeText={setSeatsTotal} keyboardType="number-pad" />
+        {/* Available Seats */}
+        <Text style={styles.label}>Available Seats</Text>
+        <View style={styles.optionsWrap}>
+          {SEAT_OPTIONS.map((num) => {
+            const isSelected = seatsTotal === num;
+            return (
+              <Pressable
+                key={num}
+                style={[styles.optionPill, isSelected && styles.optionPillSelected]}
+                onPress={() => setSeatsTotal(num)}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialCommunityIcons
+                    name="seat-passenger"
+                    size={14}
+                    color={isSelected ? appColors.primary : appColors.textSecondary}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
+                    `${num} Seat${Number(num) > 1 ? "s" : ""}`
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
 
-        <View style={styles.switchRow}>
-          <View style={styles.switchTextGroup}>
-            <Text style={styles.switchLabel}>Same gender only</Text>
-            <Text style={styles.switchHint}>
-              {user?.gender ? "Only riders of your gender can request a seat." : "Set your gender via your roster record to use this."}
+        {/* Passenger Preference (Same Gender) */}
+        <Text style={styles.label}>Passenger Preference</Text>
+        <View style={styles.optionsWrap}>
+          <Pressable
+            style={[styles.optionPill, !sameGenderOnly && styles.optionPillSelected]}
+            onPress={() => {
+              setSameGenderOnly(false);
+              setError(null);
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons
+                name="account-multiple-outline"
+                size={14}
+                color={!sameGenderOnly ? appColors.primary : appColors.textSecondary}
+                style={{ marginRight: 4 }}
+              />
+              <Text style={[styles.optionPillText, !sameGenderOnly && styles.optionPillTextSelected]}>
+                "Any Gender"
+              </Text>
+            </View>
+          </Pressable>
+
+          <Pressable
+            style={[styles.optionPill, sameGenderOnly && styles.optionPillSelected]}
+            onPress={() => {
+              const g = user?.gender?.toLowerCase();
+              if (g === "female" || g === "male") {
+                setSameGenderOnly(true);
+                setError(null);
+              } else {
+                setError("Please set your gender in your student profile to enable same-gender rides.");
+              }
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <MaterialCommunityIcons
+                name={user?.gender === "female" ? "gender-female" : user?.gender === "male" ? "gender-male" : "account-group"}
+                size={14}
+                color={sameGenderOnly ? (user?.gender === "female" ? "#BE185D" : "#1D4ED8") : appColors.textSecondary}
+                style={{ marginRight: 4 }}
+              />
+              <Text style={[styles.optionPillText, sameGenderOnly && styles.optionPillTextSelected]}>
+                {sameGenderOnly
+                  ? `${user?.gender === "female" ? "Female" : user?.gender === "male" ? "Male" : "Same Gender"} Only`
+                  : `Same Gender Only${user?.gender && user.gender !== "other" ? ` (${user.gender})` : ""}`}
+              </Text>
+            </View>
+          </Pressable>
+        </View>
+
+        {sameGenderOnly && user?.gender && user.gender !== "other" && (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: user.gender === "female" ? "#FDF2F8" : "#EFF6FF", borderWidth: 1, borderColor: user.gender === "female" ? "#FBCFE8" : "#BFDBFE" }}>
+            <MaterialCommunityIcons name="shield-check" size={15} color={user.gender === "female" ? "#BE185D" : "#1D4ED8"} style={{ marginRight: 6 }} />
+            <Text style={{ fontSize: 12, color: user.gender === "female" ? "#BE185D" : "#1D4ED8", fontWeight: "600" }}>
+              Restricted to verified {user.gender} students only.
             </Text>
           </View>
-          <Switch
-            value={sameGenderOnly}
-            onValueChange={setSameGenderOnly}
-            disabled={!user?.gender}
-            trackColor={{ true: colors.primary, false: colors.surfaceMuted }}
-            thumbColor={colors.surface}
-          />
-        </View>
+        )}
 
-        {error && <Text style={styles.error}>{error}</Text>}
+        {error ? (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 4 }} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
 
-        <Button label="Offer ride" onPress={handleSubmit} loading={isSubmitting} />
-      </Card>
-    </ScreenContainer>
+        {/* Submit Button (Zahra's Signature Gold Button from Image 1 & 2) */}
+        <Pressable
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color={appColors.primary} />
+          ) : (
+            <Text style={styles.submitButtonText}>Offer Ride</Text>
+          )}
+        </Pressable>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: typography.size.xl, fontFamily: font.serif, color: colors.ink },
-  subtitle: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textMuted, marginTop: 2, marginBottom: spacing.sm },
-  card: { gap: spacing.md },
-  row: { flexDirection: "row", gap: spacing.sm },
-  flex1: { flex: 1, minWidth: 0 },
-  chipRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  fieldLabel: { fontSize: typography.size.xs, fontFamily: font.familyMedium, color: colors.textSecondary },
-  timeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  timeInput: { width: 60 },
-  colon: { fontSize: typography.size.lg, fontFamily: font.familyMedium, color: colors.textSecondary },
-  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
-  switchTextGroup: { flex: 1, gap: 2 },
-  switchLabel: { fontSize: typography.size.base, fontFamily: font.familyMedium, color: colors.ink },
-  switchHint: { fontSize: typography.size.xs, fontFamily: font.familyRegular, color: colors.textMuted },
-  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
+  rootContainer: {
+    flex: 1,
+    backgroundColor: appColors.background,
+  },
+  topNavBar: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  navBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(13, 62, 2, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topNavTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: appColors.primary,
+  },
+  container: {
+    padding: 16,
+    gap: 10,
+  },
+  header: {
+    marginTop: 4,
+    marginBottom: 4,
+    gap: 4,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: appColors.text,
+  },
+  subtitle: {
+    color: appColors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  label: {
+    color: appColors.text,
+    fontWeight: "700",
+    fontSize: 13,
+    marginTop: 6,
+  },
+  input: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: 10,
+    padding: 12,
+    color: appColors.text,
+    fontSize: 14,
+  },
+  optionsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  optionPill: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    borderRadius: 20,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+  },
+  optionPillSelected: {
+    backgroundColor: appColors.surfaceMuted,
+    borderColor: appColors.primary,
+  },
+  optionPillText: {
+    color: appColors.textSecondary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  optionPillTextSelected: {
+    color: appColors.primary,
+    fontWeight: "800",
+  },
+  timeInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  timeBox: {
+    width: 60,
+    textAlign: "center",
+    padding: 10,
+  },
+  colon: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: appColors.textSecondary,
+  },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  submitButton: {
+    backgroundColor: "#FDBF1E",
+    borderRadius: 12,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 14,
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.035,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: appColors.primary,
+    fontWeight: "900",
+    fontSize: 15,
+  },
 });

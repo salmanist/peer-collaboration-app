@@ -1,43 +1,71 @@
+import { API_REQUEST_TIMEOUT_MS } from "../../../core/network/apiClient";
+import { colors as appColors } from "../../../core/ui/theme";
+import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
+import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ModuleOptionsMenu, type ModuleDropdownItem } from "../../../core/components/ModuleOptionsMenu";
 import { useDataStore } from "../../../core/data/DataStore";
-import { Badge, Button, Card, EmptyState, OverscrollFill, ScreenContainer, Skeleton, SoftBlock, colors, font, radius, spacing, typography } from "../../../core/ui";
-import { getCurrentRide, getMyRideProfile, type RideProfile } from "../../ondemand/data/ondemandApi";
+import { getCurrentRide, getMyRideProfile, type RideProfile, type OnDemandRide } from "../../ondemand/data/ondemandApi";
+import { PeerLiftBoard } from "../../ondemand/presentation/PeerLiftBoard";
 import { PIN_LABEL, RideBookingSection, type Stop } from "../../ondemand/presentation/RideBookingSection";
-import { listRides, type Ride } from "../../rides/data/ridesApi";
+import { listAvailableRides, type Ride } from "../../rides/data/ridesApi";
 import { TripCard, TripSkeletonList } from "../../rides/presentation/TripCard";
+import { usePolling } from "../../ondemand/presentation/usePolling";
 
-// Cache key for the unfiltered trip list - the one view every focus loads. A list filtered by
-// drop-off is never cached, since "everything" isn't a valid answer to "just trips to DHA".
 const TRIPS_CACHE_KEY = "rides:default";
 
-// Room in the green hero where the first card sits, so the card overlaps the hero.
-const HERO_OVERLAP = 56 + spacing.lg;
+type RidesTab = "scheduled" | "ondemand";
 
-// One Rides screen: ask for a ride right now (on-demand) and see scheduled trips going the same way.
-// This is the only place that knows about both modules; each stays independent of the other.
 export default function RidesHubScreen() {
+  const insets = useSafeAreaInsets();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<RidesTab>(tab === "ondemand" ? "ondemand" : "scheduled");
+  const [ondemandSubTab, setOndemandSubTab] = useState<"board" | "booking">("board");
+  const [isPeerModalOpen, setIsPeerModalOpen] = useState(false);
   const [profile, setProfile] = useState<RideProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
-  const [hasActiveRide, setHasActiveRide] = useState(false);
+  const [currentRide, setCurrentRide] = useState<OnDemandRide | null>(null);
+  const [showBooking, setShowBooking] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const [drop, setDrop] = useState<Stop | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearchQuery(searchText.trim()), 300);
+    return () => clearTimeout(timeout);
+  }, [searchText]);
   const [trips, setTrips] = useState<Ride[]>([]);
   const [isLoadingTrips, setIsLoadingTrips] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [tripsError, setTripsError] = useState<string | null>(null);
   const latestTripsRequest = useRef(0);
+  const [tripsRetry, setTripsRetry] = useState(0);
   const { getCache, setCache } = useDataStore();
+
+  const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
 
   useFocusEffect(
     useCallback(() => {
       Promise.all([getMyRideProfile(), getCurrentRide()])
         .then(([loadedProfile, currentRide]) => {
           setProfile(loadedProfile);
-          setHasActiveRide(!!currentRide);
+          setCurrentRide(currentRide);
           setProfileError(null);
         })
         .catch(() => setProfileError("Couldn't load your ride details. Check your connection."))
@@ -45,170 +73,575 @@ export default function RidesHubScreen() {
     }, []),
   );
 
-  // Trips follow the drop-off: destination-only matching (a student says where they are headed and
-  // compares departure points themselves), same rule the old trip board used. Reloads on focus too.
   useFocusEffect(
     useCallback(() => {
       const requestId = ++latestTripsRequest.current;
 
-      if (!drop) {
+      // Stale-while-revalidate: immediately display cached trips if available
+      let hasCached = false;
+      if (!drop && !searchQuery) {
         const cached = getCache<Ride[]>(TRIPS_CACHE_KEY);
-        if (cached) {
+        if (cached && cached.length > 0) {
           setTrips(cached);
           setIsLoadingTrips(false);
-          return;
+          hasCached = true;
         }
       }
 
+      const controller = new AbortController();
+      const deadline = setTimeout(() => {
+        if (requestId === latestTripsRequest.current) {
+          if (!hasCached) {
+            setTripsError("Rides are taking too long to load. Check your connection and retry.");
+          }
+          setIsLoadingTrips(false);
+        }
+        controller.abort();
+      }, API_REQUEST_TIMEOUT_MS + 1000);
+
       setTripsError(null);
-      setIsLoadingTrips(true);
-      listRides(
+      if (!hasCached) {
+        setIsLoadingTrips(true);
+      }
+
+      listAvailableRides(
         drop
           ? {
+              q: searchQuery || undefined,
               destination_lat: drop.lat,
               destination_lng: drop.lng,
-              // A free map pin has no real name to text-match on.
               destination: drop.label === PIN_LABEL ? undefined : drop.label,
             }
-          : undefined,
+          : { q: searchQuery || undefined },
+        {
+          signal: controller.signal,
+          onPage: (rides) => {
+            if (requestId === latestTripsRequest.current && !controller.signal.aborted) {
+              setTrips(rides);
+              setIsLoadingTrips(false);
+            }
+          },
+        },
       )
         .then((data) => {
-          // Ignore answers to an older drop-off if the student has already picked another.
-          if (requestId !== latestTripsRequest.current) return;
+          if (requestId !== latestTripsRequest.current || controller.signal.aborted) return;
           setTrips(data.results);
-          if (!drop) setCache(TRIPS_CACHE_KEY, data.results);
+          if (!drop && !searchQuery) setCache(TRIPS_CACHE_KEY, data.results);
         })
-        .catch((err: any) => requestId === latestTripsRequest.current && setTripsError(err?.response?.data?.detail ?? "Couldn't load scheduled trips."))
-        .finally(() => requestId === latestTripsRequest.current && setIsLoadingTrips(false));
-    }, [drop, getCache, setCache]),
+        .catch((err: any) => {
+          if (requestId === latestTripsRequest.current && !controller.signal.aborted) {
+            if (!hasCached) {
+              setTripsError(err?.response?.data?.detail ?? "Couldn't load rides. Check your connection and retry.");
+            }
+          }
+        })
+        .finally(() => {
+          clearTimeout(deadline);
+          if (requestId === latestTripsRequest.current) {
+            setIsLoadingTrips(false);
+          }
+        });
+      return () => {
+        latestTripsRequest.current += 1;
+        clearTimeout(deadline);
+        controller.abort();
+      };
+    }, [drop, searchQuery, tripsRetry, getCache, setCache]),
   );
 
-  const handleRouteChange = useCallback((_pickup: Stop | null, nextDrop: Stop | null) => setDrop(nextDrop), []);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const [loadedProfile, activeRide, ridesData] = await Promise.all([
+        getMyRideProfile().catch(() => null),
+        getCurrentRide().catch(() => null),
+        listAvailableRides(
+          drop
+            ? {
+                q: searchQuery || undefined,
+                destination_lat: drop.lat,
+                destination_lng: drop.lng,
+                destination: drop.label === PIN_LABEL ? undefined : drop.label,
+              }
+            : { q: searchQuery || undefined },
+        ).catch(() => null),
+      ]);
+      if (loadedProfile) setProfile(loadedProfile);
+      if (activeRide !== undefined) setCurrentRide(activeRide);
+      if (ridesData?.results) {
+        setTrips(ridesData.results);
+        if (!drop && !searchQuery) setCache(TRIPS_CACHE_KEY, ridesData.results);
+        setTripsError(null);
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [drop, searchQuery, setCache]);
+
+  useFocusEffect(useCallback(() => {
+    if (activeTab !== "scheduled") return;
+    const timer = setInterval(() => setTripsRetry(value => value + 1), 30000);
+    return () => clearInterval(timer);
+  }, [activeTab]));
+
+  const handleRouteChange = useCallback((_pickup: Stop | null, nextDrop: Stop | null) => {
+    setDrop(nextDrop);
+  }, []);
 
   const isApprovedDriver = profile?.role === "driver" && profile.is_approved;
   const isPendingDriver = profile?.role === "driver" && !profile.is_approved;
 
-  const renderFirstCard = () => {
-    if (isProfileLoading) return <Skeleton style={styles.skeleton} />;
-    if (!profile) {
-      return (
-        <Card contentStyle={styles.card}>
-          <Text style={styles.error}>{profileError ?? "Something went wrong."}</Text>
-        </Card>
-      );
+  usePolling(async () => {
+    if (activeTab !== "ondemand") return;
+    try {
+      setCurrentRide(await getCurrentRide());
+    } catch {
+      // Keep the last known ride visible during a temporary connection failure.
     }
-    if (hasActiveRide) {
-      return (
-        <Card contentStyle={styles.card}>
-          <Text style={styles.heading}>You have a ride in progress</Text>
-          <Button label="Open my current ride" onPress={() => router.push("/(app)/ondemand/ride")} />
-        </Card>
-      );
-    }
-    // Approved drivers don't book rides - they go online and accept requests.
-    if (isApprovedDriver) {
-      return (
-        <Card contentStyle={styles.card}>
-          <View style={styles.row}>
-            <Text style={styles.heading}>You are a driver</Text>
-            <Badge label="Approved" tone="success" />
-          </View>
-          <Text style={styles.body}>
-            {profile.vehicle_colour} {profile.vehicle_make} {profile.vehicle_model} · {profile.plate_number} · {profile.vehicle_seats} seats
-          </Text>
-          <Button label="Driver mode: go online" onPress={() => router.push("/(app)/ondemand/drive")} />
-        </Card>
-      );
-    }
-    return <RideBookingSection onRouteChange={handleRouteChange} />;
-  };
+  });
 
-  return (
-    <ScreenContainer scroll topBar="rides" style={styles.screen}>
-      <View style={styles.hero}>
-        <OverscrollFill />
-        <View style={styles.heroTopRow}>
-          <View style={styles.heroTitleGroup}>
-            <Text style={styles.title}>Rides</Text>
-            <Text style={styles.subtitle}>Ride now, or find a trip going your way</Text>
-          </View>
-          <View style={styles.heroActions}>
-            <HeroButton icon="plus" label="Offer a trip" href="/(app)/rides/offer" />
-            <HeroButton icon="briefcase-outline" label="My trips" href="/(app)/rides/mine" />
-            <HeroButton icon="cog-outline" label="On-demand settings" href="/(app)/ondemand/settings" />
-            <HeroButton icon="bell-outline" label="Notifications" href="/(app)/rides/notifications" />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.belowHero}>
-        {renderFirstCard()}
-
-        {isPendingDriver && !hasActiveRide && (
-          <Pressable onPress={() => router.push("/(app)/ondemand/settings")}>
-            <Card contentStyle={styles.row}>
-              <Text style={[styles.body, styles.flex1]}>Your driver application is waiting for admin approval.</Text>
-              <Badge label="Pending" tone="warning" />
-            </Card>
-          </Pressable>
-        )}
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{drop ? "Scheduled trips going your way" : "Scheduled trips"}</Text>
-          {drop && <Text style={styles.body}>Heading to {drop.label}</Text>}
-        </View>
-
-        {tripsError && <Text style={styles.error}>{tripsError}</Text>}
-        {isLoadingTrips && trips.length === 0 ? (
-          <TripSkeletonList />
-        ) : trips.length === 0 ? (
-          <EmptyState
-            icon="car-outline"
-            title="No scheduled trips"
-            subtitle={drop ? "No trips to that place right now. Request a ride above, or offer a trip." : "Nobody has offered a trip yet."}
-          />
-        ) : (
-          trips.map((trip) => <TripCard key={trip.id} ride={trip} />)
-        )}
-      </View>
-    </ScreenContainer>
+  const dropdownItems: ModuleDropdownItem[] = useMemo(
+    () => [
+      {
+        key: "my_trips",
+        label: "My Offered Trips",
+        subtitle: "Manage your departures & bookings",
+        icon: "car-clock",
+        iconColor: appColors.primary,
+        onPress: () => router.push("/(app)/rides/mine" as any),
+      },
+      {
+        key: "history",
+        label: "Ride History",
+        subtitle: "Your offered, requested, and real-time rides",
+        icon: "history",
+        iconColor: "#FDBF1E",
+        onPress: () => router.push("/(app)/rides/history" as any),
+      },
+    ],
+    [],
   );
-}
 
-function HeroButton({ icon, label, href }: { icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"]; label: string; href: string }) {
   return (
-    <Pressable onPress={() => router.push(href as never)} accessibilityRole="button" accessibilityLabel={label}>
-      <SoftBlock backgroundColor="rgba(255,255,255,0.15)" borderColor="transparent" pill size={40} flat>
-        <MaterialCommunityIcons name={icon} size={18} color={colors.surface} />
-      </SoftBlock>
-    </Pressable>
+    <View style={styles.container}>
+      {/* Top App Bar */}
+      <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Text style={styles.compactNavTitle}>Ride Sharing</Text>
+        </View>
+        <ModuleOptionsMenu items={dropdownItems} />
+      </View>
+
+      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+        <View style={styles.searchBar}>
+          <MaterialCommunityIcons name="magnify" size={20} color={appColors.textSecondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={activeTab === "scheduled" ? "Search area, destination, driver…" : "Search live pickup, destination, student…"}
+            accessibilityLabel="Search available rides"
+            value={searchText}
+            onChangeText={(text) => {
+              setSearchText(text);
+              setSearchQuery(text);
+            }}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {!!searchText && (
+            <Pressable
+              onPress={() => {
+                setSearchText("");
+                setSearchQuery("");
+              }}
+              accessibilityLabel="Clear ride search"
+              hitSlop={8}
+            >
+              <MaterialCommunityIcons name="close" size={18} color={appColors.textSecondary} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Mode Switcher Tabs */}
+      <View style={styles.modeTabsContainer}>
+        <Pressable
+          style={[styles.modeTab, activeTab === "scheduled" && styles.modeTabActive]}
+          onPress={() => setActiveTab("scheduled")}
+        >
+          <View style={styles.modeTabContentRow}>
+            <MaterialCommunityIcons
+              name="calendar-clock"
+              size={15}
+              color={activeTab === "scheduled" ? appColors.primary : appColors.textSecondary}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[styles.modeTabText, activeTab === "scheduled" && styles.modeTabTextActive]}>
+              Scheduled Carpools
+            </Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          style={[styles.modeTab, activeTab === "ondemand" && styles.modeTabActive]}
+          onPress={() => setActiveTab("ondemand")}
+        >
+          <View style={styles.modeTabContentRow}>
+            <MaterialCommunityIcons
+              name="car-side"
+              size={15}
+              color={activeTab === "ondemand" ? appColors.primary : appColors.textSecondary}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[styles.modeTabText, activeTab === "ondemand" && styles.modeTabTextActive]}>
+              Ride Now (On-Demand)
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom + 85, 110) },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[appColors.primary]}
+            tintColor={appColors.primary}
+          />
+        }
+      >
+        {activeTab === "scheduled" ? (
+          <>
+            {drop && (
+              <View style={styles.filterChipRow}>
+                <Text style={styles.filterChipLabel}>Filter: Heading to {drop.label}</Text>
+                <Pressable onPress={() => setDrop(null)}>
+                  <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textSecondary} />
+                </Pressable>
+              </View>
+            )}
+
+            {/* Trips List */}
+            {tripsError && (
+              <View style={styles.errorBox}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+                <Text style={styles.errorText}>{tripsError}</Text>
+                <Pressable accessibilityRole="button" onPress={() => setTripsRetry(value => value + 1)} hitSlop={8}><Text style={{ color: appColors.primary, fontWeight: "700" }}>Retry</Text></Pressable>
+              </View>
+            )}
+
+            {isLoadingTrips && trips.length === 0 ? (
+              <TripSkeletonList />
+            ) : tripsError && trips.length === 0 ? null : trips.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="car-outline" size={50} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyTitle}>{searchQuery ? "No matching rides" : "No Scheduled Trips Available"}</Text>
+                <Text style={styles.emptySub}>
+                  {searchQuery ? "Try another area, destination, or driver name." : drop
+                    ? "No student carpools heading there right now. Switch to 'Ride Now' or offer a trip!"
+                    : "Nobody has posted a carpool yet. Be the first to offer a seat!"}
+                </Text>
+              </View>
+            ) : (
+              trips.map((trip) => <TripCard key={trip.id} ride={trip} />)
+            )}
+          </>
+        ) : (
+          /* On-Demand Ride Tab: Direct Real-Time Lift Board */
+          <View style={styles.ondemandSection}>
+            <PeerLiftBoard
+              isModalOpen={isPeerModalOpen}
+              onCloseModal={() => setIsPeerModalOpen(false)}
+              onOpenModal={() => setIsPeerModalOpen(true)}
+              searchQuery={searchQuery}
+            />
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Floating Add Button */}
+      <Pressable
+        style={[
+          styles.floatingAddBtn,
+          { bottom: Math.max(insets.bottom + 65, 80) },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={activeTab === "ondemand" ? "Post immediate ride" : "Offer a trip"}
+        hitSlop={8}
+        onPress={() => {
+          if (activeTab === "ondemand") {
+            setIsPeerModalOpen(true);
+          } else {
+            router.push("/(app)/rides/offer" as any);
+          }
+        }}
+      >
+        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex1: { flex: 1 },
-  screen: { padding: 0 },
-  hero: {
-    backgroundColor: colors.primaryContainer,
-    borderBottomLeftRadius: radius.hero,
-    borderBottomRightRadius: radius.hero,
-    padding: spacing.lg,
-    paddingBottom: HERO_OVERLAP,
-    gap: spacing.xs,
+  container: {
+    flex: 1,
+    backgroundColor: appColors.background,
   },
-  heroTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: spacing.sm, marginBottom: spacing.md },
-  heroTitleGroup: { flex: 1, gap: 2 },
-  heroActions: { flexDirection: "row", gap: spacing.xs },
-  title: { fontSize: typography.size.xl, fontFamily: font.family, color: colors.surface },
-  subtitle: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.onPrimaryContainer },
-  // Pulled up so the first card sits over the hero.
-  belowHero: { paddingHorizontal: spacing.lg, gap: spacing.md, marginTop: -HERO_OVERLAP },
-  card: { gap: spacing.lg },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
-  sectionHeader: { gap: 2, marginTop: spacing.sm },
-  sectionTitle: { fontSize: typography.size.lg, fontFamily: font.familyMedium, color: colors.ink },
-  heading: { fontSize: typography.size.base, fontFamily: font.familyMedium, color: colors.ink },
-  body: { fontSize: typography.size.sm, fontFamily: font.familyRegular, color: colors.textSecondary },
-  error: { fontSize: typography.size.sm, fontFamily: font.familyMedium, color: colors.danger },
-  skeleton: { height: 120, borderRadius: 16 },
+  compactTopNav: {
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EFF0EF",
+  },
+  compactNavTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: appColors.primary,
+    letterSpacing: -0.3,
+  },
+  modeTabsContainer: {
+    flexDirection: "row",
+    backgroundColor: appColors.border,
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 8,
+    padding: 4,
+  },
+  modeTab: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+  },
+  modeTabContentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modeTabActive: {
+    backgroundColor: "#ffffff",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.035,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  modeTabText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: appColors.textSecondary,
+    textAlign: "center",
+  },
+  modeTabTextActive: {
+    color: appColors.primary,
+    fontWeight: "800",
+  },
+  subModeTabsContainer: {
+    flexDirection: "row",
+    backgroundColor: appColors.surfaceMuted,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    padding: 3,
+    marginBottom: 4,
+  },
+  subModeTab: {
+    flex: 1,
+    paddingVertical: 7,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 9,
+  },
+  subModeTabActive: {
+    backgroundColor: "#ffffff",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  subModeTabText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: appColors.textSecondary,
+    textAlign: "center",
+  },
+  subModeTabTextActive: {
+    color: appColors.primary,
+    fontWeight: "800",
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 12,
+  },
+  searchBar: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: appColors.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 16 },
+  searchInput: { flex: 1, minWidth: 0, paddingVertical: 13, fontSize: 14, color: appColors.text },
+  filterChipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: appColors.surfaceMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: appColors.border,
+  },
+  filterChipLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: appColors.primary,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: appColors.text,
+    marginBottom: 6,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: appColors.textSecondary,
+    textAlign: "center",
+    lineHeight: 19,
+  },
+  ondemandSection: {
+    gap: 12,
+  },
+  activeRideCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: appColors.border,
+    gap: 10,
+  },
+  activeRideIconCircle: {
+    width: 60,
+    height: 60,
+
+
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeRideTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: appColors.text,
+  },
+  activeRideSubtitle: {
+    fontSize: 13,
+    color: appColors.textSecondary,
+    textAlign: "center",
+  },
+  driverCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: appColors.border,
+    gap: 14,
+  },
+  driverCardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  driverHeading: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: appColors.text,
+  },
+  driverSub: {
+    fontSize: 12,
+    color: appColors.textSecondary,
+  },
+  approvedBadge: {
+    backgroundColor: appColors.surfaceMuted,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  approvedBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: appColors.primary,
+  },
+  pendingBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  pendingBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: appColors.icon,
+    fontWeight: "600",
+  },
+  primaryBtn: {
+    backgroundColor: appColors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#DC2626",
+    fontWeight: "600",
+  },
+  floatingAddBtn: {
+    position: "absolute",
+    right: 20,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: appColors.primary,
+    borderWidth: 1.5,
+    borderColor: appColors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: appColors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.035,
+    shadowRadius: 6,
+    elevation: 6,
+    zIndex: 99,
+  },
 });

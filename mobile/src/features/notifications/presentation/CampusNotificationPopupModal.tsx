@@ -1,15 +1,20 @@
+import { colors as appColors } from "../../../core/ui/theme";
+import { Text } from "../../../core/ui/AppText";
 import React from "react";
 import {
   Modal,
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useCampusNotificationStore } from "../useCampusNotificationStore";
+import {
+  navigateToNotification,
+  resolveNotificationTarget,
+} from "../notificationNavigation";
 
 export default function CampusNotificationPopupModal() {
   const activePopupNotification = useCampusNotificationStore(
@@ -19,8 +24,15 @@ export default function CampusNotificationPopupModal() {
 
   if (!activePopupNotification) return null;
 
+  const target = resolveNotificationTarget(activePopupNotification);
+
   const handleDismiss = () => {
     dismissPopup(activePopupNotification.id);
+  };
+
+  const handleAction = () => {
+    dismissPopup(activePopupNotification.id);
+    void navigateToNotification(target);
   };
 
   const formattedDate = new Date(
@@ -47,7 +59,7 @@ export default function CampusNotificationPopupModal() {
               <MaterialCommunityIcons
                 name="bell-ring-outline"
                 size={18}
-                color="#0D3E02"
+                color={appColors.primary}
               />
               <Text style={styles.headerLabel}>Campus Notice</Text>
             </View>
@@ -57,7 +69,7 @@ export default function CampusNotificationPopupModal() {
               onPress={handleDismiss}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <MaterialCommunityIcons name="close" size={18} color="#64748B" />
+              <MaterialCommunityIcons name="close" size={18} color={appColors.textSecondary} />
             </Pressable>
           </View>
 
@@ -71,20 +83,49 @@ export default function CampusNotificationPopupModal() {
             <Text style={styles.dateText}>{formattedDate}</Text>
           </View>
 
-          {/* Notification Body Message */}
-          <View style={styles.messageBox}>
+          {/* Notification Body Message (clickable) */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.messageBox,
+              pressed && { opacity: 0.88, backgroundColor: "#F8FAFC" },
+            ]}
+            onPress={handleAction}
+          >
             <Text style={styles.messageText}>
               {activePopupNotification.message}
             </Text>
-          </View>
+            <View style={styles.tapToViewHint}>
+              <Text style={[styles.tapToViewText, { color: target.accentColor }]}>
+                Tap to {target.actionLabel.toLowerCase()}
+              </Text>
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={13}
+                color={target.accentColor}
+              />
+            </View>
+          </Pressable>
 
-          {/* Action Button */}
+          {/* Action Buttons */}
           <View style={styles.footerRow}>
             <Pressable
-              style={styles.gotItButton}
+              style={styles.dismissButton}
               onPress={handleDismiss}
             >
-              <Text style={styles.gotItButtonText}>Got It</Text>
+              <Text style={styles.dismissButtonText}>Dismiss</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.gotItButton, { backgroundColor: target.accentColor }]}
+              onPress={handleAction}
+            >
+              <Text style={styles.gotItButtonText}>{target.actionLabel}</Text>
+              <MaterialCommunityIcons
+                name="arrow-right"
+                size={15}
+                color="#ffffff"
+                style={{ marginLeft: 4 }}
+              />
             </Pressable>
           </View>
         </View>
@@ -105,15 +146,15 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 420,
     backgroundColor: "#ffffff",
-    borderRadius: 24,
+    borderRadius: 16,
     padding: 22,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.035,
     shadowRadius: 20,
-    elevation: 10,
+    elevation: 1,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   headerRow: {
     flexDirection: "row",
@@ -124,29 +165,29 @@ const styles = StyleSheet.create({
   iconBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E8F5E9",
+
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 10,
+
     gap: 6,
   },
   headerLabel: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   closeCrossButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.border,
     justifyContent: "center",
     alignItems: "center",
   },
   titleText: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.text,
     letterSpacing: -0.3,
     lineHeight: 24,
     marginBottom: 6,
@@ -159,40 +200,68 @@ const styles = StyleSheet.create({
   authorText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   metaDot: {
     fontSize: 12,
-    color: "#94A3B8",
+    color: appColors.textMuted,
     marginHorizontal: 6,
   },
   dateText: {
     fontSize: 11,
     fontWeight: "500",
-    color: "#64748B",
+    color: appColors.textSecondary,
   },
   messageBox: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.background,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     marginBottom: 18,
   },
   messageText: {
     fontSize: 13,
-    color: "#334155",
+    color: appColors.textSecondary,
     lineHeight: 20,
     fontWeight: "500",
+  },
+  tapToViewHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.06)",
+  },
+  tapToViewText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
   footerRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 10,
+  },
+  dismissButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dismissButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#64748B",
   },
   gotItButton: {
-    backgroundColor: "#0D3E02",
-    paddingVertical: 11,
-    paddingHorizontal: 22,
+    flexDirection: "row",
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -200,6 +269,6 @@ const styles = StyleSheet.create({
   gotItButtonText: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: "#ffffff",
   },
 });

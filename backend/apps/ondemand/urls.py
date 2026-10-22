@@ -8,6 +8,11 @@ from .views import (
     FareQuoteView,
     MyRideProfileView,
     NearbyRequestsView,
+    PeerRideRequestCompleteView,
+    PeerRideRequestDetailView,
+    PeerRideRequestListCreateView,
+    PeerRideRequestRespondView,
+    PeerRideChatMessageListView,
     PlaceListView,
     RideAcceptView,
     RideArrivedView,
@@ -36,4 +41,10 @@ urlpatterns = [
     path("rides/<int:pk>/complete/", RideCompleteView.as_view(), name="ondemand-ride-complete"),
     path("rides/<int:pk>/retry/", RideRetryView.as_view(), name="ondemand-ride-retry"),
     path("rides/<int:pk>/cancel/", RideCancelView.as_view(), name="ondemand-ride-cancel"),
+    # ---- peer (lift-share) board ----
+    path("peer-requests/", PeerRideRequestListCreateView.as_view(), name="peer-request-list"),
+    path("peer-requests/<int:pk>/", PeerRideRequestDetailView.as_view(), name="peer-request-detail"),
+    path("peer-requests/<int:pk>/respond/", PeerRideRequestRespondView.as_view(), name="peer-request-respond"),
+    path("peer-requests/<int:pk>/complete/", PeerRideRequestCompleteView.as_view(), name="peer-request-complete"),
+    path("peer-requests/<int:request_id>/messages/", PeerRideChatMessageListView.as_view(), name="peer-request-messages"),
 ]
