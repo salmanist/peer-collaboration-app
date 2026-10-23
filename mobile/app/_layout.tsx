@@ -13,7 +13,7 @@ import { DataStoreProvider as ModuleDataStoreProvider } from "../src/core/store/
 import { applyGlobalFontFamily } from "../src/core/theme/typography";
 import { colors } from "../src/core/ui/theme";
 
-// Keep native branding visible until our identical branded view has drawn.
+// Keep the native launch surface until the full Fello branded view has drawn.
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {

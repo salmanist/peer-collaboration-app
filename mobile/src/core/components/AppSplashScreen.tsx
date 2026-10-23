@@ -17,7 +17,7 @@ export function AppSplashScreen({ onFinish, ready = true }: AppSplashScreenProps
   }, []);
   useEffect(() => {
     if (!imageLoaded) return;
-    // The identical branded image is already mounted before releasing native launch.
+    // Show the full branding before releasing Android's plain launch surface.
     const frame = requestAnimationFrame(() => { void SplashScreen.hideAsync().catch(() => {}); });
     return () => cancelAnimationFrame(frame);
   }, [imageLoaded]);

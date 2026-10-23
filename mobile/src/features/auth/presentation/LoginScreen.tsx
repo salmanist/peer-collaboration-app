@@ -71,7 +71,7 @@ export default function LoginScreen() {
           styles.scrollContent,
           {
             paddingTop: topOffset + 24,
-            paddingBottom: Math.max(insets.bottom + 24, 36),
+            paddingBottom: insets.bottom + 24,
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -159,20 +159,25 @@ const styles = StyleSheet.create({
   },
   brandBox: {
     alignItems: "center",
-    marginBottom: 28,
+    marginBottom: 16,
   },
   brandTitle: {
     fontSize: 34,
+    lineHeight: 42,
+    includeFontPadding: false,
     fontWeight: "900",
     color: appColors.primary,
     letterSpacing: -0.5,
   },
   brandSub: {
     fontSize: 14,
+    lineHeight: 18,
+    includeFontPadding: false,
     fontWeight: "700",
     color: appColors.icon,
     letterSpacing: 0.5,
-    marginTop: 4,
+    marginTop: 2,
+    textAlign: "center",
   },
   formContainer: {
     width: "100%",
