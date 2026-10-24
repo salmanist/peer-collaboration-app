@@ -119,7 +119,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
           <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
             {errorMsg ? (
               <View style={styles.errorBanner}>
-                <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
                 <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
             ) : null}
@@ -283,7 +283,7 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#000000" size="small" />
+              <ActivityIndicator color={appColors.black} size="small" />
             ) : (
               <Text style={styles.submitButtonText}>Confirm & Send Request</Text>
             )}
@@ -297,11 +297,11 @@ export function BookSessionModal({ visible, tutor, onClose, onSuccess }: Props) 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    backgroundColor: appColors.inkA08,
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "85%",
@@ -338,13 +338,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorBanner: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 8,
     padding: 10,
     marginBottom: 12,
   },
   errorText: {
-    color: "#dc2626",
+    color: appColors.danger,
     fontSize: 12,
   },
   label: {
@@ -404,11 +404,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   tagBtnTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "700",
   },
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -444,11 +444,11 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   durationTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   submitButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontSize: 15,
     fontWeight: "800",
   },

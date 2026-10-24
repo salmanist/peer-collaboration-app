@@ -27,7 +27,7 @@ export function TopBar({ active }: TopBarProps) {
   return (
     <View style={[styles.bar, { height: BAR_HEIGHT + topInset, paddingTop: topInset }]}>
       <View style={[styles.side, styles.sideLeft]}>
-        <HamburgerMenu active={active} tint={colors.text} />
+        <HamburgerMenu active={active} tint={colors.onHeader} />
       </View>
       <View style={styles.brandRow}>
         <FelloLogo size={22} variant="yellow" />
@@ -35,7 +35,7 @@ export function TopBar({ active }: TopBarProps) {
       </View>
       <View style={[styles.side, styles.sideRight]}>
         <Pressable onPress={openCenter} hitSlop={8}>
-          <MaterialCommunityIcons name="bell-outline" size={24} color={colors.text} />
+          <MaterialCommunityIcons name="bell-outline" size={24} color={colors.onHeader} />
           {unseenCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unseenCount > 9 ? "9+" : unseenCount}</Text>
@@ -43,7 +43,7 @@ export function TopBar({ active }: TopBarProps) {
           )}
         </Pressable>
         <Pressable onPress={() => router.push("/(app)/profile")} hitSlop={8}>
-          <MaterialCommunityIcons name="account-outline" size={26} color={colors.text} />
+          <MaterialCommunityIcons name="account-outline" size={26} color={colors.onHeader} />
         </Pressable>
       </View>
     </View>
@@ -56,10 +56,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: colors.surface,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
   },
   side: { width: 64, alignItems: "center" },
   sideLeft: { alignItems: "flex-start" },
@@ -82,5 +80,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.danger,
   },
   badgeText: { fontSize: 10, fontFamily: font.family, color: colors.surface },
-  title: { fontSize: 22, fontFamily: font.family, color: colors.text },
+  title: { fontSize: 22, fontFamily: font.family, color: colors.onHeader },
 });

@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { Platform, Pressable, StatusBar, StyleSheet, View } from "react-native";
@@ -17,7 +17,7 @@ export default function MyResourcesScreen() {
           style={styles.navBackBtn}
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(app)/resources" as any))}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Resources</Text>
         <View style={{ width: 36 }} />
@@ -87,9 +87,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingBottom: 12 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -98,16 +100,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: appColors.surfaceMuted,
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: appColors.border,
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.text,
+    color: appColors.onHeader,
   },
   content: {
     padding: 16,
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   actionCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,

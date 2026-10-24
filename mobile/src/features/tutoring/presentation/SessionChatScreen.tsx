@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -257,7 +257,7 @@ export function SessionChatScreen() {
             style={styles.navBackBtn}
             onPress={handleBack}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <View style={{ flex: 1, alignItems: "center", marginHorizontal: 12 }}>
             <Skeleton width={130} height={18} borderRadius={4} style={{ marginBottom: 4 }} />
@@ -390,7 +390,7 @@ export function SessionChatScreen() {
           <Image source={{ uri: selectedPhoto.uri }} style={styles.previewThumb} />
           <Text style={styles.previewName} numberOfLines={1}>{selectedPhoto.name}</Text>
           <Pressable onPress={() => setSelectedPhoto(null)} style={styles.removePhotoBtn}>
-            <MaterialCommunityIcons name="close-circle" size={18} color="#DC2626" />
+            <MaterialCommunityIcons name="close-circle" size={18} color={appColors.danger} />
           </Pressable>
         </View>
       )}
@@ -451,7 +451,7 @@ export function SessionChatScreen() {
             disabled={!inputText.trim() && !selectedPhoto}
           >
             {isSending ? (
-              <ActivityIndicator size="small" color="#000000" />
+              <ActivityIndicator size="small" color={appColors.black} />
             ) : (
               <Text style={styles.sendBtnText}>Send</Text>
             )}
@@ -464,7 +464,7 @@ export function SessionChatScreen() {
         <Modal visible transparent animationType="fade" onRequestClose={() => setZoomImage(null)}>
           <View style={styles.zoomOverlay}>
             <Pressable style={styles.closeZoomBtn} onPress={() => setZoomImage(null)}>
-              <MaterialCommunityIcons name="close" size={24} color="#ffffff" />
+              <MaterialCommunityIcons name="close" size={24} color={appColors.white} />
             </Pressable>
             <Image source={{ uri: zoomImage }} style={styles.zoomImage} resizeMode="contain" />
           </View>
@@ -501,9 +501,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -512,9 +514,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -561,15 +563,15 @@ const styles = StyleSheet.create({
   },
   activeSessionSub: {
     fontSize: 11,
-    color: "#2E7D32",
+    color: appColors.green700,
     marginTop: 1,
   },
   completeChatSessionBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
-    shadowColor: "#FDBF1E",
+    shadowColor: appColors.gold,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.035,
     shadowRadius: 4,
@@ -621,7 +623,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: appColors.border,
@@ -631,7 +633,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   bubbleTextMe: {
-    color: "#ffffff",
+    color: appColors.white,
   },
   bubbleTextOther: {
     color: appColors.text,
@@ -648,7 +650,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   timeTextMe: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: appColors.whiteA70,
   },
   timeTextOther: {
     color: appColors.textMuted,
@@ -679,13 +681,13 @@ const styles = StyleSheet.create({
   },
   removePhotoText: {
     fontSize: 14,
-    color: "#dc2626",
+    color: appColors.danger,
     fontWeight: "700",
   },
   inputBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 12,
     paddingTop: 10,
     borderTopWidth: 1,
@@ -725,11 +727,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   rateFromChatBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    shadowColor: "#FDBF1E",
+    shadowColor: appColors.gold,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.035,
     shadowRadius: 4,
@@ -759,7 +761,7 @@ const styles = StyleSheet.create({
     borderColor: appColors.border,
   },
   sendBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 20,
@@ -768,7 +770,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   sendBtnText: {
-    color: "#000000",
+    color: appColors.black,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -795,7 +797,7 @@ const styles = StyleSheet.create({
   },
   zoomOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    backgroundColor: appColors.blackA90,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -807,7 +809,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   closeZoomText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 24,
     fontWeight: "700",
   },

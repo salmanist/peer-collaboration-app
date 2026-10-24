@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
@@ -240,7 +240,7 @@ export function PeerRideChatScreen() {
             style={styles.backBtn}
             onPress={() => goBack("/(app)/rides")}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Ride Live Chat</Text>
@@ -262,7 +262,7 @@ export function PeerRideChatScreen() {
           style={styles.backBtn}
           onPress={() => goBack("/(app)/rides")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.white} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -278,7 +278,7 @@ export function PeerRideChatScreen() {
       {/* Error banner */}
       {!!errorMessage && (
         <View style={styles.errorBanner}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} />
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
       )}
@@ -328,7 +328,7 @@ export function PeerRideChatScreen() {
         <View style={styles.imagePreviewWrap}>
           <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
           <Pressable style={styles.removeImageBtn} onPress={() => setSelectedImage(null)}>
-            <MaterialCommunityIcons name="close" size={14} color="#FFFFFF" />
+            <MaterialCommunityIcons name="close" size={14} color={appColors.white} />
           </Pressable>
         </View>
       )}
@@ -355,9 +355,9 @@ export function PeerRideChatScreen() {
           disabled={!canSend}
         >
           {isSending ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={appColors.white} />
           ) : (
-            <MaterialCommunityIcons name="send" size={18} color="#FFFFFF" />
+            <MaterialCommunityIcons name="send" size={18} color={appColors.white} />
           )}
         </Pressable>
       </View>
@@ -377,7 +377,7 @@ export function PeerRideChatScreen() {
         <Modal visible transparent animationType="fade" onRequestClose={() => setViewerImageUrl(null)}>
           <View style={styles.fullViewerBackdrop}>
             <Pressable style={styles.closeViewerBtn} onPress={() => setViewerImageUrl(null)}>
-              <MaterialCommunityIcons name="close" size={24} color="#FFFFFF" />
+              <MaterialCommunityIcons name="close" size={24} color={appColors.white} />
             </Pressable>
             <Image source={{ uri: viewerImageUrl }} style={styles.fullImage} resizeMode="contain" />
           </View>
@@ -393,58 +393,58 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   header: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderColor: appColors.border,
-    backgroundColor: "#FFFFFF",
+    paddingBottom: 12 + headerGrow,
+    backgroundColor: appColors.headerBg,
   },
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: appColors.surfaceMuted,
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: appColors.border,
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.text,
+    color: appColors.onHeader,
   },
   summary: {
     fontSize: 12,
-    color: appColors.textSecondary,
+    color: appColors.onHeaderMuted,
     marginTop: 1,
   },
   liveDot: {
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: "#CBD5E1",
+    backgroundColor: appColors.slate300,
   },
   liveDotOnline: {
-    backgroundColor: "#16A34A",
+    backgroundColor: appColors.success,
   },
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
     flex: 1,
   },
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   myMessageText: {
-    color: "#FFFFFF",
+    color: appColors.white,
   },
   otherMessageText: {
     color: appColors.text,
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   myTimeText: {
-    color: "rgba(255,255,255,0.75)",
+    color: appColors.whiteA75,
   },
   otherTimeText: {
     color: appColors.textMuted,
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 4,
     left: 60,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: appColors.blackA60,
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderTopWidth: 1,
     borderColor: appColors.border,
   },
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   fullViewerBackdrop: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: appColors.black,
     justifyContent: "center",
     alignItems: "center",
   },

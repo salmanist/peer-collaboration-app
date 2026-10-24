@@ -21,7 +21,7 @@ export function TripCard({ ride }: { ride: Ride }) {
         <Text style={{ fontSize: 12, fontWeight: "700", color: appColors.primary }}>You posted</Text>
         {pendingCount > 0 && <View accessibilityLabel={`${pendingCount} pending join requests`} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
           <MaterialCommunityIcons name="bell-outline" size={15} color={appColors.primary} />
-          <View style={{ backgroundColor: "#DC2626", borderRadius: 10, minWidth: 20, paddingHorizontal: 5, paddingVertical: 2 }}><Text style={{ color: "#FFFFFF", fontSize: 11, textAlign: "center", fontWeight: "700" }}>{pendingCount}</Text></View>
+          <View style={{ backgroundColor: appColors.danger, borderRadius: 10, minWidth: 20, paddingHorizontal: 5, paddingVertical: 2 }}><Text style={{ color: appColors.white, fontSize: 11, textAlign: "center", fontWeight: "700" }}>{pendingCount}</Text></View>
         </View>}
       </View>}
       {/* Route Row */}
@@ -56,7 +56,7 @@ export function TripCard({ ride }: { ride: Ride }) {
         </View>
 
         <View style={[styles.chip, styles.seatsChip]}>
-          <MaterialCommunityIcons name="seat-passenger" size={13} color="#B45309" style={{ marginRight: 4 }} />
+          <MaterialCommunityIcons name="seat-passenger" size={13} color={appColors.amber700} style={{ marginRight: 4 }} />
           <Text style={[styles.chipText, styles.seatsText]}>
             {ride.seats_available}/{ride.seats_total} seats left
           </Text>
@@ -96,7 +96,7 @@ export function TripSkeletonList() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 15,
     borderWidth: 1,
@@ -125,14 +125,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#10B981",
+    backgroundColor: appColors.emerald500,
     marginRight: 6,
   },
   dotEnd: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#EF4444",
+    backgroundColor: appColors.red500,
     marginRight: 6,
   },
   departureText: {
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   genderBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F3FF",
+    backgroundColor: appColors.violet50,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   seatsChip: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
   },
   seatsText: {
-    color: "#B45309",
+    color: appColors.amber700,
   },
   footerRow: {
     flexDirection: "row",

@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -83,7 +83,7 @@ export default function NewPrintRequestScreen() {
       {/* Top Nav Bar */}
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>New Print Request</Text>
         <View style={{ width: 36 }} />
@@ -98,7 +98,7 @@ export default function NewPrintRequestScreen() {
         {/* Error Banner */}
         {error ? (
           <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -113,7 +113,7 @@ export default function NewPrintRequestScreen() {
         >
           {document ? (
             <View style={{ width: "100%", alignItems: "center", gap: 6 }}>
-              <View style={[styles.uploadIconCircle, { backgroundColor: "#DCFCE7" }]}>
+              <View style={[styles.uploadIconCircle, { backgroundColor: appColors.successBg }]}>
                 <MaterialCommunityIcons name="file-document-check-outline" size={28} color={appColors.primary} />
               </View>
               <Text style={[styles.uploadTitle, { textAlign: "center", paddingHorizontal: 12 }]} numberOfLines={2}>
@@ -128,7 +128,7 @@ export default function NewPrintRequestScreen() {
                     setDocument(null);
                   }}
                 >
-                  <MaterialCommunityIcons name="close-circle" size={18} color="#DC2626" />
+                  <MaterialCommunityIcons name="close-circle" size={18} color={appColors.danger} />
                 </Pressable>
               </View>
             </View>
@@ -173,7 +173,7 @@ export default function NewPrintRequestScreen() {
               value={isColor}
               onValueChange={setIsColor}
               trackColor={{ true: appColors.primary, false: appColors.border }}
-              thumbColor="#FFFFFF"
+              thumbColor={appColors.white}
             />
           </View>
 
@@ -188,7 +188,7 @@ export default function NewPrintRequestScreen() {
               value={isDoubleSided}
               onValueChange={setIsDoubleSided}
               trackColor={{ true: appColors.primary, false: appColors.border }}
-              thumbColor="#FFFFFF"
+              thumbColor={appColors.white}
             />
           </View>
         </View>
@@ -200,7 +200,7 @@ export default function NewPrintRequestScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#000000" />
+            <ActivityIndicator size="small" color={appColors.black} />
           ) : (
             <Text style={styles.submitButtonText}>Send Print Request</Text>
           )}
@@ -216,45 +216,47 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
   },
   errorBanner: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
     flexDirection: "row",
     alignItems: "center",
   },
   errorText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 13,
     fontWeight: "600",
     flex: 1,
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.primaryA08,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
   changeBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: appColors.border,
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -328,14 +330,14 @@ const styles = StyleSheet.create({
     padding: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     gap: 6,
   },
   uploadIconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.primaryA08,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 2,
@@ -394,7 +396,7 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.border,
   },
   submitButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -409,7 +411,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 15,
   },

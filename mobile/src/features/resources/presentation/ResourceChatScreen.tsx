@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
@@ -232,14 +232,14 @@ export default function ResourceChatScreen() {
           style={styles.navBackBtn}
           onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <View style={styles.navTitleWrap}>
           <Text style={styles.topNavTitle} numberOfLines={1}>
             {resourceTitle || "Resource Chat"}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MaterialCommunityIcons name="circle" size={8} color={isConnected ? "#22C55E" : appColors.textMuted} style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="circle" size={8} color={appColors.onHeader} style={{ marginRight: 4 }} />
             <Text style={styles.topNavSub}>
               {isConnected ? "Connected Live" : "Offline Sync"}
             </Text>
@@ -250,7 +250,7 @@ export default function ResourceChatScreen() {
 
       {errorMessage ? (
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, marginTop: 8 }}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
       ) : null}
@@ -277,7 +277,7 @@ export default function ResourceChatScreen() {
           <Image source={{ uri: selectedImage.uri }} style={styles.attachThumb} />
           <Pressable style={styles.removeAttachButton} onPress={() => setSelectedImage(null)}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialCommunityIcons name="close" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="close" size={14} color={appColors.red700} style={{ marginRight: 4 }} />
               <Text style={styles.removeAttachText}>Remove Photo</Text>
             </View>
           </Pressable>
@@ -303,7 +303,7 @@ export default function ResourceChatScreen() {
           disabled={!canSend || isSending}
         >
           {isSending ? (
-            <ActivityIndicator size="small" color="#000000" />
+            <ActivityIndicator size="small" color={appColors.black} />
           ) : (
             <Text style={styles.sendButtonText}>Send</Text>
           )}
@@ -315,7 +315,7 @@ export default function ResourceChatScreen() {
         <View style={styles.modalBackdrop}>
           <Pressable style={styles.modalCloseButton} onPress={() => setViewerImageUrl(null)}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialCommunityIcons name="close" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="close" size={16} color={appColors.white} style={{ marginRight: 4 }} />
               <Text style={styles.modalCloseText}>Close</Text>
             </View>
           </Pressable>
@@ -341,9 +341,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -352,9 +354,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -364,12 +366,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
   },
   topNavTitle: {
-    color: appColors.primary,
+    color: appColors.onHeader,
     fontSize: 15,
     fontWeight: "800",
   },
   topNavSub: {
-    color: appColors.textSecondary,
+    color: appColors.onHeaderMuted,
     fontSize: 10,
     marginTop: 2,
   },
@@ -379,7 +381,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     paddingHorizontal: 16,
     paddingTop: 8,
     fontSize: 12,
@@ -410,7 +412,7 @@ const styles = StyleSheet.create({
   },
   otherMessage: {
     alignSelf: "flex-start",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderWidth: 1,
   },
@@ -425,7 +427,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   myMessageText: {
-    color: "#ffffff",
+    color: appColors.white,
   },
   otherMessageText: {
     color: appColors.text,
@@ -438,7 +440,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   myMessageTime: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     alignSelf: "flex-end",
   },
   otherMessageTime: {
@@ -469,13 +471,13 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   removeAttachText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontWeight: "700",
     fontSize: 13,
   },
   composer: {
     alignItems: "flex-end",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopColor: appColors.border,
     borderTopWidth: 1,
     flexDirection: "row",
@@ -508,7 +510,7 @@ const styles = StyleSheet.create({
     color: appColors.text,
   },
   sendButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     borderRadius: 10,
     paddingHorizontal: 16,
     minHeight: 44,
@@ -519,13 +521,13 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.border,
   },
   sendButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 13,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
+    backgroundColor: appColors.blackA90,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
@@ -536,11 +538,11 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 10,
     padding: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: appColors.whiteA20,
     borderRadius: 20,
   },
   modalCloseText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontWeight: "700",
     fontSize: 15,
   },

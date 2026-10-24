@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { SkillPicker } from "../../../core/ui/SkillPicker";
 import { errorMessage } from "../../../core/network/errorMessage";
 import { Text, TextInput } from "../../../core/ui/AppText";
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
   }, [accessToken, updateUser]);
 
   const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
-  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 34);
+  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 34 + 2 * headerGrow);
 
   if (!user) {
     return (
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
         contentContainerStyle={[
           styles.contentContainer,
           {
-            paddingTop: topOffset + 38,
+            paddingTop: topOffset + 38 + 2 * headerGrow,
             paddingBottom: Math.max(insets.bottom + 40, 60),
           },
         ]}
@@ -309,7 +309,7 @@ export default function ProfileScreen() {
         </View>
         {/* Logout Action */}
         <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-          <MaterialCommunityIcons name="logout" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+          <MaterialCommunityIcons name="logout" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
           <Text style={styles.logoutBtnText}>Log Out from Account</Text>
         </Pressable>
         </View>
@@ -326,21 +326,21 @@ export default function ProfileScreen() {
                 style={[styles.genderOptionPill, gender === "male" && styles.genderOptionPillSelected]}
                 onPress={() => setGender("male")}
               >
-                <MaterialCommunityIcons name="gender-male" size={16} color={gender === "male" ? "#1D4ED8" : appColors.textSecondary} style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="gender-male" size={16} color={gender === "male" ? appColors.blue700 : appColors.textSecondary} style={{ marginRight: 4 }} />
                 <Text style={[styles.genderOptionText, gender === "male" && styles.genderOptionTextSelected]}>Male</Text>
               </Pressable>
               <Pressable
                 style={[styles.genderOptionPill, gender === "female" && styles.genderOptionPillSelected]}
                 onPress={() => setGender("female")}
               >
-                <MaterialCommunityIcons name="gender-female" size={16} color={gender === "female" ? "#BE185D" : appColors.textSecondary} style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="gender-female" size={16} color={gender === "female" ? appColors.pink700 : appColors.textSecondary} style={{ marginRight: 4 }} />
                 <Text style={[styles.genderOptionText, gender === "female" && styles.genderOptionTextSelected]}>Female</Text>
               </Pressable>
             </View>
-            {!!saveError && <Text accessibilityRole="alert" style={{ color: "#B91C1C" }}>{saveError}</Text>}
+            {!!saveError && <Text accessibilityRole="alert" style={{ color: appColors.red700 }}>{saveError}</Text>}
             <View style={styles.dialogActions}>
               <Pressable disabled={saving} style={styles.editButton} onPress={() => setEditing(false)}><Text>Cancel</Text></Pressable>
-              <Pressable disabled={saving} style={[styles.editButton, { backgroundColor: appColors.primary }]} onPress={() => void saveProfile()}>{saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Save Changes</Text>}</Pressable>
+              <Pressable disabled={saving} style={[styles.editButton, { backgroundColor: appColors.primary }]} onPress={() => void saveProfile()}>{saving ? <ActivityIndicator color={appColors.white} /> : <Text style={{ color: appColors.white }}>Save Changes</Text>}</Pressable>
             </View>
           </ScrollView>
         </View></View>
@@ -361,22 +361,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   femaleBadge: {
-    backgroundColor: "#FDF2F8",
-    borderColor: "#FBCFE8",
+    backgroundColor: appColors.pink50,
+    borderColor: appColors.pink200,
   },
   maleBadge: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#BFDBFE",
+    backgroundColor: appColors.blue50,
+    borderColor: appColors.blue200,
   },
   genderBadgeText: {
     fontSize: 11,
     fontWeight: "800",
   },
   femaleBadgeText: {
-    color: "#BE185D",
+    color: appColors.pink700,
   },
   maleBadgeText: {
-    color: "#1D4ED8",
+    color: appColors.blue700,
   },
   genderOptionPill: {
     flex: 1,
@@ -390,8 +390,8 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.surfaceMuted,
   },
   genderOptionPillSelected: {
-    backgroundColor: "#DCFCE7",
-    borderColor: "#86EFAC",
+    backgroundColor: appColors.successBg,
+    borderColor: appColors.successBorder,
   },
   genderOptionText: {
     fontSize: 13,
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   },
 
   profileCard: {
-    backgroundColor: "#fff",
+    backgroundColor: appColors.white,
     flexGrow: 1,
     width: "100%",
   },
@@ -415,13 +415,13 @@ const styles = StyleSheet.create({
   skillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   skillPill: { backgroundColor: appColors.surfaceMuted, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 7 },
   settingsRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14 },
-  editOverlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20, backgroundColor: "rgba(15,23,42,0.25)" },
-  editDialog: { width: "100%", maxWidth: 480, maxHeight: "90%", backgroundColor: "#fff", borderRadius: 16, padding: 24 },
+  editOverlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20, backgroundColor: appColors.inkA25 },
+  editDialog: { width: "100%", maxWidth: 480, maxHeight: "90%", backgroundColor: appColors.white, borderRadius: 16, padding: 24 },
   editInput: { backgroundColor: appColors.background, borderWidth: 1, borderColor: appColors.border, borderRadius: 10, padding: 12, color: appColors.text, ...(Platform.OS === "web" ? { outlineWidth: 0 } : {}) },
   dialogActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
   rootContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: appColors.white,
   },
   container: {
     flex: 1,
@@ -431,14 +431,16 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   collapsibleTopBar: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 7,
+    paddingBottom: 7 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -468,7 +470,7 @@ const styles = StyleSheet.create({
   topNavBrand: {
     fontSize: 19,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   homeIconBtn: {
@@ -502,14 +504,14 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: "#F5F8F5",
+    backgroundColor: appColors.sageTint,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
     fontSize: 32,
     fontWeight: "900",
-    color: "#FDBF1E",
+    color: appColors.gold,
     letterSpacing: 1,
   },
   verifiedDot: {
@@ -523,10 +525,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#ffffff",
+    borderColor: appColors.white,
   },
   verifiedDotText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -614,7 +616,7 @@ const styles = StyleSheet.create({
   detailsCardHeader: {
     marginBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.hairline,
     paddingBottom: 12,
   },
   sectionTitle: {
@@ -629,12 +631,12 @@ const styles = StyleSheet.create({
   infoRow: {
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.hairline,
     gap: 5,
   },
   infoLabel: {
     fontSize: 14,
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "400",
   },
   infoValue: {
@@ -659,17 +661,17 @@ const styles = StyleSheet.create({
   logoutBtn: {
     margin: 20,
     marginTop: 0,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 16,
     paddingVertical: 14,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
   },
   logoutBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 14,
     fontWeight: "800",
   },
@@ -710,7 +712,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   adminRoleBadgeText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 9,
     fontWeight: "900",
   },

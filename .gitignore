@@ -3,6 +3,7 @@ backend/.venv/
 backend/venv/
 **/__pycache__/
 *.pyc
+.env
 backend/.env
 backend/staticfiles/
 backend/media/
@@ -26,3 +27,4 @@ mobile/*.log
 .idea/
 .DS_Store
 Thumbs.db
+universty_docs/

@@ -1,5 +1,5 @@
 import { cleanSampleText } from "../../../core/utils/cleanText";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -254,7 +254,7 @@ export function TutorDiscoveryFeedScreen() {
                       <Text style={styles.tutorName} numberOfLines={1}>{cleanSampleText(item.tutor_name)}</Text>
                       {Number(item.average_rating) > 0 ? (
                         <View style={styles.ratingBadge}>
-                          <MaterialCommunityIcons name="star" size={12} color="#FDBF1E" style={{ marginRight: 2 }} />
+                          <MaterialCommunityIcons name="star" size={12} color={appColors.gold} style={{ marginRight: 2 }} />
                           <Text style={styles.ratingText}>{Number(item.average_rating).toFixed(1)}</Text>
                           <Text style={styles.reviewsCountText}>({item.total_reviews})</Text>
                         </View>
@@ -316,14 +316,16 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   mySessionsHeaderBtn: {
     backgroundColor: appColors.surfaceMuted,
@@ -355,7 +357,7 @@ const styles = StyleSheet.create({
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   avatarBtn: {
@@ -382,7 +384,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
@@ -420,7 +422,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tagPill: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
@@ -442,7 +444,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   tagPillTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   listContent: {
@@ -483,7 +485,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
@@ -503,14 +505,14 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: "#F5F8F5",
+    backgroundColor: appColors.sageTint,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
     fontSize: 19,
     fontWeight: "900",
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   tutorHeaderInfo: {
     flex: 1,
@@ -536,7 +538,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   ratingText: {
     fontSize: 11,

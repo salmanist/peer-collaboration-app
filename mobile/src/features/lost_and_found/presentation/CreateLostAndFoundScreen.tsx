@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
@@ -113,7 +113,7 @@ export default function CreateLostAndFoundScreen() {
           style={styles.navBackBtn}
           onPress={() => goBack("/(app)/lost-and-found")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Post Notice</Text>
         <View style={{ width: 36 }} />
@@ -127,7 +127,7 @@ export default function CreateLostAndFoundScreen() {
       >
         {errorMessage ? (
           <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         ) : null}
@@ -229,7 +229,7 @@ export default function CreateLostAndFoundScreen() {
             <Image source={{ uri: selectedImage.uri }} style={styles.previewImage} resizeMode="cover" />
             <Pressable style={styles.removeImageBtn} onPress={() => setSelectedImage(null)}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="close" size={14} color={appColors.danger} style={{ marginRight: 4 }} />
                 <Text style={styles.removeImageText}>Remove Photo</Text>
               </View>
             </Pressable>
@@ -248,7 +248,7 @@ export default function CreateLostAndFoundScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#000000" />
+            <ActivityIndicator size="small" color={appColors.black} />
           ) : (
             <Text style={styles.submitButtonText}>
               Publish {postType === "lost" ? "Lost Item" : "Found Item"} Notice
@@ -273,9 +273,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -284,32 +286,32 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
   },
   errorBanner: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
     flexDirection: "row",
     alignItems: "center",
   },
   errorText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 13,
     fontWeight: "600",
     flex: 1,
@@ -330,14 +332,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderWidth: 2,
     alignItems: "center",
   },
   typeOptionLostActive: {
-    borderColor: "#DC2626",
-    backgroundColor: "#FEF2F2",
+    borderColor: appColors.danger,
+    backgroundColor: appColors.red50,
   },
   typeOptionFoundActive: {
     borderColor: appColors.primary,
@@ -362,7 +364,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 10,
@@ -384,7 +386,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderWidth: 1,
   },
@@ -398,7 +400,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   catBtnTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "700",
   },
   photoUploadBtn: {
@@ -407,7 +409,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: appColors.primary,
     borderStyle: "dashed",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -421,7 +423,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   imagePreviewContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 12,
     padding: 10,
     borderColor: appColors.border,
@@ -439,12 +441,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   removeImageText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontWeight: "700",
     fontSize: 13,
   },
   submitButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -459,7 +461,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 15,
   },

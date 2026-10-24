@@ -177,11 +177,11 @@ export const ImageSourceModal: React.FC<ImageSourceModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.45)",
+    backgroundColor: appColors.inkA45,
     justifyContent: "flex-end",
   },
   sheetContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,

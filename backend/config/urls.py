@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/lost-and-found/", include("apps.lost_and_found.urls")),
     path("api/tutoring/", include("apps.peer_tutoring.urls")),
     path("api/notifications/", include("apps.notifications.urls")),
+    path("api/chatbot/", include("apps.chatbot.urls")),
     path("api/departments/", DepartmentListView.as_view(), name="departments-list"),
     # kept as an alias so Zahra's clients (/api/common/departments/) keep working
     path("api/common/departments/", DepartmentListView.as_view(), name="common-departments-list"),

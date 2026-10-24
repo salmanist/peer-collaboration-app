@@ -112,7 +112,7 @@ export function CollaborationBoardScreen() {
           onPress={() => router.push("/(app)/tutoring/collaborations/create")}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 2 }} />
+            <MaterialCommunityIcons name="plus" size={14} color={appColors.white} style={{ marginRight: 2 }} />
             <Text style={styles.postBtnText}>Post Request</Text>
           </View>
         </Pressable>
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   postBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     marginHorizontal: 20,
     marginTop: 4,
     marginBottom: 8,
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     shadowColor: appColors.text,
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   categoryPillTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   loadingContainer: {
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   collabCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -420,8 +420,10 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
     marginRight: 2,
   },
-  skillChip: {    paddingHorizontal: 8,
-    paddingVertical: 3,  },
+  skillChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
   skillChipText: {
     fontSize: 11,
     color: appColors.icon,
@@ -464,12 +466,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
   },
   deleteBtnText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#b91c1c",
+    color: appColors.red700,
   },
   emptyContainer: {
     alignItems: "center",

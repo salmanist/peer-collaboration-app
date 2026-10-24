@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
@@ -62,7 +62,7 @@ export default function NoteDetailScreen() {
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Note Details</Text>
           <View style={{ width: 36 }} />
@@ -148,7 +148,7 @@ export default function NoteDetailScreen() {
                   onPress={() => Linking.openURL(f.file)}
                 >
                   <View style={styles.fileIconWrap}>
-                    <MaterialCommunityIcons name="file-pdf-box" size={22} color="#DC2626" />
+                    <MaterialCommunityIcons name="file-pdf-box" size={22} color={appColors.danger} />
                   </View>
                   <Text style={styles.fileName} numberOfLines={1}>
                     {f.file.split("/").pop()}
@@ -179,7 +179,7 @@ export default function NoteDetailScreen() {
 
         {error && (
           <View style={styles.errorBox}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -198,7 +198,7 @@ export default function NoteDetailScreen() {
           <MaterialCommunityIcons
             name={note.is_upvoted ? "thumb-up" : "thumb-up-outline"}
             size={18}
-            color={note.is_upvoted ? "#FDBF1E" : appColors.primary}
+            color={note.is_upvoted ? appColors.gold : appColors.primary}
             style={{ marginRight: 6 }}
           />
           <Text
@@ -222,7 +222,7 @@ export default function NoteDetailScreen() {
           <MaterialCommunityIcons
             name={note.is_bookmarked ? "bookmark" : "bookmark-outline"}
             size={18}
-            color={note.is_bookmarked ? "#FDBF1E" : appColors.primary}
+            color={note.is_bookmarked ? appColors.gold : appColors.primary}
             style={{ marginRight: 6 }}
           />
           <Text
@@ -250,36 +250,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
     gap: 12,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -297,7 +299,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   semesterBadge: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 8,
@@ -305,7 +307,7 @@ const styles = StyleSheet.create({
   semesterBadgeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#B45309",
+    color: appColors.amber700,
   },
   courseBadge: {
     backgroundColor: appColors.surfaceMuted,
@@ -437,16 +439,16 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
   bottomBar: {
@@ -454,7 +456,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderTopWidth: 1,
     borderTopColor: appColors.border,
     paddingHorizontal: 16,
@@ -479,7 +481,7 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.primary,
   },
   actionButtonOutline: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1.5,
     borderColor: appColors.primary,
   },
@@ -488,7 +490,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   actionButtonTextActive: {
-    color: "#FFFFFF",
+    color: appColors.white,
   },
   actionButtonTextOutline: {
     color: appColors.primary,

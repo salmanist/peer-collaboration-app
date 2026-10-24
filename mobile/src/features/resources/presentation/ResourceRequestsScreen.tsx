@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
@@ -97,7 +97,7 @@ export default function ResourceRequestsScreen() {
           style={styles.navBackBtn}
           onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Interest Requests</Text>
         <View style={{ width: 36 }} />
@@ -105,9 +105,9 @@ export default function ResourceRequestsScreen() {
 
       {errorMessage ? (
         <Pressable style={styles.errorBox} onPress={() => void loadRequests(true)}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
           <Text style={styles.errorText}>{errorMessage}</Text>
-          <MaterialCommunityIcons name="reload" size={14} color="#B91C1C" style={{ marginLeft: 6 }} />
+          <MaterialCommunityIcons name="reload" size={14} color={appColors.red700} style={{ marginLeft: 6 }} />
         </Pressable>
       ) : null}
 
@@ -230,7 +230,7 @@ function RequestCard({
             onPress={() => void onUpdate(interestRequest.id, "accepted")}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="check" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="check" size={14} color={appColors.white} style={{ marginRight: 4 }} />
               <Text style={styles.acceptBtnText}>Accept Request</Text>
             </View>
           </Pressable>
@@ -239,7 +239,7 @@ function RequestCard({
             onPress={() => void onUpdate(interestRequest.id, "declined")}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="close" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="close" size={14} color={appColors.red700} style={{ marginRight: 4 }} />
               <Text style={styles.declineBtnText}>Decline</Text>
             </View>
           </Pressable>
@@ -253,7 +253,7 @@ function RequestCard({
             onPress={() => void onUpdate(interestRequest.id, "completed")}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="check-circle-outline" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="check-circle-outline" size={14} color={appColors.white} style={{ marginRight: 4 }} />
               <Text style={styles.completeBtnText}>Mark Exchange Completed</Text>
             </View>
           </Pressable>
@@ -303,9 +303,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -314,16 +316,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
@@ -342,7 +344,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: appColors.border,
@@ -354,7 +356,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -401,7 +403,7 @@ const styles = StyleSheet.create({
   },
   statusPending: {
     backgroundColor: appColors.surfaceMuted,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
     borderWidth: 1,
   },
   statusPendingText: {
@@ -410,12 +412,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   statusDeclined: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#FCA5A5",
+    backgroundColor: appColors.dangerBg,
+    borderColor: appColors.red300,
     borderWidth: 1,
   },
   statusDeclinedText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 10,
     fontWeight: "800",
   },
@@ -449,21 +451,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   acceptBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 12,
     fontWeight: "700",
   },
   declineBtn: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   declineBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -475,21 +477,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   completeBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 12,
     fontWeight: "700",
   },
   cancelBtn: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   cancelBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -501,18 +503,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   chatBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 12,
     fontWeight: "800",
   },
   errorBox: {
     margin: 16,
     padding: 12,
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 8,
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 12,
     textAlign: "center",
   },

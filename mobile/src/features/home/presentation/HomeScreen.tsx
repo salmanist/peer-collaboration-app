@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -110,7 +110,7 @@ export default function HomeScreen() {
   const user = useSessionStore((state) => state.user);
   const accessToken = useSessionStore((state) => state.accessToken);
   const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
-  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 34);
+  const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 34 + 2 * headerGrow);
 
   const pendingTutoringRequests = useTutoringNotificationStore((state) => state.pendingRequestsCount);
   const hasNewLostClaims = useLostAndFoundNotificationStore((state) => state.hasNewClaims);
@@ -192,7 +192,7 @@ export default function HomeScreen() {
   const moduleNotice = (module: string) => {
     const aliases: Record<string, string[]> = { tutoring: ["sessions", "tutoring"], resources: ["marketplace", "resources"], library: ["library"], "lost-and-found": ["lost_and_found", "lost-and-found"], rides: ["rides", "ride_sharing", "ondemand"], printing: ["printing"] };
     const count = notifications.filter(n => !n.is_read && n.is_active && (aliases[module]?.includes(n.category) || (n.action_url || "").includes(`/${module}`))).length;
-    return count ? <View style={styles.moduleNotice}><MaterialCommunityIcons name="bell-outline" size={10} color="#68736C" /><Text style={styles.moduleNoticeText}>{count} {count === 1 ? "notice" : "notices"}</Text></View> : null;
+    return count ? <View style={styles.moduleNotice}><MaterialCommunityIcons name="bell-outline" size={10} color={appColors.neutral500} /><Text style={styles.moduleNoticeText}>{count} {count === 1 ? "notice" : "notices"}</Text></View> : null;
   };
 
   const activityModules = useMemo(() => {
@@ -238,7 +238,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.rootContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor={appColors.primary} />
 
       {/* Top Header Bar matching Preview */}
       <Animated.View
@@ -266,7 +266,7 @@ export default function HomeScreen() {
             <MaterialCommunityIcons
               name={unseenCount > 0 ? "bell-badge-outline" : "bell-outline"}
               size={22}
-              color="#0F172A"
+              color={appColors.white}
             />
             {unseenCount > 0 && (
               <View style={styles.notificationBadgePill}>
@@ -282,7 +282,7 @@ export default function HomeScreen() {
             onPress={() => router.push("/(app)/profile" as any)}
             accessibilityLabel="My Profile"
           >
-            <MaterialCommunityIcons name="account-outline" size={22} color="#0F172A" />
+            <MaterialCommunityIcons name="account-outline" size={22} color={appColors.onHeader} />
           </Pressable>
         </View>
       </Animated.View>
@@ -293,23 +293,45 @@ export default function HomeScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#0D3E02" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={appColors.primary} />
         }
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: topOffset + 48,
+            paddingTop: topOffset + 48 + 2 * headerGrow,
             paddingBottom: Math.max(insets.bottom, 16) + 84,
           },
         ]}
       >
         {/* Good Morning & Syeda Zahra Ijaz Greeting */}
         <View style={styles.heroGreetingSection}>
-          <Text style={styles.heroGreetingSub}>{greeting},</Text>
-          <Text style={styles.heroGreetingName} numberOfLines={1}>
-            {displayName}
-          </Text>
+          <View style={styles.heroGreetingText}>
+            <Text style={styles.heroGreetingSub}>{greeting},</Text>
+            <Text style={styles.heroGreetingName} numberOfLines={1}>
+              {displayName}
+            </Text>
+          </View>
+          <Pressable
+            style={styles.askButton}
+            onPress={() => router.push("/(app)/chatbot" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Ask the University Assistant"
+          >
+            <MaterialCommunityIcons name="robot-outline" size={18} color={appColors.primary} />
+            <Text style={styles.askButtonText}>Ask me</Text>
+          </Pressable>
         </View>
+
+        {/* Global Search Bar Under Name */}
+        <Pressable
+          style={styles.searchBarContainer}
+          onPress={() => { setServiceQuery(""); setServiceSearchOpen(true); }}
+          accessibilityRole="button"
+          accessibilityLabel="Search"
+        >
+          <MaterialCommunityIcons name="magnify" size={20} color={appColors.slate400} style={{ marginRight: 8 }} />
+          <Text style={styles.searchPlaceholderText}>Search...</Text>
+        </Pressable>
 
         {/* LGU Campus Photo Banner (Zero text overlay) */}
         <View style={styles.lguBannerContainer}>
@@ -319,17 +341,6 @@ export default function HomeScreen() {
             resizeMode="contain"
           />
         </View>
-
-        {/* Global Search Bar Under Picture */}
-        <Pressable
-          style={styles.searchBarContainer}
-          onPress={() => { setServiceQuery(""); setServiceSearchOpen(true); }}
-          accessibilityRole="button"
-          accessibilityLabel="Search"
-        >
-          <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" style={{ marginRight: 8 }} />
-          <Text style={styles.searchPlaceholderText}>Search...</Text>
-        </Pressable>
 
         {/* Campus Services Section with Black Grid Lines */}
         <View style={styles.sectionHeaderRow}>
@@ -346,7 +357,7 @@ export default function HomeScreen() {
                 router.push("/(app)/tutoring" as any);
               }}
             >
-              <MaterialCommunityIcons name="school-outline" size={28} color="#364A41" />
+              <MaterialCommunityIcons name="school-outline" size={28} color={appColors.icon} />
               <Text style={styles.gridCellTitle}>Tutoring</Text>
             </Pressable>
 
@@ -359,7 +370,7 @@ export default function HomeScreen() {
                 router.push("/(app)/resources" as any);
               }}
             >
-              <MaterialCommunityIcons name="storefront-outline" size={28} color="#364A41" />
+              <MaterialCommunityIcons name="storefront-outline" size={28} color={appColors.icon} />
               <Text style={styles.gridCellTitle} numberOfLines={1}>Marketplace</Text>
             </Pressable>
 
@@ -370,7 +381,7 @@ export default function HomeScreen() {
               style={styles.gridCell}
               onPress={handleDigitalLibraryPress}
             >
-              <MaterialCommunityIcons name="bookshelf" size={28} color="#364A41" />
+              <MaterialCommunityIcons name="bookshelf" size={28} color={appColors.icon} />
               <Text style={styles.gridCellTitle} numberOfLines={1}>Digital Library</Text>
             </Pressable>
           </View>
@@ -387,7 +398,7 @@ export default function HomeScreen() {
                 router.push("/(app)/lost-and-found" as any);
               }}
             >
-              <MaterialCommunityIcons name="magnify" size={28} color="#364A41" />
+              <MaterialCommunityIcons name="magnify" size={28} color={appColors.icon} />
               <Text style={styles.gridCellTitle}>Lost & Found</Text>
             </Pressable>
 
@@ -398,7 +409,7 @@ export default function HomeScreen() {
               style={styles.gridCell}
               onPress={handleRideSharePress}
             >
-              <MaterialCommunityIcons name="car-multiple" size={28} color="#364A41" />
+              <MaterialCommunityIcons name="car-multiple" size={28} color={appColors.icon} />
               <Text style={styles.gridCellTitle}>Ride Sharing</Text>
             </Pressable>
 
@@ -409,7 +420,7 @@ export default function HomeScreen() {
               style={styles.gridCell}
               onPress={handlePrintCenterPress}
             >
-              <MaterialCommunityIcons name="printer-outline" size={28} color="#364A41" />
+              <MaterialCommunityIcons name="printer-outline" size={28} color={appColors.icon} />
               <Text style={styles.gridCellTitle}>Print Center</Text>
             </Pressable>
           </View>
@@ -419,7 +430,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionHeading}>Campus Highlights</Text>
           <Pressable onPress={handleNextSpotlight} hitSlop={8} accessibilityLabel="Next campus highlight">
-            <MaterialCommunityIcons name="chevron-right" size={22} color="#1E293B" />
+            <MaterialCommunityIcons name="chevron-right" size={22} color={appColors.slate800} />
           </Pressable>
         </View>
 
@@ -472,12 +483,12 @@ export default function HomeScreen() {
                       </Text>
 
                       <View style={styles.spotlightBannerMetaRow}>
-                        <MaterialCommunityIcons name="calendar-month-outline" size={13} color="#E2E8F0" style={{ marginRight: 5 }} />
+                        <MaterialCommunityIcons name="calendar-month-outline" size={13} color={appColors.border} style={{ marginRight: 5 }} />
                         <Text style={styles.spotlightBannerMetaText}>{evt.dateTime}</Text>
                       </View>
 
                       <View style={styles.spotlightBannerMetaRow}>
-                        <MaterialCommunityIcons name="map-marker-outline" size={13} color="#E2E8F0" style={{ marginRight: 5 }} />
+                        <MaterialCommunityIcons name="map-marker-outline" size={13} color={appColors.border} style={{ marginRight: 5 }} />
                         <Text style={styles.spotlightBannerMetaText}>{evt.venue}</Text>
                       </View>
 
@@ -524,7 +535,7 @@ export default function HomeScreen() {
             <MaterialCommunityIcons
               name={showAllActivity ? "chevron-up" : "arrow-right"}
               size={14}
-              color="#475569"
+              color={appColors.textSecondary}
               style={{ marginLeft: 4 }}
             />
           </Pressable>
@@ -535,9 +546,9 @@ export default function HomeScreen() {
             <React.Fragment key={module.id}>
               {index > 0 && <View style={styles.activityDivider} />}
               <Pressable style={styles.activityRowItem} onPress={() => router.push(module.route as any)}>
-                <MaterialCommunityIcons name={module.icon} size={24} color="#364A41" style={{ marginRight: 14 }} />
+                <MaterialCommunityIcons name={module.icon} size={24} color={appColors.icon} style={{ marginRight: 14 }} />
                 <View style={styles.activityRowInfo}><Text style={styles.activityRowTitle}>{module.title}</Text></View>
-                <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
+                <MaterialCommunityIcons name="chevron-right" size={20} color={appColors.slate400} />
               </Pressable>
             </React.Fragment>
           )) : <Text style={{ color: appColors.textSecondary, paddingVertical: 16 }}>Your modules will appear here as you use them.</Text>}
@@ -551,12 +562,12 @@ export default function HomeScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendHorizontalScroll}>
           {recommendations.map(item => (
             <Pressable key={item.id} style={styles.recommendedCard} onPress={() => router.push(item.route as any)}>
-              <MaterialCommunityIcons name={item.icon} size={30} color="#364A41" style={{ marginLeft: 14 }} />
+              <MaterialCommunityIcons name={item.icon} size={30} color={appColors.icon} style={{ marginLeft: 14 }} />
               <View style={styles.recommendedContent}>
                 <Text style={styles.recommendedTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.recommendedSub}>{item.label}</Text>
               </View>
-              <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" style={{ marginRight: 12 }} />
+              <MaterialCommunityIcons name="chevron-right" size={20} color={appColors.slate400} style={{ marginRight: 12 }} />
             </Pressable>
           ))}
         </ScrollView>
@@ -569,22 +580,22 @@ export default function HomeScreen() {
             <View style={styles.searchModalHeader}>
               <Text style={styles.sectionHeading}>Campus services</Text>
               <Pressable accessibilityLabel="Close search" hitSlop={10} onPress={() => setServiceSearchOpen(false)}>
-                <MaterialCommunityIcons name="close" size={22} color="#0F172A" />
+                <MaterialCommunityIcons name="close" size={22} color={appColors.ink} />
               </Pressable>
             </View>
             <View style={styles.searchModalInputRow}>
-              <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" style={{ marginRight: 8 }} />
+              <MaterialCommunityIcons name="magnify" size={20} color={appColors.slate400} style={{ marginRight: 8 }} />
               <TextInput
                 style={styles.searchModalInput}
                 placeholder="Search..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={appColors.slate400}
                 autoFocus
                 value={serviceQuery}
                 onChangeText={setServiceQuery}
               />
               {serviceQuery.length > 0 && (
                 <Pressable onPress={() => setServiceQuery("")}>
-                  <MaterialCommunityIcons name="close-circle" size={18} color="#94A3B8" />
+                  <MaterialCommunityIcons name="close-circle" size={18} color={appColors.slate400} />
                 </Pressable>
               )}
             </View>
@@ -598,9 +609,9 @@ export default function HomeScreen() {
                     router.push(item.route as any);
                   }}
                 >
-                  <MaterialCommunityIcons name={item.icon} size={22} color="#1E293B" style={{ marginRight: 12 }} />
+                  <MaterialCommunityIcons name={item.icon} size={22} color={appColors.slate800} style={{ marginRight: 12 }} />
                   <Text style={styles.searchResultText}>{item.label}</Text>
-                  <MaterialCommunityIcons name="chevron-right" size={18} color="#94A3B8" />
+                  <MaterialCommunityIcons name="chevron-right" size={18} color={appColors.slate400} />
                 </Pressable>
               ))}
             </ScrollView>
@@ -623,7 +634,7 @@ export default function HomeScreen() {
                   <Text style={styles.eventModalPillText}>{selectedEventForModal.tag}</Text>
                 </View>
                 <Pressable onPress={() => setSelectedEventForModal(null)} hitSlop={10}>
-                  <MaterialCommunityIcons name="close" size={22} color="#64748B" />
+                  <MaterialCommunityIcons name="close" size={22} color={appColors.textMuted} />
                 </Pressable>
               </View>
 
@@ -631,11 +642,11 @@ export default function HomeScreen() {
 
               <View style={{ gap: 6, marginVertical: 12 }}>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="calendar-month-outline" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="calendar-month-outline" size={15} color={appColors.primary} style={{ marginRight: 6 }} />
                   <Text style={styles.eventModalMeta}>{selectedEventForModal.dateTime}</Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="map-marker-outline" size={15} color="#0D3E02" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="map-marker-outline" size={15} color={appColors.primary} style={{ marginRight: 6 }} />
                   <Text style={styles.eventModalMeta}>{selectedEventForModal.venue}</Text>
                 </View>
               </View>
@@ -659,48 +670,50 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
   content: {
     paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
 
   // Top Bar
   collapsibleTopBar: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   topNavLeft: {
     flexDirection: "row",
     alignItems: "center",
-    height: 30,
+    height: 34,
     gap: 6,
   },
   brandTitleWrap: {
     justifyContent: "center",
   },
   topNavBrand: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.onHeader,
     letterSpacing: -0.3,
-    lineHeight: 20,
+    lineHeight: 28,
   },
   topRightActions: {
     flexDirection: "row",
@@ -718,7 +731,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -2,
     right: -2,
-    backgroundColor: "#EF4444",
+    backgroundColor: appColors.red500,
     borderRadius: 8,
     minWidth: 14,
     height: 14,
@@ -726,10 +739,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ffffff",
+    borderColor: appColors.white,
   },
   notificationBadgeText: {
-    color: "#ffffff",
+    color: appColors.onHeader,
     fontSize: 7.5,
     fontWeight: "900",
     textAlign: "center",
@@ -743,19 +756,42 @@ const styles = StyleSheet.create({
 
   // Hero Greeting Section
   heroGreetingSection: {
+    marginTop: 10,
     paddingTop: 8,
     paddingBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  heroGreetingText: {
+    flex: 1,
+  },
+  askButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: appColors.gold,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  askButtonText: {
+    color: appColors.primary,
+    fontSize: 13,
+    fontWeight: "800",
   },
   heroGreetingSub: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#000000",
+    color: appColors.black,
+    opacity: 0.4,
     marginBottom: 2,
   },
   heroGreetingName: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#0D3E02",
+    color: appColors.black,
     letterSpacing: -0.4,
   },
 
@@ -763,9 +799,9 @@ const styles = StyleSheet.create({
   searchBarContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 12,
     height: 46,
     paddingHorizontal: 14,
@@ -774,7 +810,7 @@ const styles = StyleSheet.create({
   searchPlaceholderText: {
     fontSize: 14,
     fontWeight: "400",
-    color: "#94A3B8",
+    color: appColors.slate400,
   },
 
   // LGU Campus Banner (Photo with exact 2.03 aspect ratio framing, zero text overlay)
@@ -784,7 +820,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 20,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.surfaceContainer,
   },
   lguBannerImage: {
     width: "100%",
@@ -802,7 +838,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.ink,
     letterSpacing: -0.3,
   },
   seeAllButton: {
@@ -814,16 +850,16 @@ const styles = StyleSheet.create({
   sectionSeeAll: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
 
   // Campus Services Grid with Soft Lines & Exact Preview Colors
   servicesGridBox: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#EFF0EF",
+    borderColor: appColors.hairline,
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     overflow: "hidden",
     marginBottom: 24,
   },
@@ -832,7 +868,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   moduleNotice: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
-  moduleNoticeText: { fontSize: 10, color: "#68736C" },
+  moduleNoticeText: { fontSize: 10, color: appColors.neutral500 },
   gridCell: {
     flex: 1,
     height: 88,
@@ -843,19 +879,19 @@ const styles = StyleSheet.create({
   gridCellTitle: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#38404B",
+    color: appColors.slate700,
     marginTop: 6,
     textAlign: "center",
   },
   verticalDivider: {
     width: 1,
     height: "100%",
-    backgroundColor: "#EFF0EF",
+    backgroundColor: appColors.hairline,
   },
   horizontalDivider: {
     width: "100%",
     height: 1,
-    backgroundColor: "#EFF0EF",
+    backgroundColor: appColors.hairline,
   },
 
   // Campus Spotlight Carousel
@@ -873,7 +909,7 @@ const styles = StyleSheet.create({
   },
   spotlightDarkGradientOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.42)",
+    backgroundColor: appColors.inkA42,
     padding: 16,
     justifyContent: "space-between",
     borderRadius: 16,
@@ -884,14 +920,14 @@ const styles = StyleSheet.create({
   },
   spotlightWhitePill: {
     alignSelf: "flex-start",
-    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    backgroundColor: appColors.blackA55,
     paddingHorizontal: 9,
     paddingVertical: 3,
     borderRadius: 6,
     marginBottom: 6,
   },
   spotlightWhitePillText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.2,
@@ -899,10 +935,10 @@ const styles = StyleSheet.create({
   spotlightBannerTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: "#ffffff",
+    color: appColors.white,
     letterSpacing: -0.3,
     marginBottom: 6,
-    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowColor: appColors.blackA60,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
@@ -914,8 +950,8 @@ const styles = StyleSheet.create({
   spotlightBannerMetaText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#E2E8F0",
-    textShadowColor: "rgba(0,0,0,0.5)",
+    color: appColors.border,
+    textShadowColor: appColors.blackA50,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -925,8 +961,8 @@ const styles = StyleSheet.create({
   spotlightViewDetailsText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#ffffff",
-    textShadowColor: "rgba(0,0,0,0.5)",
+    color: appColors.white,
+    textShadowColor: appColors.blackA50,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -940,20 +976,20 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    backgroundColor: appColors.whiteA40,
   },
   spotlightDotIndicatorActive: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     width: 14,
     borderRadius: 3,
   },
 
   // Your Activity Section
   activityCardContainer: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     paddingHorizontal: 16,
     paddingVertical: 4,
     marginBottom: 24,
@@ -969,11 +1005,11 @@ const styles = StyleSheet.create({
   activityRowTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#1E293B",
+    color: appColors.slate800,
   },
   activityDivider: {
     height: 1,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.surfaceContainer,
   },
 
   // Recommended for you
@@ -986,10 +1022,10 @@ const styles = StyleSheet.create({
     height: 84,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     overflow: "hidden",
   },
   recommendedImage: {
@@ -1004,20 +1040,20 @@ const styles = StyleSheet.create({
   recommendedTitle: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#0F172A",
+    color: appColors.ink,
     lineHeight: 18,
   },
   recommendedSub: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#64748B",
+    color: appColors.textMuted,
     marginTop: 3,
   },
 
   // Modals
   searchModalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.35)",
+    backgroundColor: appColors.inkA35,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -1025,11 +1061,11 @@ const styles = StyleSheet.create({
   searchModalCard: {
     width: "100%",
     maxWidth: 440,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   searchModalHeader: {
     flexDirection: "row",
@@ -1040,9 +1076,9 @@ const styles = StyleSheet.create({
   searchModalInputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -1051,7 +1087,7 @@ const styles = StyleSheet.create({
   searchModalInput: {
     flex: 1,
     fontSize: 14,
-    color: "#0F172A",
+    color: appColors.ink,
     padding: 0,
     outlineStyle: "none" as any,
   },
@@ -1060,17 +1096,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: appColors.surfaceContainer,
   },
   searchResultText: {
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: "#1E293B",
+    color: appColors.slate800,
   },
   eventModalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    backgroundColor: appColors.inkA40,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -1078,14 +1114,14 @@ const styles = StyleSheet.create({
   eventModalCard: {
     width: "100%",
     maxWidth: 400,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: appColors.border,
   },
   eventModalPill: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: appColors.primaryFixed,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -1093,33 +1129,33 @@ const styles = StyleSheet.create({
   eventModalPillText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0D3E02",
+    color: appColors.primary,
   },
   eventModalTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#0F172A",
+    color: appColors.ink,
   },
   eventModalMeta: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#475569",
+    color: appColors.textSecondary,
   },
   eventModalDesc: {
     fontSize: 13,
-    color: "#475569",
+    color: appColors.textSecondary,
     lineHeight: 20,
     marginTop: 6,
     marginBottom: 18,
   },
   eventModalCtaBtn: {
-    backgroundColor: "#0D3E02",
+    backgroundColor: appColors.primary,
     borderRadius: 12,
     paddingVertical: 11,
     alignItems: "center",
   },
   eventModalCtaText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "800",
   },

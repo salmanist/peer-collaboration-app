@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
@@ -63,11 +63,11 @@ function getCategoryBg(category: string) {
     case "books":
       return appColors.surfaceMuted;
     case "notes":
-      return "#FFFBEB";
+      return appColors.amber50;
     case "lab_equipment":
       return appColors.surfaceMuted;
     case "stationery":
-      return "#FDF4FF";
+      return appColors.fuchsia50;
     default:
       return appColors.background;
   }
@@ -138,7 +138,7 @@ export default function ResourceDetailScreen() {
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/resources")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Resource Details</Text>
           <View style={{ width: 36 }} />
@@ -161,7 +161,7 @@ export default function ResourceDetailScreen() {
           <View style={{ width: 36 }} />
         </View>
         <View style={styles.centered}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={44} color="#B91C1C" style={{ marginBottom: 12 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={44} color={appColors.red700} style={{ marginBottom: 12 }} />
           <Text style={styles.errorText}>{errorMessage || "Resource not found or may have been removed."}</Text>
           <Pressable
             style={[styles.interestBtn, { paddingHorizontal: 24, marginTop: 16 }]}
@@ -327,10 +327,10 @@ export default function ResourceDetailScreen() {
               disabled={isSendingRequest}
             >
               {isSendingRequest ? (
-                <ActivityIndicator color="#000000" />
+                <ActivityIndicator color={appColors.black} />
               ) : (
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                  <MaterialCommunityIcons name="send-outline" size={15} color="#000000" style={{ marginRight: 5 }} />
+                  <MaterialCommunityIcons name="send-outline" size={15} color={appColors.black} style={{ marginRight: 5 }} />
                   <Text style={styles.interestBtnText}>Send Interest Request</Text>
                 </View>
               )}
@@ -348,9 +348,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -359,16 +361,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   container: {
     padding: 16,
@@ -418,7 +420,7 @@ const styles = StyleSheet.create({
   priceTagPaid: {
     backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   priceTagText: {
     fontSize: 12,
@@ -449,7 +451,7 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   infoCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 14,
     borderWidth: 1,
@@ -494,7 +496,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
     fontSize: 14,
     lineHeight: 22,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
@@ -520,13 +522,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   editListingBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
     fontSize: 13,
   },
   alreadyRequestedCard: {
     backgroundColor: appColors.surfaceMuted,
-    borderColor: "#BBF7D0",
+    borderColor: appColors.green200,
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
@@ -544,7 +546,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   viewRequestsBtn: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderWidth: 1,
     borderRadius: 10,
@@ -559,7 +561,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   interestCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -598,7 +600,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   interestBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     borderRadius: 10,
     minHeight: 46,
     alignItems: "center",
@@ -609,12 +611,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   interestBtnText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 14,
   },
   errorText: {
-    color: "#dc2626",
+    color: appColors.danger,
     fontSize: 14,
     textAlign: "center",
   },

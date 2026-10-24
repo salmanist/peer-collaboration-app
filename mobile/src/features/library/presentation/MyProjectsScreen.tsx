@@ -1,5 +1,5 @@
 import { Skeleton } from "../../../core/components/Skeleton";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -30,8 +30,8 @@ const statusConfig: Record<
 > = {
   pending: {
     label: "Under Review",
-    bg: "#FFFBEB",
-    text: "#B45309",
+    bg: appColors.amber50,
+    text: appColors.amber700,
     icon: "clock-outline",
   },
   approved: {
@@ -42,8 +42,8 @@ const statusConfig: Record<
   },
   rejected: {
     label: "Revision Needed",
-    bg: "#FEF2F2",
-    text: "#DC2626",
+    bg: appColors.red50,
+    text: appColors.danger,
     icon: "alert-circle-outline",
   },
 };
@@ -124,7 +124,7 @@ export default function MyProjectsScreen() {
       {/* Top Nav Bar */}
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Submitted Projects</Text>
         <View style={{ width: 36 }} />
@@ -155,7 +155,7 @@ export default function MyProjectsScreen() {
                 style={styles.uploadBtn}
                 onPress={() => router.push("/(app)/library/upload" as any)}
               >
-                <MaterialCommunityIcons name="plus" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="plus" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                 <Text style={styles.uploadBtnText}>Submit a Project</Text>
               </Pressable>
             </View>
@@ -208,7 +208,7 @@ export default function MyProjectsScreen() {
                   onPress={() => confirmDelete(item)}
                   disabled={deletingId === item.id}
                 >
-                  <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                  <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                   <Text style={[styles.actionText, styles.deleteText]}>
                     {deletingId === item.id ? "Deleting..." : "Delete"}
                   </Text>
@@ -229,29 +229,31 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   list: {
     padding: 16,
@@ -289,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   uploadBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -397,10 +399,10 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   deleteBtn: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FEE2E2",
+    backgroundColor: appColors.red50,
+    borderColor: appColors.dangerBg,
   },
   deleteText: {
-    color: "#DC2626",
+    color: appColors.danger,
   },
 });

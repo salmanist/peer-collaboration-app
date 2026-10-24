@@ -1,5 +1,5 @@
 import { cleanSampleText } from "../../../core/utils/cleanText";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -76,7 +76,7 @@ export function TutorProfileScreen() {
             style={styles.navBackBtn}
             onPress={() => goBack("/(app)/tutoring")}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Tutor Profile</Text>
           <View style={{ width: 36 }} />
@@ -138,7 +138,7 @@ export function TutorProfileScreen() {
             <View style={styles.statItem}>
               {Number(tutor.average_rating) > 0 ? (
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="star" size={14} color="#FDBF1E" style={{ marginRight: 2 }} />
+                  <MaterialCommunityIcons name="star" size={14} color={appColors.gold} style={{ marginRight: 2 }} />
                   <Text style={styles.statVal}>{Number(tutor.average_rating).toFixed(1)}</Text>
                 </View>
               ) : (
@@ -227,7 +227,7 @@ export function TutorProfileScreen() {
                   <Text style={styles.reviewerName}>{rev.reviewer_name}</Text>
                   <View style={{ flexDirection: "row" }}>
                     {[...Array(rev.rating)].map((_, i) => (
-                      <MaterialCommunityIcons key={i} name="star" size={14} color="#FDBF1E" />
+                      <MaterialCommunityIcons key={i} name="star" size={14} color={appColors.gold} />
                     ))}
                   </View>
                 </View>
@@ -284,9 +284,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -295,16 +297,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContainer: {
     flex: 1,
@@ -347,11 +349,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   backBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontWeight: "700",
   },
   profileCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
@@ -368,7 +370,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#F5F8F5",
+    backgroundColor: appColors.sageTint,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
@@ -376,7 +378,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   tutorName: {
     fontSize: 20,
@@ -424,7 +426,7 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.border,
   },
   section: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -474,10 +476,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   skillPillText: {
-    color: "#854D0E",
+    color: appColors.yellow800,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -516,7 +518,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopWidth: 1,
     borderTopColor: appColors.border,
     paddingHorizontal: 16,
@@ -545,10 +547,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#FDBF1E",
+    borderColor: appColors.gold,
   },
   bookButtonText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 15,
     fontWeight: "800",
   },

@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
@@ -171,7 +171,7 @@ export default function LibraryListScreen() {
         label: "FYP Roadmap",
         subtitle: "Step-by-step final year project guide",
         icon: "map-marker-path",
-        iconColor: "#FDBF1E",
+        iconColor: appColors.gold,
         onPress: () => router.push("/(app)/library/roadmap" as any),
       },
       {
@@ -283,7 +283,7 @@ export default function LibraryListScreen() {
       ) : error ? (
         <View style={styles.messageBox}>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
           <Pressable style={styles.retryBtn} onPress={handleRefresh}>
@@ -345,7 +345,7 @@ export default function LibraryListScreen() {
         ]}
         onPress={() => router.push(uploadHref as any)}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+        <MaterialCommunityIcons name="plus" size={28} color={appColors.white} />
       </Pressable>
     </View>
   );
@@ -416,7 +416,7 @@ function NoteCard({ note }: { note: Note }) {
     >
       <View style={styles.cardHeader}>
         <View style={[styles.iconThumb, { }]}>
-          <MaterialCommunityIcons name="file-document-outline" size={24} color="#B45309" />
+          <MaterialCommunityIcons name="file-document-outline" size={24} color={appColors.amber700} />
         </View>
 
         <View style={styles.cardHeaderInfo}>
@@ -470,19 +470,21 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   modeTabsContainer: {
@@ -506,8 +508,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modeTabActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 2,
@@ -534,7 +536,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
@@ -593,7 +595,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -646,7 +648,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   semesterBadge: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -654,7 +656,7 @@ const styles = StyleSheet.create({
   semesterBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#B45309",
+    color: appColors.amber700,
   },
   deptBadge: {
     backgroundColor: appColors.border,
@@ -773,15 +775,15 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 16,
     borderRadius: 14,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
     alignItems: "center",
   },
   errorText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#B91C1C",
+    color: appColors.red700,
   },
   retryBtn: {
     marginTop: 8,
@@ -791,7 +793,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 12,
     fontWeight: "700",
   },

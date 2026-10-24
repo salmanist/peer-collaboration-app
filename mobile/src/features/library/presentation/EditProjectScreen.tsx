@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
@@ -85,7 +85,7 @@ export default function EditProjectScreen() {
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Edit Project</Text>
           <View style={{ width: 36 }} />
@@ -185,7 +185,7 @@ export default function EditProjectScreen() {
           </View>
 
           <View style={styles.verifiedBox}>
-            <MaterialCommunityIcons name="information-outline" size={18} color="#B45309" style={{ marginRight: 8 }} />
+            <MaterialCommunityIcons name="information-outline" size={18} color={appColors.amber700} style={{ marginRight: 8 }} />
             <Text style={styles.verifiedText}>
               Saving changes sends this project back to moderation queue for verification.
             </Text>
@@ -193,7 +193,7 @@ export default function EditProjectScreen() {
 
           {error && (
             <View style={styles.errorBox}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -204,7 +204,7 @@ export default function EditProjectScreen() {
             disabled={isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator color="#000000" size="small" />
+              <ActivityIndicator color={appColors.black} size="small" />
             ) : (
               <Text style={styles.primaryBtnText}>Save Changes</Text>
             )}
@@ -218,7 +218,7 @@ export default function EditProjectScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
   centerContainer: {
     flex: 1,
@@ -226,29 +226,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -267,7 +269,7 @@ const styles = StyleSheet.create({
     color: appColors.text,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -315,17 +317,17 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   levelPillTextActive: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontWeight: "700",
   },
   verifiedBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   verifiedText: {
     flex: 1,
@@ -337,20 +339,20 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
   primaryBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -365,7 +367,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryBtnText: {
-    color: "#000000",
+    color: appColors.black,
     fontSize: 14,
     fontWeight: "800",
   },

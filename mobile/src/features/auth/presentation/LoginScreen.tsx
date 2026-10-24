@@ -89,7 +89,7 @@ export default function LoginScreen() {
         <View style={styles.formContainer}>
           {error ? (
             <View style={styles.errorBannerRow}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} />
               <Text style={styles.errorBanner}>{error}</Text>
             </View>
           ) : null}
@@ -126,7 +126,7 @@ export default function LoginScreen() {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#000000" size="small" />
+              <ActivityIndicator color={appColors.black} size="small" />
             ) : (
               <Text style={styles.loginButtonText}>Log In</Text>
             )}
@@ -149,13 +149,13 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#ffffff", // Pure white full-screen background
+    backgroundColor: appColors.white, // Pure white full-screen background
   },
   scrollContent: {
     paddingHorizontal: 24,
     flexGrow: 1,
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
   },
   brandBox: {
     alignItems: "center",
@@ -203,15 +203,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
   },
   errorBanner: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 13,
     fontWeight: "600",
     flex: 1,
@@ -244,11 +244,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   loginButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 15,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: "#FDBF1E",
+    shadowColor: appColors.gold,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.035,
     shadowRadius: 6,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   loginButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "900",
     fontSize: 16,
   },

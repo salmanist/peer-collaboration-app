@@ -4,6 +4,7 @@ Auth: `auth/` register, verify-email, forgot-password, reset-password, login, re
 Shared: `departments/` (alias `common/departments/`), `courses/`, `schema/`, `docs/` (Swagger).
 Rides: `rides/` (see `rides.md`) and `ondemand/` (places, fare, profile, driver, rides/...).
 Library: `library/` projects + `library/notes/` (see `library.md`).
+Chatbot: `chatbot/ask/` (POST question, see `chatbot.md`).
 Printing: `printing/` (open pool, mine, printers, accept/reject/release/complete/cancel/rate).
 Marketplace: `resources/` listings, requests, wanted + offers, summary.
 Lost & Found: `lost-and-found/` items, claims, claim chat, summary.

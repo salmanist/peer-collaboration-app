@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -18,11 +18,11 @@ import { OfferedTripCardSkeleton, SkeletonList } from "../../../core/components/
 import { formatTime12h, listMyRides, type Ride } from "../data/ridesApi";
 
 function rideStatus(ride: Ride) {
-  if (ride.status === "cancelled") return { label: "Cancelled", bg: "#FEF2F2", text: "#DC2626" };
+  if (ride.status === "cancelled") return { label: "Cancelled", bg: appColors.red50, text: appColors.danger };
   if (ride.status === "expired") return { label: "Expired", bg: appColors.border, text: appColors.textSecondary };
   if (ride.status === "in_progress") return { label: "In Progress", bg: appColors.surfaceMuted, text: appColors.primary };
   if (ride.status === "completed") return { label: "Completed", bg: appColors.surfaceMuted, text: appColors.primary };
-  if (ride.seats_available <= 0) return { label: "Full", bg: "#FFFBEB", text: "#B45309" };
+  if (ride.seats_available <= 0) return { label: "Full", bg: appColors.amber50, text: appColors.amber700 };
   return { label: "Open", bg: appColors.surfaceMuted, text: appColors.primary };
 }
 
@@ -58,7 +58,7 @@ export default function MyRidesScreen() {
       {/* Top Nav Bar */}
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/rides")}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Offered Trips</Text>
         <View style={{ width: 36 }} />
@@ -97,7 +97,7 @@ export default function MyRidesScreen() {
                 style={styles.offerBtn}
                 onPress={() => router.push("/(app)/rides/offer" as any)}
               >
-                <MaterialCommunityIcons name="plus" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="plus" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                 <Text style={styles.offerBtnText}>Offer a Trip</Text>
               </Pressable>
             </View>
@@ -137,7 +137,7 @@ export default function MyRidesScreen() {
                 </View>
 
                 <View style={[styles.chip, styles.seatsChip]}>
-                  <MaterialCommunityIcons name="seat-passenger" size={13} color="#B45309" style={{ marginRight: 4 }} />
+                  <MaterialCommunityIcons name="seat-passenger" size={13} color={appColors.amber700} style={{ marginRight: 4 }} />
                   <Text style={[styles.chipText, styles.seatsText]}>
                     {item.seats_available}/{item.seats_total} seats
                   </Text>
@@ -162,29 +162,31 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   list: {
     padding: 16,
@@ -222,12 +224,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   offerBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "700",
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -254,14 +256,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#10B981",
+    backgroundColor: appColors.emerald500,
     marginRight: 6,
   },
   dotEnd: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#EF4444",
+    backgroundColor: appColors.red500,
     marginRight: 6,
   },
   routeText: {
@@ -298,10 +300,10 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   seatsChip: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
   },
   seatsText: {
-    color: "#B45309",
+    color: appColors.amber700,
   },
   footerRow: {
     flexDirection: "row",

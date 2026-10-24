@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { AdminModulePanel } from "./AdminModulePanel";
@@ -245,16 +245,16 @@ export function AdminCenterScreen() {
   // Access check guard
   if (!isAdmin) {
     return (
-      <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
-        <View style={styles.topNav}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+        <View style={[styles.topNav, { paddingTop: topOffset }]}>
           <Pressable style={styles.navBackBtn} accessibilityLabel="Return to home" onPress={() => router.replace("/(app)/home")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Access Denied</Text>
           <View style={styles.navSpacer} />
         </View>
         <View style={styles.accessDeniedCard}>
-          <MaterialCommunityIcons name="shield-lock-outline" size={64} color="#DC2626" />
+          <MaterialCommunityIcons name="shield-lock-outline" size={64} color={appColors.danger} />
           <Text style={styles.accessDeniedTitle}>Admin Privileges Required</Text>
           <Text style={styles.accessDeniedSub}>
             This portal is restricted to platform administrators (Salman & Zahra).
@@ -270,8 +270,8 @@ export function AdminCenterScreen() {
   // Security Password Gate (Required before entering Admin Center)
   if (!isAuthenticated) {
     return (
-      <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
-        <View style={styles.topNav}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+        <View style={[styles.topNav, { paddingTop: topOffset }]}>
           <Pressable style={styles.navBackBtn} accessibilityLabel="Return to home" onPress={() => router.replace("/(app)/home")}>
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
@@ -282,7 +282,7 @@ export function AdminCenterScreen() {
         <ScrollView contentContainerStyle={styles.lockScrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.lockCard}>
             <View style={styles.lockIconCircle}>
-              <MaterialCommunityIcons name="shield-key" size={38} color="#FDBF1E" />
+              <MaterialCommunityIcons name="shield-key" size={38} color={appColors.gold} />
             </View>
 
             <Text style={styles.lockTitle}>Admin Security Check</Text>
@@ -292,7 +292,7 @@ export function AdminCenterScreen() {
 
             {authError ? (
               <View style={styles.errorBanner}>
-                <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
                 <Text style={styles.errorBannerText}>{authError}</Text>
               </View>
             ) : null}
@@ -334,10 +334,10 @@ export function AdminCenterScreen() {
               disabled={isVerifying}
             >
               {isVerifying ? (
-                <ActivityIndicator size="small" color="#FDBF1E" />
+                <ActivityIndicator size="small" color={appColors.gold} />
               ) : (
                 <>
-                  <MaterialCommunityIcons name="shield-check-outline" size={18} color="#FDBF1E" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="shield-check-outline" size={18} color={appColors.gold} style={{ marginRight: 6 }} />
                   <Text style={styles.verifyBtnText}>Unlock Admin Center</Text>
                 </>
               )}
@@ -674,9 +674,9 @@ export function AdminCenterScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: topOffset, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {/* Top Navigation Bar */}
-      <View style={styles.topNav}>
+      <View style={[styles.topNav, { paddingTop: topOffset }]}>
         <Pressable style={styles.navBackBtn} accessibilityLabel="Return to home" onPress={() => router.replace("/(app)/home")}>
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
@@ -712,7 +712,7 @@ export function AdminCenterScreen() {
                 <MaterialCommunityIcons
                   name={tab.icon}
                   size={15}
-                  color={isSelected ? "#FDBF1E" : appColors.textSecondary}
+                  color={isSelected ? appColors.gold : appColors.textSecondary}
                   style={{ marginRight: 5 }}
                 />
                 <Text style={[styles.tabButtonText, isSelected && styles.tabButtonTextActive]}>
@@ -744,7 +744,7 @@ export function AdminCenterScreen() {
               <View style={styles.welcomeBanner}>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                    <MaterialCommunityIcons name="shield-account" size={18} color="#FDBF1E" />
+                    <MaterialCommunityIcons name="shield-account" size={18} color={appColors.gold} />
                     <Text style={styles.welcomeTitle}>Welcome, {user?.full_name || "Admin"}</Text>
                   </View>
                   <Text style={styles.welcomeSub}>
@@ -791,7 +791,7 @@ export function AdminCenterScreen() {
                 </View>
 
                 <View style={styles.kpiCard}>
-                  <MaterialCommunityIcons name="star" size={24} color="#FDBF1E" />
+                  <MaterialCommunityIcons name="star" size={24} color={appColors.gold} />
                   <Text style={styles.kpiValue}>{metrics.avg_rating} ★</Text>
                   <Text style={styles.kpiLabel}>Average Rating</Text>
                   <Text style={styles.kpiSub}>Reviews: {metrics.total_reviews}</Text>
@@ -879,7 +879,7 @@ export function AdminCenterScreen() {
                       style={styles.broadcastRemoveImageBtn}
                       onPress={() => setBImage(null)}
                     >
-                      <MaterialCommunityIcons name="close-circle" size={16} color="#EF4444" style={{ marginRight: 4 }} />
+                      <MaterialCommunityIcons name="close-circle" size={16} color={appColors.red500} style={{ marginRight: 4 }} />
                       <Text style={styles.broadcastRemoveImageText}>Remove Photo</Text>
                     </Pressable>
                   </View>
@@ -927,10 +927,10 @@ export function AdminCenterScreen() {
                   disabled={isPostingBroadcast}
                 >
                   {isPostingBroadcast ? (
-                    <ActivityIndicator size="small" color="#FDBF1E" />
+                    <ActivityIndicator size="small" color={appColors.gold} />
                   ) : (
                     <>
-                      <MaterialCommunityIcons name="send" size={16} color="#FDBF1E" style={{ marginRight: 6 }} />
+                      <MaterialCommunityIcons name="send" size={16} color={appColors.gold} style={{ marginRight: 6 }} />
                       <Text style={styles.broadcastSubmitText}>Broadcast to Students</Text>
                     </>
                   )}
@@ -995,7 +995,7 @@ export function AdminCenterScreen() {
                             ]);
                           }}
                         >
-                          <MaterialCommunityIcons name="trash-can-outline" size={15} color="#EF4444" />
+                          <MaterialCommunityIcons name="trash-can-outline" size={15} color={appColors.red500} />
                           <Text style={styles.broadcastDeleteBtnText}>Deactivate</Text>
                         </Pressable>
                       </View>
@@ -1059,7 +1059,7 @@ export function AdminCenterScreen() {
                           </Text>
                         </View>
                         <Pressable style={styles.cardDeleteBtn} onPress={() => handleDeleteListing(item.id)}>
-                          <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                          <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                         </Pressable>
                       </View>
 
@@ -1112,7 +1112,7 @@ export function AdminCenterScreen() {
                           </Text>
                         </View>
                         <Pressable style={styles.cardDeleteBtn} onPress={() => handleDeleteRequest(req.id)}>
-                          <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                          <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                         </Pressable>
                       </View>
                       <Text style={styles.cardDesc}>{req.description}</Text>
@@ -1190,7 +1190,7 @@ export function AdminCenterScreen() {
                         </Text>
                       </View>
                       <Pressable style={styles.cardDeleteBtn} onPress={() => handleDeleteLostFoundItem(item.id)}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                        <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                       </Pressable>
                     </View>
 
@@ -1258,7 +1258,7 @@ export function AdminCenterScreen() {
 
                     <View style={styles.cardMetaRow}>
                       <View style={styles.cardMetaPill}>
-                        <MaterialCommunityIcons name="star" size={12} color="#FDBF1E" style={{ marginRight: 4 }} />
+                        <MaterialCommunityIcons name="star" size={12} color={appColors.gold} style={{ marginRight: 4 }} />
                         <Text style={styles.cardMetaText}>{tutor.rating_avg} ({tutor.rating_count} reviews)</Text>
                       </View>
                       <View style={styles.cardMetaPill}>
@@ -1280,7 +1280,7 @@ export function AdminCenterScreen() {
                         </Text>
                       </View>
                       <Pressable style={styles.cardDeleteBtn} onPress={() => handleDeleteSession(session.id)}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                        <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                       </Pressable>
                     </View>
 
@@ -1314,13 +1314,13 @@ export function AdminCenterScreen() {
                     <View style={styles.cardHeader}>
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <MaterialCommunityIcons name="star" size={16} color="#FDBF1E" />
+                          <MaterialCommunityIcons name="star" size={16} color={appColors.gold} />
                           <Text style={styles.cardTitle}>{rev.rating} ★ Review for {rev.tutor_name}</Text>
                         </View>
                         <Text style={styles.cardOwner}>By: {rev.reviewer_name} ({rev.reviewer_email})</Text>
                       </View>
                       <Pressable style={styles.cardDeleteBtn} onPress={() => handleDeleteReview(rev.id)}>
-                        <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                        <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                       </Pressable>
                     </View>
                     {rev.comment ? <Text style={styles.cardDesc}>"{rev.comment}"</Text> : null}
@@ -1402,7 +1402,7 @@ export function AdminCenterScreen() {
                             style={styles.cardDeleteBtn}
                             onPress={() => handleDeleteCatalogItem("course", c.id)}
                           >
-                            <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                            <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                           </Pressable>
                         </View>
                       </View>
@@ -1446,7 +1446,7 @@ export function AdminCenterScreen() {
                             style={styles.cardDeleteBtn}
                             onPress={() => handleDeleteCatalogItem("skill", s.id)}
                           >
-                            <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                            <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                           </Pressable>
                         </View>
                       </View>
@@ -1490,7 +1490,7 @@ export function AdminCenterScreen() {
                             style={styles.cardDeleteBtn}
                             onPress={() => handleDeleteCatalogItem("department", d.id)}
                           >
-                            <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                            <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                           </Pressable>
                         </View>
                       </View>
@@ -1624,7 +1624,7 @@ export function AdminCenterScreen() {
               </Pressable>
               <Pressable style={styles.modalSaveBtn} onPress={() => void handleSaveCatalogItem()} disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#FDBF1E" />
+                  <ActivityIndicator size="small" color={appColors.gold} />
                 ) : (
                   <Text style={styles.modalSaveText}>Save Changes</Text>
                 )}
@@ -1650,20 +1650,23 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNav: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 9,
-    backgroundColor: "#FFFFFF",
+    paddingBottom: 9 + headerGrow,
+    backgroundColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1676,7 +1679,7 @@ const styles = StyleSheet.create({
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   adminBadge: {
     flexDirection: "row",
@@ -1693,7 +1696,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   tabStrip: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderBottomWidth: 1,
     borderBottomColor: appColors.border,
   },
@@ -1720,7 +1723,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   tabButtonTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   contentScroll: {
     flex: 1,
@@ -1741,12 +1744,12 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: appColors.gold,
     marginBottom: 4,
   },
   welcomeSub: {
     fontSize: 12,
-    color: "#ffffff",
+    color: appColors.white,
     lineHeight: 16,
     opacity: 0.9,
   },
@@ -1764,7 +1767,7 @@ const styles = StyleSheet.create({
   kpiCard: {
     flexBasis: "48%",
     flexGrow: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
@@ -1795,7 +1798,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: appColors.border,
@@ -1810,7 +1813,7 @@ const styles = StyleSheet.create({
   },
   subTabRow: {
     flexDirection: "row",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 8,
     padding: 3,
     borderWidth: 1,
@@ -1833,10 +1836,10 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   subTabBtnTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   adminCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
@@ -1865,7 +1868,7 @@ const styles = StyleSheet.create({
   },
   cardDeleteBtn: {
     padding: 6,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 6,
   },
   cardMetaRow: {
@@ -1918,7 +1921,7 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
   },
   statusToggleTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   typeBadge: {
     paddingHorizontal: 6,
@@ -1928,8 +1931,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   typeBadgeLost: {
-    backgroundColor: "#FEE2E2",
-    color: "#DC2626",
+    backgroundColor: appColors.dangerBg,
+    color: appColors.danger,
   },
   typeBadgeFound: {
     backgroundColor: appColors.surfaceMuted,
@@ -1948,7 +1951,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "900",
     backgroundColor: appColors.primary,
-    color: "#FDBF1E",
+    color: appColors.gold,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -1962,7 +1965,7 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.surfaceMuted,
   },
   toggleActiveBtnOff: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
   },
   toggleActiveBtnText: {
     fontSize: 11,
@@ -2007,7 +2010,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   backHomeBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -2020,7 +2023,7 @@ const styles = StyleSheet.create({
   lockCard: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
@@ -2060,9 +2063,9 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -2072,7 +2075,7 @@ const styles = StyleSheet.create({
   errorBannerText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#DC2626",
+    color: appColors.danger,
     flex: 1,
   },
   lockInputWrap: {
@@ -2104,18 +2107,18 @@ const styles = StyleSheet.create({
     height: 48,
     width: "100%",
     borderWidth: 1.5,
-    borderColor: "#FDBF1E",
+    borderColor: appColors.gold,
     marginBottom: 12,
   },
   verifyBtnText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   addCatalogBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 12,
     height: 42,
     borderRadius: 10,
@@ -2132,7 +2135,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    backgroundColor: appColors.inkA08,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -2140,12 +2143,12 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "100%",
     maxWidth: 460,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
     borderColor: appColors.border,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.035,
     shadowRadius: 12,
@@ -2205,7 +2208,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   deptSelectTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   modalFooter: {
     flexDirection: "row",
@@ -2239,17 +2242,17 @@ const styles = StyleSheet.create({
   modalSaveText: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
 
   // Broadcast Composer & Items
   broadcastComposerCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
     borderColor: appColors.border,
-    shadowColor: "#000000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
@@ -2308,7 +2311,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   categoryPillBtnTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   priorityPillsRow: {
@@ -2335,7 +2338,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   priorityPillBtnTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   broadcastSubmitBtn: {
@@ -2353,10 +2356,10 @@ const styles = StyleSheet.create({
   broadcastSubmitText: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   broadcastItemCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
@@ -2406,7 +2409,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.05)",
+    borderTopColor: appColors.blackA05,
     paddingTop: 8,
   },
   broadcastAuthorText: {
@@ -2421,12 +2424,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
   },
   broadcastDeleteBtnText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#EF4444",
+    color: appColors.red500,
   },
   inputLabel: {
     fontSize: 12,
@@ -2450,7 +2453,7 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   emptyStateCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 12,
     padding: 24,
     alignItems: "center",
@@ -2480,14 +2483,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 8,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderTopWidth: 1,
-    borderTopColor: "#FEE2E2",
+    borderTopColor: appColors.dangerBg,
   },
   broadcastRemoveImageText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#EF4444",
+    color: appColors.red500,
   },
   broadcastImagePickerBtn: {
     flexDirection: "row",

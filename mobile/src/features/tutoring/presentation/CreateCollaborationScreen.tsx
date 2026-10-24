@@ -95,7 +95,7 @@ export function CreateCollaborationScreen() {
 
       {errorMsg ? (
         <View style={styles.errorBanner}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
           <Text style={styles.errorText}>{errorMsg}</Text>
         </View>
       ) : null}
@@ -196,7 +196,7 @@ export function CreateCollaborationScreen() {
         disabled={isSubmitting}
       >
         {isSubmitting ? (
-          <ActivityIndicator color="#ffffff" size="small" />
+          <ActivityIndicator color={appColors.white} size="small" />
         ) : (
           <Text style={styles.submitBtnText}>Post to Collaboration Board</Text>
         )}
@@ -227,15 +227,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   errorBanner: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: appColors.red50,
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#fca5a5",
+    borderColor: appColors.red300,
     marginBottom: 14,
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 13,
   },
   label: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 8,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   catBtn: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   skillPill: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
   },
   customInput: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 8,
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 15,
     fontWeight: "700",
   },

@@ -1,3 +1,4 @@
+import { colors } from "../ui/theme";
 import React, { useEffect, useState } from "react";
 import { Image, StatusBar, StyleSheet, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
@@ -27,13 +28,13 @@ export function AppSplashScreen({ onFinish, ready = true }: AppSplashScreenProps
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <Image source={require("../../../assets/fello-launch.png")} style={styles.brand} resizeMode="contain" onLoad={() => setImageLoaded(true)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { ...StyleSheet.absoluteFill, zIndex: 99999, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" },
+  container: { ...StyleSheet.absoluteFill, zIndex: 99999, backgroundColor: colors.white, justifyContent: "center", alignItems: "center" },
   brand: { width: 320, height: 160, maxWidth: "90%" },
 });

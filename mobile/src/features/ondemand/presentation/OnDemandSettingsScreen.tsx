@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { useCallback, useState } from "react";
 import {
@@ -105,7 +105,7 @@ export default function OnDemandSettingsScreen() {
       <View style={styles.container}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={handleBack}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Driver Settings</Text>
           <View style={{ width: 36 }} />
@@ -139,7 +139,7 @@ export default function OnDemandSettingsScreen() {
       >
         {error ? (
           <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -252,7 +252,7 @@ export default function OnDemandSettingsScreen() {
                   <MaterialCommunityIcons
                     name={profile.is_approved ? "check-decagram" : "clock-outline"}
                     size={14}
-                    color={profile.is_approved ? appColors.primary : "#B45309"}
+                    color={profile.is_approved ? appColors.primary : appColors.amber700}
                     style={{ marginRight: 4 }}
                   />
                   <Text
@@ -313,7 +313,7 @@ export default function OnDemandSettingsScreen() {
                   <MaterialCommunityIcons
                     name={profile.is_approved ? "account-cancel-outline" : "close-circle-outline"}
                     size={18}
-                    color="#DC2626"
+                    color={appColors.danger}
                     style={{ marginRight: 6 }}
                   />
                   <Text style={styles.dangerOutlineBtnText}>
@@ -334,7 +334,7 @@ export default function OnDemandSettingsScreen() {
                       disabled={isBusy}
                     >
                       {isBusy ? (
-                        <ActivityIndicator color="#FFFFFF" size="small" />
+                        <ActivityIndicator color={appColors.white} size="small" />
                       ) : (
                         <Text style={styles.dangerSolidBtnText}>Yes, Confirm</Text>
                       )}
@@ -360,32 +360,34 @@ export default function OnDemandSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
   topNavBar: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: "#FFFFFF",
+    paddingBottom: 10 + headerGrow,
+    backgroundColor: appColors.headerBg,
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContainer: {
     flex: 1,
@@ -424,21 +426,21 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   errorText: {
     flex: 1,
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     padding: 0,
   },
   cardSectionHeading: {
@@ -462,7 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -480,7 +482,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
   },
@@ -498,7 +500,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   primaryBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -563,7 +565,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   statusBadgeTextWarning: {
-    color: "#B45309",
+    color: appColors.amber700,
   },
   vehicleBox: {
     flexDirection: "row",
@@ -595,7 +597,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   plateChip: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     paddingHorizontal: 8,
@@ -625,27 +627,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
     paddingVertical: 12,
     borderRadius: 12,
   },
   dangerOutlineBtnText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#DC2626",
+    color: appColors.danger,
   },
   confirmBox: {
-    backgroundColor: "#FFF5F5",
+    backgroundColor: appColors.redTint,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
   },
   confirmText: {
     fontSize: 13,
-    color: "#7F1D1D",
+    color: appColors.red900,
     lineHeight: 18,
     marginBottom: 12,
   },
@@ -655,20 +657,20 @@ const styles = StyleSheet.create({
   },
   dangerSolidBtn: {
     flex: 1,
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   dangerSolidBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "800",
   },
   cancelGhostBtn: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     paddingVertical: 10,

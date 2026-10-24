@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     zIndex: 90,
   },
   bottomBarContainer: {
-    width: "100%", backgroundColor: "#FFFFFF",
+    width: "100%", backgroundColor: appColors.white,
     borderTopWidth: 1, borderTopColor: appColors.border,
     paddingTop: 8, paddingHorizontal: 8,
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     borderRadius: 3.5,
     backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#ffffff",
+    borderColor: appColors.white,
   },
   countBadge: {
     position: "absolute",
@@ -244,10 +244,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 2,
     borderWidth: 1,
-    borderColor: "#ffffff",
+    borderColor: appColors.white,
   },
   countBadgeText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 8,
     fontWeight: "900",
     lineHeight: 10,

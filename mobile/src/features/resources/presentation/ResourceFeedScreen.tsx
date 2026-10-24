@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -105,11 +105,11 @@ function getCategoryBg(category: string) {
     case "books":
       return appColors.surfaceMuted;
     case "notes":
-      return "#FFFBEB";
+      return appColors.amber50;
     case "lab_equipment":
       return appColors.surfaceMuted;
     case "stationery":
-      return "#FDF4FF";
+      return appColors.fuchsia50;
     default:
       return appColors.background;
   }
@@ -351,7 +351,7 @@ export default function ResourceFeedScreen() {
       const existingOffer = myOffers.find((offer) => offer.public_request_id === request.id);
 
       return (
-        <View style={styles.card}>
+        <Pressable style={styles.card} onPress={() => router.push(`/resources/wanted/${request.id}` as any)}>
           <View style={styles.cardHeader}>
             {/* Category Placeholder Icon */}
             <View style={styles.cardThumbPlaceholder}>
@@ -441,13 +441,13 @@ export default function ResourceFeedScreen() {
                 onPress={() => router.push(`/resources/wanted/offer/${request.id}` as any)}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                  <MaterialCommunityIcons name="hand-heart-outline" size={15} color="#ffffff" style={{ marginRight: 5 }} />
+                  <MaterialCommunityIcons name="hand-heart-outline" size={15} color={appColors.white} style={{ marginRight: 5 }} />
                   <Text style={styles.fulfillBtnText}>I Have This / Send Offer</Text>
                 </View>
               </Pressable>
             )}
           </View>
-        </View>
+        </Pressable>
       );
     },
     [myOffers, user?.id],
@@ -508,7 +508,7 @@ export default function ResourceFeedScreen() {
                 <MaterialCommunityIcons
                   name={cat.icon}
                   size={14}
-                  color={isSelected ? "#FDBF1E" : appColors.textSecondary}
+                  color={isSelected ? appColors.gold : appColors.textSecondary}
                   style={{ marginRight: 4 }}
                 />
                 <Text style={[styles.categoryBtnLabel, isSelected && styles.categoryBtnLabelActive]}>
@@ -526,7 +526,7 @@ export default function ResourceFeedScreen() {
       ) : errorMessage ? (
         <View style={styles.messageBox}>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
           <Pressable style={styles.retryBtn} onPress={() => void loadData()}>
@@ -570,7 +570,7 @@ export default function ResourceFeedScreen() {
         ]}
         onPress={() => router.push("/(app)/resources/create" as any)}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+        <MaterialCommunityIcons name="plus" size={28} color={appColors.white} />
       </Pressable>
     </View>
   );
@@ -582,14 +582,16 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   myListingsHeaderBtn: {
     backgroundColor: appColors.surfaceMuted,
@@ -621,7 +623,7 @@ const styles = StyleSheet.create({
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   avatarBtn: {
@@ -648,7 +650,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
@@ -715,8 +717,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modeTabActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 2,
@@ -744,7 +746,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
@@ -772,7 +774,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   categoryBtnLabelActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   list: {
@@ -792,7 +794,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -846,7 +848,7 @@ const styles = StyleSheet.create({
   priceTagPaid: {
     backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   priceTagText: {
     fontSize: 11,
@@ -867,7 +869,7 @@ const styles = StyleSheet.create({
     borderColor: appColors.border,
   },
   wantedBadgeText: {
-    color: "#1E40AF",
+    color: appColors.blue800,
     fontSize: 11,
     fontWeight: "800",
   },
@@ -980,31 +982,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fulfillBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 12,
     fontWeight: "800",
   },
   messageBox: {
     margin: 20,
     padding: 16,
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 12,
     alignItems: "center",
     gap: 8,
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 13,
     textAlign: "center",
   },
   retryBtn: {
-    backgroundColor: "#b91c1c",
+    backgroundColor: appColors.red700,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 6,
   },
   retryBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 12,
     fontWeight: "700",
   },

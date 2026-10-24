@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { FelloLogo } from "../../../core/components/FelloLogo";
 import axios from "axios";
@@ -112,7 +112,7 @@ export default function ForgotPasswordScreen() {
           style={styles.navBackBtn}
           onPress={() => router.replace("/(auth)/login" as any)}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Reset Password</Text>
         <View style={{ width: 36 }} />
@@ -134,9 +134,9 @@ export default function ForgotPasswordScreen() {
         </View>
 
         {error ? (
-          <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FEF2F2", padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#FECACA", marginBottom: 14, gap: 8 }}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" />
-            <Text style={{ color: "#B91C1C", fontSize: 13, flex: 1, fontWeight: "600" }}>{error}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: appColors.red50, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: appColors.red200, marginBottom: 14, gap: 8 }}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} />
+            <Text style={{ color: appColors.red700, fontSize: 13, flex: 1, fontWeight: "600" }}>{error}</Text>
           </View>
         ) : null}
 
@@ -163,7 +163,7 @@ export default function ForgotPasswordScreen() {
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <ActivityIndicator color="#000000" size="small" />
+                <ActivityIndicator color={appColors.black} size="small" />
               ) : (
                 <Text style={styles.submitButtonText}>Send Reset Code</Text>
               )}
@@ -219,7 +219,7 @@ export default function ForgotPasswordScreen() {
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <ActivityIndicator color="#000000" size="small" />
+                <ActivityIndicator color={appColors.black} size="small" />
               ) : (
                 <Text style={styles.submitButtonText}>Reset Password & Log In</Text>
               )}
@@ -257,12 +257,14 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -271,21 +273,21 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: appColors.border,
+    backgroundColor: appColors.headerControlBg,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     paddingHorizontal: 24,
     paddingVertical: 16,
     flexGrow: 1,
     justifyContent: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
   },
   brandBox: {
     alignItems: "center",
@@ -310,14 +312,14 @@ const styles = StyleSheet.create({
   errorBanner: {
     width: "100%",
     maxWidth: 480,
-    backgroundColor: "#FEE2E2",
-    color: "#B91C1C",
+    backgroundColor: appColors.dangerBg,
+    color: appColors.red700,
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     fontSize: 13,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
     fontWeight: "600",
   },
   card: {
@@ -371,7 +373,7 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.surfaceMuted,
     padding: 10,
     borderRadius: 8,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
     borderWidth: 1,
     marginBottom: 16,
     alignItems: "center",
@@ -386,7 +388,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   submitButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -401,7 +403,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 15,
   },

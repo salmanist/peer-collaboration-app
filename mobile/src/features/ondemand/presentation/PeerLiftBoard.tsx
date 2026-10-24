@@ -202,7 +202,6 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
             <View style={styles.liveIndicator} />
             <Text style={styles.title}>Live Campus Lift Board</Text>
           </View>
-          <Text style={styles.subtitle}>Leaving now? Offer a lift or find an instant ride</Text>
         </View>
 
 
@@ -213,9 +212,9 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
         <View style={styles.myPostCard}>
           <View style={styles.myPostTopRow}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap", flex: 1 }}>
-              <View style={[styles.myPostBadge, { backgroundColor: "#DCFCE7", borderColor: "#86EFAC" }]}>
-                <MaterialCommunityIcons name="car-connected" size={14} color="#065F46" />
-                <Text style={[styles.myPostBadgeText, { color: "#065F46" }]}>
+              <View style={[styles.myPostBadge, { backgroundColor: appColors.successBg, borderColor: appColors.successBorder }]}>
+                <MaterialCommunityIcons name="car-connected" size={14} color={appColors.emerald800} />
+                <Text style={[styles.myPostBadgeText, { color: appColors.emerald800 }]}>
                   {myAcceptedRide.kind === "offering" ? "Joined Peer's Lift" : "Taking Peer to Destination"}
                 </Text>
               </View>
@@ -252,7 +251,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                 } as any)
               }
             >
-              <MaterialCommunityIcons name="chat-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="chat-outline" size={16} color={appColors.white} style={{ marginRight: 6 }} />
               <Text style={styles.chatActionBtnText}>Open Live Coordination Chat</Text>
             </Pressable>
           </View>
@@ -299,7 +298,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
           <View style={styles.myPostFooter}>
             {myOpenRequest.status === "accepted" && myOpenRequest.responder ? (
               <View style={{ flex: 1, gap: 8 }}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#16A34A" }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: appColors.success }}>
                   Connected with {myOpenRequest.responder.full_name}!
                 </Text>
                 <Pressable
@@ -315,7 +314,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                     } as any)
                   }
                 >
-                  <MaterialCommunityIcons name="chat-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="chat-outline" size={16} color={appColors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.chatActionBtnText}>Open Live Coordination Chat</Text>
                 </Pressable>
               </View>
@@ -330,7 +329,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                   disabled={actionLoadingId === myOpenRequest.id}
                 >
                   {actionLoadingId === myOpenRequest.id ? (
-                    <ActivityIndicator size="small" color="#DC2626" />
+                    <ActivityIndicator size="small" color={appColors.danger} />
                   ) : (
                     <Text style={styles.cancelBtnText}>Cancel Post</Text>
                   )}
@@ -372,7 +371,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                     <MaterialCommunityIcons
                       name={isOffering ? "car" : "human-greeting"}
                       size={12}
-                      color={isOffering ? "#065F46" : "#92400E"}
+                      color={isOffering ? appColors.emerald800 : appColors.onSecondaryContainer}
                     />
                     <Text style={[styles.badgeText, isOffering ? styles.offeringBadgeText : styles.needBadgeText]}>
                       {isOffering ? `Offering · ${item.seats} Seats` : "Needs Ride"}
@@ -425,13 +424,13 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                 disabled={isBusy}
               >
                 {isBusy ? (
-                  <ActivityIndicator size="small" color={isOffering ? "#FFFFFF" : appColors.primary} />
+                  <ActivityIndicator size="small" color={isOffering ? appColors.white : appColors.primary} />
                 ) : (
                   <>
                     <MaterialCommunityIcons
                       name={isOffering ? "account-plus" : "steering"}
                       size={15}
-                      color={isOffering ? "#FFFFFF" : appColors.primary}
+                      color={isOffering ? appColors.white : appColors.primary}
                       style={{ marginRight: 6 }}
                     />
                     <Text style={[styles.actionBtnText, !isOffering && styles.offerBtnText]}>
@@ -465,7 +464,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
             >
             {formError && (
               <View style={styles.modalError}>
-                <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" />
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} />
                 <Text style={styles.modalErrorText}>{formError}</Text>
               </View>
             )}
@@ -593,7 +592,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={appColors.ink} />
               ) : (
                 <Text style={styles.submitBtnText}>
                   {kind === "offering" ? "Post Lift (Leaving Now)" : "Post Ride Request"}
@@ -622,7 +621,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#16A34A",
+    backgroundColor: appColors.success,
   },
   title: {
     fontSize: 16,
@@ -644,14 +643,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   postBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 12,
     fontWeight: "700",
   },
   myPostCard: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: appColors.green50,
     borderWidth: 1.5,
-    borderColor: "#86EFAC",
+    borderColor: appColors.successBorder,
     borderRadius: 14,
     padding: 14,
     gap: 8,
@@ -692,7 +691,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: "#DCFCE7",
+    borderTopColor: appColors.successBg,
   },
   waitingNotice: {
     fontSize: 11,
@@ -700,26 +699,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   cancelBtn: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   cancelBtnText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#DC2626",
+    color: appColors.danger,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: appColors.border,
     padding: 14,
     gap: 10,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 2,
@@ -739,20 +738,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   offeringBadge: {
-    backgroundColor: "#D1FAE5",
+    backgroundColor: appColors.emerald100,
   },
   needBadge: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.warningBg,
   },
   badgeText: {
     fontSize: 11,
     fontWeight: "700",
   },
   offeringBadgeText: {
-    color: "#065F46",
+    color: appColors.emerald800,
   },
   needBadgeText: {
-    color: "#92400E",
+    color: appColors.onSecondaryContainer,
   },
   timeText: {
     fontSize: 11,
@@ -804,7 +803,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
   },
   routeLine: {
     width: 1.5,
@@ -834,13 +833,13 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.primary,
   },
   offerBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
   },
   offerBtnText: {
     color: appColors.primary,
   },
   actionBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -854,7 +853,7 @@ const styles = StyleSheet.create({
     borderColor: appColors.border,
     borderStyle: "dashed",
     borderRadius: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
   emptyTitle: {
     fontSize: 14,
@@ -871,7 +870,7 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: appColors.blackA50,
   },
   modalBackdrop: {
     position: "absolute",
@@ -881,7 +880,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   modalSheet: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "88%",
@@ -919,15 +918,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   modalErrorText: {
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
   typeSwitcher: {
@@ -945,7 +944,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   typeOptionActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     elevation: 1,
   },
   typeText: {
@@ -1030,7 +1029,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   submitBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 13,
     borderRadius: 12,
     alignItems: "center",
@@ -1041,27 +1040,27 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitBtnText: {
-    color: "#0F172A",
+    color: appColors.ink,
     fontSize: 14,
     fontWeight: "800",
   },
   submitBtnYellow: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
   },
   submitBtnTextYellow: {
-    color: "#0F172A",
+    color: appColors.ink,
     fontWeight: "800",
   },
   departureBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#F0FDF4",
+    backgroundColor: appColors.green50,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#DCFCE7",
+    borderColor: appColors.successBg,
   },
   departureBadgeText: {
     fontSize: 11,
@@ -1108,7 +1107,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   chatActionBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "700",
   },

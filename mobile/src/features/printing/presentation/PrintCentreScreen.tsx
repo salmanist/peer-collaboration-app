@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
@@ -109,7 +109,7 @@ export default function PrintCentreScreen() {
         label: myProfile ? "Printer Settings" : "Register as a Campus Printer",
         subtitle: myProfile ? "Manage your pricing & availability" : "Earn by printing documents for peers",
         icon: "printer-settings",
-        iconColor: "#FDBF1E",
+        iconColor: appColors.gold,
         onPress: () => router.push("/(app)/printing/printer" as any),
       },
     ],
@@ -184,7 +184,7 @@ export default function PrintCentreScreen() {
         </View>
       ) : error ? (
         <View style={styles.errorBox}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : (
@@ -291,7 +291,7 @@ export default function PrintCentreScreen() {
         ]}
         onPress={() => router.push("/(app)/printing/new" as any)}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+        <MaterialCommunityIcons name="plus" size={28} color={appColors.white} />
       </Pressable>
     </View>
   );
@@ -303,19 +303,21 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   bannerRow: {
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -378,7 +380,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   countBadge: {
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 8,
@@ -386,7 +388,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#FFFFFF",
+    color: appColors.white,
   },
   searchBarRow: {
     paddingHorizontal: 16,
@@ -395,7 +397,7 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === "ios" ? 10 : 7,
@@ -452,7 +454,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -608,17 +610,17 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     padding: 12,
     margin: 16,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
 });

@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -215,7 +215,7 @@ export function SetupTutorProfileScreen() {
             </View>
           </View>
           <View style={[styles.checkboxBox, isSelected && styles.checkboxBoxActive]}>
-            {isSelected ? <MaterialCommunityIcons name="check" size={13} color="#ffffff" /> : null}
+            {isSelected ? <MaterialCommunityIcons name="check" size={13} color={appColors.white} /> : null}
           </View>
         </Pressable>
       );
@@ -307,7 +307,7 @@ export function SetupTutorProfileScreen() {
             style={styles.navBackBtn}
             onPress={handleBack}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Tutor Profile</Text>
           <View style={{ width: 36 }} />
@@ -351,7 +351,7 @@ export function SetupTutorProfileScreen() {
 
         {errorMsg ? (
           <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{errorMsg}</Text>
           </View>
         ) : null}
@@ -531,7 +531,7 @@ export function SetupTutorProfileScreen() {
               value={isActive}
               onValueChange={setIsActive}
               trackColor={{ false: appColors.border, true: appColors.primary }}
-              thumbColor={isActive ? "#FDBF1E" : "#f4f3f4"}
+              thumbColor={isActive ? appColors.gold : appColors.neutral100}
             />
           </View>
         </View>
@@ -791,9 +791,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -802,16 +804,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContainer: {
     flex: 1,
@@ -844,15 +846,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   errorBanner: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 10,
     padding: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   errorText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -869,7 +871,7 @@ const styles = StyleSheet.create({
   },
   typeOptionBtn: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1.5,
@@ -924,7 +926,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   textInput: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -941,12 +943,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1.5,
     borderColor: appColors.border,
     borderRadius: 14,
     padding: 12,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 2,
@@ -994,7 +996,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   selectedBox: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -1032,7 +1034,7 @@ const styles = StyleSheet.create({
   },
   selectedSkillChip: {
     backgroundColor: appColors.surfaceMuted,
-    borderColor: "#FCD34D",
+    borderColor: appColors.amber300,
   },
   selectedSkillChipText: {
     color: appColors.icon,
@@ -1041,7 +1043,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: appColors.blackA06,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1056,7 +1058,7 @@ const styles = StyleSheet.create({
   },
   customInput: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -1084,7 +1086,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
@@ -1104,7 +1106,7 @@ const styles = StyleSheet.create({
   feeInputWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -1129,7 +1131,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   saveButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -1144,7 +1146,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontSize: 15,
     fontWeight: "800",
   },
@@ -1156,7 +1158,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -1188,7 +1190,7 @@ const styles = StyleSheet.create({
   modalSearchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -1217,7 +1219,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
   },
@@ -1235,11 +1237,11 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   modalFilterPillTextActive: {
-    color: "#ffffff",
+    color: appColors.white,
     fontWeight: "700",
   },
   modalFilterPillTextActiveGold: {
-    color: "#ffffff",
+    color: appColors.white,
     fontWeight: "700",
   },
   modalListScroll: {
@@ -1249,7 +1251,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     padding: 12,
     borderRadius: 12,
     marginBottom: 8,
@@ -1262,7 +1264,7 @@ const styles = StyleSheet.create({
   },
   modalSkillRowSelected: {
     borderColor: appColors.icon,
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
   },
   modalItemLeft: {
     flexDirection: "row",
@@ -1316,12 +1318,12 @@ const styles = StyleSheet.create({
     borderColor: appColors.icon,
   },
   checkboxTick: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "800",
   },
   checkboxTickGold: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -1329,7 +1331,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopWidth: 1,
     borderTopColor: appColors.border,
     paddingHorizontal: 16,
@@ -1347,7 +1349,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalDoneBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "700",
   },

@@ -23,6 +23,7 @@ React Native (Expo 57) app + Django REST backend on one shared Neon Postgres. La
 - Efficient, optimized code; good variable names; a bit of naivety in the code so it passes AI checks; mark deliberate shortcuts with a `ponytail:` comment.
 - Always use vector icons (MaterialCommunityIcons / @expo/vector-icons), never emojis.
 - Frontend standard: canvas `#F8FAFC`, unboxed headers; cards radius 20, white, border `#F1F5F9`, shadowOpacity 0.04, shadowRadius 8, elevation 2; deep emerald `#0D3E02` for headings/brand surfaces, gold `#FDBF1E` for primary CTAs; headings weight 800/900 with letterSpacing -0.3, secondary text 500/600; generous padding. (Salman's older screens use `core/ui/theme.ts`; unify toward this standard.)
+- Colours: `mobile/src/core/ui/theme.ts` is the single source of truth. Never write a hex or `rgba(...)` literal in a screen or component; use `colors.<token>` (add a new token to `theme.ts` first if none fits). Every screen's top header uses `headerBg` with `onHeader`, `onHeaderMuted`, `headerControlBg` and `headerControlBorder` for its text, icons and back button.
 - Check for syntax errors first when hunting layout breaks.
 - Expo has changed: read https://docs.expo.dev/versions/v57.0.0/ before writing Expo code.
 

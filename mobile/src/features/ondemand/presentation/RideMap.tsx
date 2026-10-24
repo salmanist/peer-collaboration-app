@@ -21,15 +21,15 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 var pickupMarker, dropMarker, routeLine;
 function dot(p, color) {
-  return L.circleMarker([p.lat, p.lng], { radius: 9, color: '#fff', weight: 3, fillColor: color, fillOpacity: 1 });
+  return L.circleMarker([p.lat, p.lng], { radius: 9, color: colors.white, weight: 3, fillColor: color, fillOpacity: 1 });
 }
 function setState(s) {
   [pickupMarker, dropMarker, routeLine].forEach(function (layer) { if (layer) map.removeLayer(layer); });
   pickupMarker = dropMarker = routeLine = null;
   var points = [];
-  if (s.route && s.route.length) { routeLine = L.polyline(s.route, { color: '#2e6b4f', weight: 5 }).addTo(map); }
-  if (s.pickup) { pickupMarker = dot(s.pickup, '#2e9e5b').addTo(map); points.push([s.pickup.lat, s.pickup.lng]); }
-  if (s.drop) { dropMarker = dot(s.drop, '#d93025').addTo(map); points.push([s.drop.lat, s.drop.lng]); }
+  if (s.route && s.route.length) { routeLine = L.polyline(s.route, { color: colors.sage700, weight: 5 }).addTo(map); }
+  if (s.pickup) { pickupMarker = dot(s.pickup, colors.green600).addTo(map); points.push([s.pickup.lat, s.pickup.lng]); }
+  if (s.drop) { dropMarker = dot(s.drop, colors.googleRed).addTo(map); points.push([s.drop.lat, s.drop.lng]); }
   if (routeLine) { map.fitBounds(routeLine.getBounds(), { padding: [30, 30] }); }
   else if (points.length === 1) { map.setView(points[0], 15); }
 }

@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import * as ImagePicker from "expo-image-picker";
@@ -213,10 +213,10 @@ export default function ClaimChatScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Pressable
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: appColors.surfaceMuted, borderWidth: 1, borderColor: appColors.border, alignItems: "center", justifyContent: "center" }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: appColors.headerControlBg, borderWidth: 1, borderColor: appColors.headerControlBorder, alignItems: "center", justifyContent: "center" }}
             onPress={() => goBack("/(app)/lost-and-found")}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Handover Live Chat</Text>
@@ -235,10 +235,10 @@ export default function ClaimChatScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable
-          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: appColors.surfaceMuted, borderWidth: 1, borderColor: appColors.border, alignItems: "center", justifyContent: "center" }}
+          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: appColors.headerControlBg, borderWidth: 1, borderColor: appColors.headerControlBorder, alignItems: "center", justifyContent: "center" }}
           onPress={() => goBack("/(app)/lost-and-found")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.white} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Handover Live Chat</Text>
@@ -289,7 +289,7 @@ export default function ClaimChatScreen() {
           <Image source={{ uri: selectedImage.uri }} style={styles.attachThumb} />
           <Pressable style={styles.removeAttachButton} onPress={() => setSelectedImage(null)}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="close" size={14} color={appColors.danger} style={{ marginRight: 4 }} />
               <Text style={styles.removeAttachText}>Remove</Text>
             </View>
           </Pressable>
@@ -313,7 +313,7 @@ export default function ClaimChatScreen() {
           disabled={!canSend || isSending}
         >
           {isSending ? (
-            <ActivityIndicator size="small" color="#ffffff" />
+            <ActivityIndicator size="small" color={appColors.white} />
           ) : (
             <Text style={styles.sendButtonText}>Send</Text>
           )}
@@ -325,7 +325,7 @@ export default function ClaimChatScreen() {
         <View style={styles.modalBackdrop}>
           <Pressable style={styles.modalCloseButton} onPress={() => setViewerImageUrl(null)}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <MaterialCommunityIcons name="close" size={16} color="#ffffff" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="close" size={16} color={appColors.white} style={{ marginRight: 4 }} />
               <Text style={styles.modalCloseText}>Close</Text>
             </View>
           </Pressable>
@@ -346,31 +346,33 @@ export default function ClaimChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: appColors.background, flex: 1, paddingTop: 56 },
+  container: { backgroundColor: appColors.background, flex: 1 },
   centered: { alignItems: "center", flex: 1, justifyContent: "center" },
   header: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     alignItems: "center",
-    borderBottomColor: appColors.border,
-    borderBottomWidth: 1,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     gap: 16,
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingTop: 56,
+    paddingBottom: 14 + headerGrow,
   },
   backLink: { color: appColors.primary, fontWeight: "700" },
-  title: { color: appColors.text, fontSize: 18, fontWeight: "700" },
-  summary: { color: appColors.textSecondary, fontSize: 12, marginTop: 2 },
-  connection: { color: appColors.textSecondary, fontSize: 11, marginTop: 1 },
-  errorText: { color: "#b91c1c", paddingHorizontal: 20, paddingTop: 10, fontSize: 13 },
+  title: { color: appColors.onHeader, fontSize: 18, fontWeight: "700" },
+  summary: { color: appColors.onHeaderMuted, fontSize: 12, marginTop: 2 },
+  connection: { color: appColors.onHeaderMuted, fontSize: 11, marginTop: 1 },
+  errorText: { color: appColors.red700, paddingHorizontal: 20, paddingTop: 10, fontSize: 13 },
   messageList: { padding: 16, gap: 10 },
   emptyList: { alignItems: "center", flexGrow: 1, justifyContent: "center", padding: 24 },
   emptyText: { color: appColors.textSecondary, textAlign: "center", fontSize: 13 },
   messageBubble: { borderRadius: 12, maxWidth: "80%", padding: 10 },
   myMessage: { alignSelf: "flex-end", backgroundColor: appColors.primary },
-  otherMessage: { alignSelf: "flex-start", backgroundColor: "#ffffff", borderColor: appColors.border, borderWidth: 1 },
+  otherMessage: { alignSelf: "flex-start", backgroundColor: appColors.white, borderColor: appColors.border, borderWidth: 1 },
   senderName: { color: appColors.textSecondary, fontSize: 12, fontWeight: "700", marginBottom: 3 },
   messageText: { color: appColors.text, fontSize: 14 },
-  myMessageText: { color: "#ffffff" },
+  myMessageText: { color: appColors.onHeader },
   captionText: { marginTop: 6 },
   messageTime: { color: appColors.textSecondary, fontSize: 11, marginTop: 4 },
   myMessageTime: { color: appColors.surfaceMuted },
@@ -387,10 +389,10 @@ const styles = StyleSheet.create({
   },
   attachThumb: { width: 48, height: 48, borderRadius: 6 },
   removeAttachButton: { padding: 8 },
-  removeAttachText: { color: "#b91c1c", fontWeight: "700", fontSize: 13 },
+  removeAttachText: { color: appColors.red700, fontWeight: "700", fontSize: 13 },
   composer: {
     alignItems: "flex-end",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopColor: appColors.border,
     borderTopWidth: 1,
     flexDirection: "row",
@@ -426,10 +428,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   sendButtonDisabled: { backgroundColor: appColors.textMuted },
-  sendButtonText: { color: "#ffffff", fontWeight: "700" },
+  sendButtonText: { color: appColors.white, fontWeight: "700" },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.92)",
+    backgroundColor: appColors.blackA92,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
@@ -440,9 +442,9 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 10,
     padding: 10,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: appColors.whiteA20,
     borderRadius: 20,
   },
-  modalCloseText: { color: "#ffffff", fontWeight: "700", fontSize: 15 },
+  modalCloseText: { color: appColors.white, fontWeight: "700", fontSize: 15 },
   modalImage: { width: "100%", height: "80%" },
 });

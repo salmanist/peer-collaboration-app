@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
@@ -161,7 +161,7 @@ export default function LostAndFoundDetailScreen() {
       <View style={styles.container}>
         <View style={[styles.compactTopNav, { paddingTop: topOffset > 0 ? topOffset : 4 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/lost-and-found")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.compactNavTitle}>Details</Text>
           <View style={{ width: 36 }} />
@@ -182,7 +182,7 @@ export default function LostAndFoundDetailScreen() {
           <View style={{ width: 36 }} />
         </View>
         <View style={styles.centeredError}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={48} color="#EF4444" style={{ marginBottom: 12 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={48} color={appColors.red500} style={{ marginBottom: 12 }} />
           <Text style={styles.errorText}>{errorMessage || "Notice not found."}</Text>
           <Pressable style={styles.retryBtn} onPress={() => void loadData()}>
             <Text style={styles.retryBtnText}>Try Again</Text>
@@ -226,7 +226,7 @@ export default function LostAndFoundDetailScreen() {
       >
         {errorMessage ? (
           <View style={styles.errorBannerRow}>
-            <MaterialCommunityIcons name="information" size={16} color="#B91C1C" />
+            <MaterialCommunityIcons name="information" size={16} color={appColors.red700} />
             <Text style={styles.errorBannerText}>{errorMessage}</Text>
           </View>
         ) : null}
@@ -236,7 +236,7 @@ export default function LostAndFoundDetailScreen() {
           <Pressable onPress={() => setIsImageViewerVisible(true)} style={styles.photoBannerCard}>
             <Image source={{ uri: imageUrl }} style={styles.photoBanner} resizeMode="cover" />
             <View style={styles.bannerTapHint}>
-              <MaterialCommunityIcons name="magnify-plus-outline" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="magnify-plus-outline" size={14} color={appColors.white} style={{ marginRight: 4 }} />
               <Text style={styles.bannerTapText}>Tap to enlarge</Text>
             </View>
           </Pressable>
@@ -246,7 +246,7 @@ export default function LostAndFoundDetailScreen() {
               <MaterialCommunityIcons
                 name={isLost ? "help-circle-outline" : "cube-scan"}
                 size={34}
-                color={isLost ? "#DC2626" : appColors.primary}
+                color={isLost ? appColors.danger : appColors.primary}
               />
             </View>
             <Text style={styles.graphicTitle}>{isLost ? "Reported Lost Item" : "Reported Found Item"}</Text>
@@ -262,7 +262,7 @@ export default function LostAndFoundDetailScreen() {
               <MaterialCommunityIcons
                 name={isLost ? "alert-circle" : "check-decagram"}
                 size={12}
-                color={isLost ? "#B91C1C" : appColors.primary}
+                color={isLost ? appColors.red700 : appColors.primary}
                 style={{ marginRight: 4 }}
               />
               <Text style={[styles.typeBadgeText, isLost ? styles.typeBadgeTextLost : styles.typeBadgeTextFound]}>
@@ -335,7 +335,7 @@ export default function LostAndFoundDetailScreen() {
               )}
 
               <Pressable style={styles.deletePostBtn} onPress={handleDelete}>
-                <MaterialCommunityIcons name="trash-can-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
                 <Text style={styles.deletePostBtnText}>Delete Notice</Text>
               </Pressable>
             </View>
@@ -466,7 +466,7 @@ export default function LostAndFoundDetailScreen() {
       <Modal visible={isImageViewerVisible} transparent animationType="fade">
         <View style={styles.fullImageBackdrop}>
           <Pressable style={styles.fullImageClose} onPress={() => setIsImageViewerVisible(false)}>
-            <MaterialCommunityIcons name="close" size={18} color="#ffffff" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="close" size={18} color={appColors.white} style={{ marginRight: 6 }} />
             <Text style={styles.fullImageCloseText}>Close</Text>
           </Pressable>
           {imageUrl ? (
@@ -484,30 +484,32 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
     zIndex: 10,
   },
   navBackBtn: {
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   compactNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   ownerHeaderActions: {
@@ -518,7 +520,7 @@ const styles = StyleSheet.create({
   editHeaderBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -530,7 +532,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   deleteHeaderBtn: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     padding: 7,
     borderRadius: 8,
     alignItems: "center",
@@ -542,7 +544,7 @@ const styles = StyleSheet.create({
   errorBannerRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     marginHorizontal: 16,
     marginBottom: 12,
     padding: 12,
@@ -550,7 +552,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   errorBannerText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 13,
     fontWeight: "600",
     flex: 1,
@@ -577,7 +579,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 12,
     right: 12,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    backgroundColor: appColors.blackA65,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -585,7 +587,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bannerTapText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -605,8 +607,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   noPhotoLost: {
-    backgroundColor: "#FFF5F5",
-    borderColor: "#FED7D7",
+    backgroundColor: appColors.redTint,
+    borderColor: appColors.redTintStrong,
   },
   noPhotoFound: {
     backgroundColor: appColors.surfaceMuted,
@@ -639,7 +641,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   detailsCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     marginHorizontal: 16,
     marginTop: 14,
     borderRadius: 16,
@@ -665,7 +667,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   typeBadgeLost: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
   },
   typeBadgeFound: {
     backgroundColor: appColors.surfaceMuted,
@@ -676,7 +678,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   typeBadgeTextLost: {
-    color: "#B91C1C",
+    color: appColors.red700,
   },
   typeBadgeTextFound: {
     color: appColors.primary,
@@ -773,7 +775,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   posterAvatarText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "900",
     fontSize: 17,
   },
@@ -792,7 +794,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   actionsCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     marginHorizontal: 16,
     marginTop: 14,
     borderRadius: 16,
@@ -819,7 +821,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 13,
     borderRadius: 14,
   },
@@ -845,14 +847,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF5F5",
+    backgroundColor: appColors.redTint,
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#FED7D7",
+    borderColor: appColors.redTintStrong,
   },
   deletePostBtnText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontWeight: "800",
     fontSize: 13,
   },
@@ -881,7 +883,7 @@ const styles = StyleSheet.create({
     color: appColors.text,
   },
   claimStatusBadge: {
-    backgroundColor: "#E0E7FF",
+    backgroundColor: appColors.indigo100,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
@@ -889,7 +891,7 @@ const styles = StyleSheet.create({
   claimStatusText: {
     fontSize: 10,
     fontWeight: "900",
-    color: "#4338CA",
+    color: appColors.indigo700,
   },
   claimMessage: {
     fontSize: 13,
@@ -901,7 +903,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: 10,
@@ -916,10 +918,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 16,
-    shadowColor: "#FDBF1E",
+    shadowColor: appColors.gold,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.035,
     shadowRadius: 6,
@@ -963,11 +965,11 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: appColors.blackA60,
     justifyContent: "flex-end",
   },
   claimModalCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -1020,7 +1022,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   modalSubmitBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -1034,7 +1036,7 @@ const styles = StyleSheet.create({
   },
   fullImageBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.94)",
+    backgroundColor: appColors.blackA94,
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
@@ -1046,13 +1048,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: appColors.whiteA20,
     borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
   },
   fullImageCloseText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontWeight: "800",
     fontSize: 14,
   },
@@ -1067,7 +1069,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   errorText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 14,
     fontWeight: "700",
     textAlign: "center",
@@ -1080,7 +1082,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   retryBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "900",
     fontSize: 13,
   },

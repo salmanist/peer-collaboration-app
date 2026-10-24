@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
@@ -32,15 +32,15 @@ import {
 } from "../data/ridesApi";
 
 const statusTone: Record<string, { bg: string; text: string }> = {
-  pending: { bg: "#FFFBEB", text: "#B45309" },
+  pending: { bg: appColors.amber50, text: appColors.amber700 },
   accepted: { bg: appColors.surfaceMuted, text: appColors.primary },
-  declined: { bg: "#FEF2F2", text: "#DC2626" },
+  declined: { bg: appColors.red50, text: appColors.danger },
 };
 
 const rideStatusBadge: Partial<Record<Ride["status"], { label: string; bg: string; text: string }>> = {
   in_progress: { label: "In Progress", bg: appColors.surfaceMuted, text: appColors.primary },
   completed: { label: "Completed", bg: appColors.surfaceMuted, text: appColors.primary },
-  cancelled: { label: "Cancelled", bg: "#FEF2F2", text: "#DC2626" },
+  cancelled: { label: "Cancelled", bg: appColors.red50, text: appColors.danger },
   expired: { label: "Expired", bg: appColors.border, text: appColors.textSecondary },
 };
 
@@ -98,7 +98,7 @@ export default function RideDetailScreen() {
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/rides")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Trip Details</Text>
           <View style={{ width: 36 }} />
@@ -139,7 +139,7 @@ export default function RideDetailScreen() {
               </View>
             ) : null}
             {ride.same_gender_only && (
-              <View style={[styles.badge, { backgroundColor: "#F5F3FF" }]}>
+              <View style={[styles.badge, { backgroundColor: appColors.violet50 }]}>
                 <MaterialCommunityIcons name="account-group" size={12} color={appColors.icon} style={{ marginRight: 3 }} />
                 <Text style={[styles.badgeText, { color: appColors.icon }]}>Same Gender</Text>
               </View>
@@ -176,7 +176,7 @@ export default function RideDetailScreen() {
               </Text>
             </View>
             <View style={[styles.chip, styles.seatsChip]}>
-              <MaterialCommunityIcons name="seat-passenger" size={14} color="#B45309" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="seat-passenger" size={14} color={appColors.amber700} style={{ marginRight: 4 }} />
               <Text style={[styles.chipText, styles.seatsText]}>
                 {ride.seats_available}/{ride.seats_total} seats available
               </Text>
@@ -197,7 +197,7 @@ export default function RideDetailScreen() {
 
         {error && (
           <View style={styles.errorBox}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -212,7 +212,7 @@ export default function RideDetailScreen() {
                   onPress={() => runAction(() => startRide(rideId))}
                   disabled={isActing}
                 >
-                  <MaterialCommunityIcons name="play-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="play-circle-outline" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.primaryBtnText}>Start Ride</Text>
                 </Pressable>
 
@@ -221,7 +221,7 @@ export default function RideDetailScreen() {
                   onPress={() => runAction(() => cancelRide(rideId))}
                   disabled={isActing}
                 >
-                  <MaterialCommunityIcons name="cancel" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="cancel" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
                   <Text style={styles.dangerBtnText}>Cancel Trip</Text>
                 </Pressable>
               </View>
@@ -233,7 +233,7 @@ export default function RideDetailScreen() {
                 onPress={() => runAction(() => completeRide(rideId))}
                 disabled={isActing}
               >
-                <MaterialCommunityIcons name="check-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="check-circle-outline" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                 <Text style={styles.primaryBtnText}>Mark Ride Completed</Text>
               </Pressable>
             )}
@@ -271,7 +271,7 @@ export default function RideDetailScreen() {
                           onPress={() => runAction(() => acceptRequest(request.id))}
                           disabled={isActing}
                         >
-                          <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="check" size={16} color={appColors.white} style={{ marginRight: 4 }} />
                           <Text style={styles.acceptBtnText}>Accept</Text>
                         </Pressable>
                         <Pressable
@@ -279,7 +279,7 @@ export default function RideDetailScreen() {
                           onPress={() => runAction(() => declineRequest(request.id))}
                           disabled={isActing}
                         >
-                          <MaterialCommunityIcons name="close" size={16} color="#DC2626" style={{ marginRight: 4 }} />
+                          <MaterialCommunityIcons name="close" size={16} color={appColors.danger} style={{ marginRight: 4 }} />
                           <Text style={styles.declineBtnText}>Decline</Text>
                         </Pressable>
                       </View>
@@ -299,10 +299,10 @@ export default function RideDetailScreen() {
                 disabled={isActing}
               >
                 {isActing ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={appColors.white} />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="car-seat" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <MaterialCommunityIcons name="car-seat" size={20} color={appColors.white} style={{ marginRight: 8 }} />
                     <Text style={styles.primaryBtnText}>Request to Join Carpool</Text>
                   </>
                 )}
@@ -353,36 +353,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
     gap: 14,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -427,14 +429,14 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#10B981",
+    backgroundColor: appColors.emerald500,
     marginTop: 4,
   },
   dotEnd: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#EF4444",
+    backgroundColor: appColors.red500,
     marginTop: 4,
   },
   pointLabel: {
@@ -467,10 +469,10 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   seatsChip: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
   },
   seatsText: {
-    color: "#B45309",
+    color: appColors.amber700,
   },
   driverSection: {
     flexDirection: "row",
@@ -510,14 +512,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 14,
     fontWeight: "800",
   },
   dangerBtn: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
     borderRadius: 12,
     paddingVertical: 14,
     flexDirection: "row",
@@ -525,7 +527,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dangerBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 14,
     fontWeight: "800",
   },
@@ -543,7 +545,7 @@ const styles = StyleSheet.create({
     color: appColors.text,
   },
   emptyRequestsCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
@@ -561,7 +563,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   requestCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
@@ -599,7 +601,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   acceptBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -608,19 +610,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 8,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   declineBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 12,
     fontWeight: "700",
   },
   statusBox: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     padding: 16,
     flexDirection: "row",
@@ -637,16 +639,16 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
 });

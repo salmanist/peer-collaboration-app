@@ -87,7 +87,7 @@ export default function CampusNotificationPopupModal() {
           <Pressable
             style={({ pressed }) => [
               styles.messageBox,
-              pressed && { opacity: 0.88, backgroundColor: "#F8FAFC" },
+              pressed && { opacity: 0.88, backgroundColor: appColors.surfaceMuted },
             ]}
             onPress={handleAction}
           >
@@ -123,7 +123,7 @@ export default function CampusNotificationPopupModal() {
               <MaterialCommunityIcons
                 name="arrow-right"
                 size={15}
-                color="#ffffff"
+                color={appColors.white}
                 style={{ marginLeft: 4 }}
               />
             </Pressable>
@@ -137,7 +137,7 @@ export default function CampusNotificationPopupModal() {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.12)",
+    backgroundColor: appColors.inkA12,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
@@ -145,10 +145,10 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 22,
-    shadowColor: "#000000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.035,
     shadowRadius: 20,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.06)",
+    borderTopColor: appColors.blackA06,
   },
   tapToViewText: {
     fontSize: 11,
@@ -249,14 +249,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: appColors.surfaceContainer,
     alignItems: "center",
     justifyContent: "center",
   },
   dismissButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#64748B",
+    color: appColors.textMuted,
   },
   gotItButton: {
     flexDirection: "row",
@@ -269,6 +269,6 @@ const styles = StyleSheet.create({
   gotItButtonText: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#ffffff",
+    color: appColors.white,
   },
 });

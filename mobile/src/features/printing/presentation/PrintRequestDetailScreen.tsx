@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
@@ -76,7 +76,7 @@ export default function PrintRequestDetailScreen() {
       <View style={styles.rootContainer}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Print Order Details</Text>
           <View style={{ width: 36 }} />
@@ -191,7 +191,7 @@ export default function PrintRequestDetailScreen() {
 
           {error && (
             <View style={styles.errorBox}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -204,10 +204,10 @@ export default function PrintRequestDetailScreen() {
               disabled={isBusy}
             >
               {isBusy ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={appColors.white} />
               ) : (
                 <>
-                  <MaterialCommunityIcons name="printer-check" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name="printer-check" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                   <Text style={styles.primaryBtnText}>Accept and Print Job</Text>
                 </>
               )}
@@ -253,10 +253,10 @@ export default function PrintRequestDetailScreen() {
                 disabled={isBusy}
               >
                 {isBusy ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={appColors.white} />
                 ) : (
                   <>
-                    <MaterialCommunityIcons name="check-all" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <MaterialCommunityIcons name="check-all" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                     <Text style={styles.primaryBtnText}>Mark Completed & Ready</Text>
                   </>
                 )}
@@ -329,36 +329,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
     gap: 14,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -465,7 +467,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1.5,
     borderColor: appColors.primary,
     borderRadius: 12,
@@ -485,7 +487,7 @@ const styles = StyleSheet.create({
     color: appColors.text,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 12,
@@ -503,21 +505,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 14,
     fontWeight: "800",
   },
   dangerBtn: {
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   dangerBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -537,16 +539,16 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
 });

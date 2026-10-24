@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -385,7 +385,7 @@ export default function LostAndFoundFeedScreen() {
         ]}
         onPress={() => router.push("/(app)/lost-and-found/create")}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+        <MaterialCommunityIcons name="plus" size={28} color={appColors.white} />
       </Pressable>
     </View>
   );
@@ -397,14 +397,16 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   myNoticesHeaderBtn: {
     backgroundColor: appColors.surfaceMuted,
@@ -436,7 +438,7 @@ const styles = StyleSheet.create({
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   avatarBtn: {
@@ -463,7 +465,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: Platform.OS === "ios" ? 11 : 7,
@@ -525,8 +527,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   segmentBtnActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 2,
@@ -549,7 +551,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryBtn: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   categoryBtnLabelActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   feedList: {
@@ -593,7 +595,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     minHeight: 160,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
@@ -621,7 +623,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   placeholderLost: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
   },
   placeholderFound: {
     backgroundColor: appColors.surfaceMuted,
@@ -638,13 +640,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   tagLost: {
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
   },
   tagFound: {
     backgroundColor: appColors.primary,
   },
   postTypeTagText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 10,
     fontWeight: "900",
   },
@@ -706,24 +708,24 @@ const styles = StyleSheet.create({
   messageBox: {
     margin: 16,
     padding: 12,
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 10,
     alignItems: "center",
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 12,
     textAlign: "center",
   },
   retryBtn: {
     marginTop: 6,
-    backgroundColor: "#b91c1c",
+    backgroundColor: appColors.red700,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   retryBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 11,
     fontWeight: "700",
   },

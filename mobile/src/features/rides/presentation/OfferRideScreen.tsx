@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -105,7 +105,7 @@ export default function OfferRideScreen() {
       {/* Top Navigation Bar with Back Button */}
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/rides")}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Offer a Ride</Text>
         <View style={{ width: 36 }} />
@@ -274,7 +274,7 @@ export default function OfferRideScreen() {
               <MaterialCommunityIcons
                 name={user?.gender === "female" ? "gender-female" : user?.gender === "male" ? "gender-male" : "account-group"}
                 size={14}
-                color={sameGenderOnly ? (user?.gender === "female" ? "#BE185D" : "#1D4ED8") : appColors.textSecondary}
+                color={sameGenderOnly ? (user?.gender === "female" ? appColors.pink700 : appColors.blue700) : appColors.textSecondary}
                 style={{ marginRight: 4 }}
               />
               <Text style={[styles.optionPillText, sameGenderOnly && styles.optionPillTextSelected]}>
@@ -287,9 +287,9 @@ export default function OfferRideScreen() {
         </View>
 
         {sameGenderOnly && user?.gender && user.gender !== "other" && (
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: user.gender === "female" ? "#FDF2F8" : "#EFF6FF", borderWidth: 1, borderColor: user.gender === "female" ? "#FBCFE8" : "#BFDBFE" }}>
-            <MaterialCommunityIcons name="shield-check" size={15} color={user.gender === "female" ? "#BE185D" : "#1D4ED8"} style={{ marginRight: 6 }} />
-            <Text style={{ fontSize: 12, color: user.gender === "female" ? "#BE185D" : "#1D4ED8", fontWeight: "600" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: user.gender === "female" ? appColors.pink50 : appColors.blue50, borderWidth: 1, borderColor: user.gender === "female" ? appColors.pink200 : appColors.blue200 }}>
+            <MaterialCommunityIcons name="shield-check" size={15} color={user.gender === "female" ? appColors.pink700 : appColors.blue700} style={{ marginRight: 6 }} />
+            <Text style={{ fontSize: 12, color: user.gender === "female" ? appColors.pink700 : appColors.blue700, fontWeight: "600" }}>
               Restricted to verified {user.gender} students only.
             </Text>
           </View>
@@ -297,7 +297,7 @@ export default function OfferRideScreen() {
 
         {error ? (
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 4 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -325,9 +325,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -336,16 +338,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   container: {
     padding: 16,
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -387,7 +389,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   optionPill: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 20,
@@ -423,12 +425,12 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   errorText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
   },
   submitButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     borderRadius: 12,
     minHeight: 48,
     alignItems: "center",

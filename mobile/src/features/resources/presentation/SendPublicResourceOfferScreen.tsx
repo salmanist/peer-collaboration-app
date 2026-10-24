@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { router, useLocalSearchParams } from "expo-router";
@@ -52,7 +52,7 @@ export default function SendPublicResourceOfferScreen() {
           style={styles.navBackBtn}
           onPress={() => goBack("/(app)/resources")}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Fulfill Request</Text>
         <View style={{ width: 36 }} />
@@ -87,7 +87,7 @@ export default function SendPublicResourceOfferScreen() {
 
         {errorMessage ? (
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         ) : null}
@@ -98,10 +98,10 @@ export default function SendPublicResourceOfferScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#000000" />
+            <ActivityIndicator color={appColors.black} />
           ) : (
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-              <MaterialCommunityIcons name="send-outline" size={15} color="#000000" style={{ marginRight: 5 }} />
+              <MaterialCommunityIcons name="send-outline" size={15} color={appColors.black} style={{ marginRight: 5 }} />
               <Text style={styles.sendText}>Send Offer to Requester</Text>
             </View>
           )}
@@ -117,9 +117,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -128,16 +130,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   container: {
     padding: 16,
@@ -165,7 +167,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 10,
     borderWidth: 1,
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     alignItems: "center",
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     borderRadius: 12,
     justifyContent: "center",
     marginTop: 14,
@@ -193,12 +195,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   sendText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 14,
   },
   errorText: {
-    color: "#dc2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
     marginTop: 6,

@@ -11,7 +11,7 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR.parent / ".env")  # repo-root .env
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-dev-only-change-me")
 
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.lost_and_found",
     "apps.peer_tutoring",
     "apps.notifications",
+    "apps.chatbot",
 ]
 
 MIDDLEWARE = [
@@ -155,3 +156,14 @@ EMAIL_OTP_LIFETIME_MINUTES = 15
 
 # Comma-separated emails that are auto-promoted to platform admin (Admin Center + broadcast notifications).
 ADMIN_EMAILS = {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+EMBEDDING_DIMENSIONS = 768  # single source for the chatbot vector size
+# Document search runs locally on Ollama (no quota); Gemini only writes the answers.
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+EMBEDDING_MODEL = "nomic-embed-text"  # must output EMBEDDING_DIMENSIONS numbers
+# Below this similarity the bot says it does not know. nomic scores on the handbooks: answerable 0.63-0.81, off-topic <=0.64,
+# so this is deliberately low and Gemini's "could not find" reply is the second guard.
+CHATBOT_MIN_SIMILARITY = 0.60
+CHATBOT_TEXT_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]  # tried in order; free-tier speed varies a lot
+CHATBOT_ANSWER_TIMEOUT_MS = 10000  # per model attempt (Google minimum is 10s)
+CHATBOT_CONTEXT_CHUNKS = 6

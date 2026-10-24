@@ -1,3 +1,4 @@
+import { colors } from "../ui/theme";
 import React from "react";
 import { Image, ImageStyle, StyleSheet, View, ViewStyle } from "react-native";
 import { Text } from "../ui/AppText";
@@ -18,7 +19,7 @@ export function FelloLogo({
   showText = false,
   variant = "yellow",
   tintColor,
-  textColor = "#0D3E02",
+  textColor = colors.primary,
   textSize,
   style,
   imageStyle,

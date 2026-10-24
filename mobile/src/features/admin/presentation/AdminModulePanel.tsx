@@ -59,7 +59,7 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
 
   return <View style={styles.section}>
     <View style={styles.row}>{sections[module].map(tab => <Pressable key={tab.key} style={[styles.tab, kind === tab.key && styles.selected]} onPress={() => { setKind(tab.key); setPage(1); setSearch(""); setQuery(""); }}>
-      <Text style={{ color: kind === tab.key ? "#fff" : appColors.primary }}>{tab.label}</Text>
+      <Text style={{ color: kind === tab.key ? appColors.white : appColors.primary }}>{tab.label}</Text>
     </Pressable>)}</View>
     <TextInput accessibilityLabel="Search admin records" placeholder="Search by title, email, or record ID" value={search} onChangeText={setSearch} style={styles.input} />
     <View style={styles.row}><Text>{data?.count ?? 0} records</Text><Pressable onPress={() => setRevision(v => v + 1)}><Text style={styles.link}>Refresh</Text></Pressable></View>
@@ -70,7 +70,7 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
       {!!item.description && <Text>{item.description}</Text>}
       {!!item.status && <Text style={styles.link}>Status: {item.status.replaceAll("_", " ")}</Text>}
       <View style={styles.row}>{item.actions.map(action => <Pressable key={action} disabled={busy} style={styles.action} onPress={() => setPending({ item, action })}>
-        <Text style={{ color: action === "delete" ? "#B91C1C" : appColors.primary }}>{labels[action] || action}</Text>
+        <Text style={{ color: action === "delete" ? appColors.red700 : appColors.primary }}>{labels[action] || action}</Text>
       </Pressable>)}</View>
     </View>)}
     {!!data && <View style={styles.row}>
@@ -85,7 +85,7 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
         <Text>{pending?.action === "delete" ? "This permanently removes the record and its related data." : "This changes the record for all participants."}</Text>
         <View style={styles.row}>
           <Pressable disabled={busy} onPress={() => setPending(null)} style={styles.action}><Text>Go back</Text></Pressable>
-          <Pressable disabled={busy} onPress={() => void act()} style={[styles.tab, styles.selected]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Confirm</Text>}</Pressable>
+          <Pressable disabled={busy} onPress={() => void act()} style={[styles.tab, styles.selected]}>{busy ? <ActivityIndicator color={appColors.white} /> : <Text style={{ color: appColors.white }}>Confirm</Text>}</Pressable>
         </View>
       </View></View>
     </Modal>
@@ -95,10 +95,10 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
 const styles = StyleSheet.create({
   section: { gap: 14 }, row: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
   tab: { padding: 10, borderRadius: 8, backgroundColor: appColors.surfaceMuted }, selected: { backgroundColor: appColors.primary },
-  input: { backgroundColor: "#fff", padding: 12, borderWidth: 1, borderColor: appColors.border, borderRadius: 10, ...(Platform.OS === "web" ? { outlineWidth: 0 } : {}) },
-  card: { backgroundColor: "#fff", borderRadius: 12, borderWidth: 1, borderColor: appColors.border, padding: 16, gap: 10 },
+  input: { backgroundColor: appColors.white, padding: 12, borderWidth: 1, borderColor: appColors.border, borderRadius: 10, ...(Platform.OS === "web" ? { outlineWidth: 0 } : {}) },
+  card: { backgroundColor: appColors.white, borderRadius: 12, borderWidth: 1, borderColor: appColors.border, padding: 16, gap: 10 },
   title: { fontSize: 16, fontWeight: "700", color: appColors.primary }, meta: { fontSize: 12, color: appColors.textSecondary },
-  link: { color: appColors.primary, fontWeight: "600" }, error: { color: "#B91C1C" }, action: { padding: 10, borderRadius: 8, backgroundColor: appColors.border },
-  overlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.3)", padding: 24 },
-  dialog: { backgroundColor: "#fff", borderRadius: 16, padding: 24, gap: 16, width: "100%", maxWidth: 440 },
+  link: { color: appColors.primary, fontWeight: "600" }, error: { color: appColors.red700 }, action: { padding: 10, borderRadius: 8, backgroundColor: appColors.border },
+  overlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: appColors.blackA30, padding: 24 },
+  dialog: { backgroundColor: appColors.white, borderRadius: 16, padding: 24, gap: 16, width: "100%", maxWidth: 440 },
 });

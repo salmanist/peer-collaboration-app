@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
@@ -35,7 +35,7 @@ const STATUS_CONFIGS: Record<RideStatus, StatusConfig> = {
   requested: {
     label: "Requested",
     badgeBg: appColors.surfaceMuted,
-    badgeText: "#B45309",
+    badgeText: appColors.amber700,
     icon: "magnify",
     title: "Ride requested",
   },
@@ -49,7 +49,7 @@ const STATUS_CONFIGS: Record<RideStatus, StatusConfig> = {
   arrived: {
     label: "Driver Arrived",
     badgeBg: appColors.surfaceMuted,
-    badgeText: "#0369A1",
+    badgeText: appColors.sky700,
     icon: "map-marker-check",
     title: "Driver has arrived at pickup",
   },
@@ -69,15 +69,15 @@ const STATUS_CONFIGS: Record<RideStatus, StatusConfig> = {
   },
   cancelled: {
     label: "Cancelled",
-    badgeBg: "#FEF2F2",
-    badgeText: "#DC2626",
+    badgeBg: appColors.red50,
+    badgeText: appColors.danger,
     icon: "close-circle",
     title: "Ride Cancelled",
   },
   no_driver: {
     label: "No Driver Found",
-    badgeBg: "#FEF2F2",
-    badgeText: "#DC2626",
+    badgeBg: appColors.red50,
+    badgeText: appColors.danger,
     icon: "account-search",
     title: "No driver accepted in time",
   },
@@ -173,7 +173,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
       <View style={styles.container}>
         <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
           <Pressable style={styles.navBackBtn} onPress={goHome}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+            <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>My Ride</Text>
           <View style={{ width: 36 }} />
@@ -300,7 +300,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
               onPress={() => act("cancel")}
               disabled={isBusy}
             >
-              <MaterialCommunityIcons name="close-circle-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="close-circle-outline" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
               <Text style={styles.dangerOutlineBtnText}>Cancel Ride</Text>
             </Pressable>
           )}
@@ -347,7 +347,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
         {/* Error Banner */}
         {error ? (
           <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -428,7 +428,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
                 onPress={cancelAndLeave}
                 disabled={isBusy}
               >
-                <MaterialCommunityIcons name="close" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="close" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
                 <Text style={styles.dangerOutlineBtnText}>Cancel Request</Text>
               </Pressable>
             </View>
@@ -454,31 +454,33 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: "#FFFFFF",
+    paddingBottom: 10 + headerGrow,
+    backgroundColor: appColors.headerBg,
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
   },
   topNavTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   headerBadge: {
     alignSelf: "flex-end",
@@ -536,20 +538,20 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: appColors.border,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 3,
     elevation: 1,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -602,7 +604,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
   },
   routeTimelineLine: {
     width: 2,
@@ -681,7 +683,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   plateChip: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     paddingHorizontal: 10,
@@ -703,15 +705,15 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   errorText: {
     flex: 1,
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -720,7 +722,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   primaryBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -750,7 +752,7 @@ const styles = StyleSheet.create({
   dangerOutlineBtnText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#DC2626",
+    color: appColors.danger,
   },
   btnDisabled: {
     opacity: 0.6,

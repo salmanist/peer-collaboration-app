@@ -113,7 +113,7 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
 
           {errorMsg ? (
             <View style={styles.errorBanner}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{errorMsg}</Text>
             </View>
           ) : null}
@@ -131,7 +131,7 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
                   <MaterialCommunityIcons
                     name={star <= rating ? "star" : "star-outline"}
                     size={36}
-                    color="#FDBF1E"
+                    color={appColors.gold}
                   />
                 </Pressable>
               ))}
@@ -181,20 +181,20 @@ export function RateTutorModal({ visible, session, onClose, onSuccess }: Props) 
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    backgroundColor: appColors.inkA08,
     justifyContent: "flex-end",
   },
   backdropTouch: {
     flex: 1,
   },
   sheetContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: "85%",
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.035,
     shadowRadius: 16,
@@ -255,15 +255,15 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   errorBanner: {
-    backgroundColor: "#fef2f2",
+    backgroundColor: appColors.red50,
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#fca5a5",
+    borderColor: appColors.red300,
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 13,
   },
   ratingSection: {
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 38,
   },
   starFilled: {
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   starEmpty: {
     color: appColors.border,
@@ -318,11 +318,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   submitBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#FDBF1E",
+    shadowColor: appColors.gold,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.035,
     shadowRadius: 6,

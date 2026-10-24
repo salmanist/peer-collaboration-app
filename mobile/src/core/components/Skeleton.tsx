@@ -1,3 +1,4 @@
+import { colors } from "../ui/theme";
 import React, { useEffect, useRef } from "react";
 import { Animated, DimensionValue, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
@@ -144,7 +145,7 @@ export function TutorCardSkeleton() {
         <Skeleton width={95} height={22} borderRadius={12} />
         <Skeleton width={65} height={22} borderRadius={12} />
       </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 12 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: colors.surfaceContainer, paddingTop: 12 }}>
         <Skeleton width={90} height={16} borderRadius={4} />
         <Skeleton width={110} height={34} borderRadius={8} />
       </View>
@@ -207,7 +208,7 @@ export function TutoringSessionCardSkeleton() {
           <Skeleton width="30%" height={12} borderRadius={4} />
         </View>
       </View>
-      <View style={{ backgroundColor: "#F8FAF8", padding: 10, borderRadius: 8, gap: 6, marginBottom: 12 }}>
+      <View style={{ backgroundColor: colors.sageTintLight, padding: 10, borderRadius: 8, gap: 6, marginBottom: 12 }}>
         <Skeleton width="70%" height={13} borderRadius={4} />
         <Skeleton width="50%" height={13} borderRadius={4} />
       </View>
@@ -236,7 +237,7 @@ export function CollaborationCardSkeleton() {
         <Skeleton width={75} height={20} borderRadius={10} />
         <Skeleton width={70} height={20} borderRadius={10} />
       </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 10 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: colors.surfaceContainer, paddingTop: 10 }}>
         <Skeleton width={110} height={14} borderRadius={4} />
         <Skeleton width={80} height={28} borderRadius={6} />
       </View>
@@ -261,7 +262,7 @@ export function OfferedTripCardSkeleton() {
         <Skeleton width={140} height={24} borderRadius={8} />
         <Skeleton width={88} height={24} borderRadius={8} />
       </View>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 10 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: colors.surfaceContainer, paddingTop: 10 }}>
         <Skeleton width={160} height={14} borderRadius={4} />
         <Skeleton width={16} height={16} borderRadius={8} />
       </View>
@@ -278,7 +279,7 @@ export function PublicRequestCardSkeleton() {
       </View>
       <Skeleton width="90%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
       <Skeleton width="75%" height={14} borderRadius={4} style={{ marginBottom: 12 }} />
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: "#F1F5F9", paddingTop: 10 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTopWidth: 1, borderTopColor: colors.surfaceContainer, paddingTop: 10 }}>
         <Skeleton width={100} height={14} borderRadius={4} />
         <Skeleton width={80} height={26} borderRadius={8} />
       </View>
@@ -412,19 +413,19 @@ export function SkeletonList({
 
 const styles = StyleSheet.create({
   skeletonBase: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: colors.border,
   },
   skeletonList: {
     padding: 16,
     gap: 12,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#0D3E02",
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 4,
@@ -444,10 +445,10 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   detailCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: colors.white,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: colors.border,
   },
 });

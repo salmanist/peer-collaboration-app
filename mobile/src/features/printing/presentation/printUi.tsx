@@ -19,8 +19,8 @@ export const statusConfig: Record<
   },
   accepted: {
     label: "Being Printed",
-    bg: "#FFFBEB",
-    text: "#B45309",
+    bg: appColors.amber50,
+    text: appColors.amber700,
     icon: "printer-pos",
   },
   done: {
@@ -31,8 +31,8 @@ export const statusConfig: Record<
   },
   cancelled: {
     label: "Cancelled",
-    bg: "#FEF2F2",
-    text: "#DC2626",
+    bg: appColors.red50,
+    text: appColors.danger,
     icon: "close-circle-outline",
   },
 };
@@ -109,7 +109,7 @@ export function Stars({ score, onChange }: { score: number; onChange?: (score: n
           <MaterialCommunityIcons
             name={n <= score ? "star" : "star-outline"}
             size={onChange ? 30 : 16}
-            color="#FDBF1E"
+            color={appColors.gold}
           />
         </Pressable>
       ))}
@@ -138,7 +138,7 @@ export function SwitchRow({
         value={value}
         onValueChange={onChange}
         trackColor={{ true: appColors.primary, false: appColors.border }}
-        thumbColor="#FFFFFF"
+        thumbColor={appColors.white}
       />
     </View>
   );
@@ -147,12 +147,12 @@ export function SwitchRow({
 export const printStyles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "800", color: appColors.text },
   subtitle: { fontSize: 13, color: appColors.textSecondary },
-  error: { fontSize: 12, fontWeight: "600", color: "#DC2626" },
+  error: { fontSize: 12, fontWeight: "600", color: appColors.danger },
 });
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,

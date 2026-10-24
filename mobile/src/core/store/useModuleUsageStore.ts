@@ -1,3 +1,4 @@
+import { colors } from "../ui/theme";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { create } from "zustand";
@@ -29,8 +30,8 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     title: "Peer Tutoring",
     subTitle: "Find Tutors & Study Groups",
     icon: "account-school",
-    bgColor: "#166534",
-    iconColor: "#ffffff",
+    bgColor: colors.green800,
+    iconColor: colors.white,
     defaultRank: 1,
   },
   {
@@ -39,8 +40,8 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     title: "Marketplace",
     subTitle: "Buy, Sell & Student Ads",
     icon: "storefront",
-    bgColor: "#D97706",
-    iconColor: "#ffffff",
+    bgColor: colors.warning,
+    iconColor: colors.white,
     defaultRank: 2,
   },
   {
@@ -49,8 +50,8 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     title: "Lost & Found",
     subTitle: "Report & Claim Items",
     icon: "map-marker-question",
-    bgColor: "#059669",
-    iconColor: "#ffffff",
+    bgColor: colors.emerald600,
+    iconColor: colors.white,
     defaultRank: 3,
   },
   {
@@ -59,8 +60,8 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     title: "Digital Library",
     subTitle: "Past Papers, E-Books & Notes",
     icon: "book-open-page-variant",
-    bgColor: "#2563EB",
-    iconColor: "#ffffff",
+    bgColor: colors.blue600,
+    iconColor: colors.white,
     defaultRank: 4,
   },
   {
@@ -69,8 +70,8 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     title: "Ride Sharing",
     subTitle: "Campus Commute & Carpool",
     icon: "car-multiple",
-    bgColor: "#DB2777",
-    iconColor: "#ffffff",
+    bgColor: colors.pink600,
+    iconColor: colors.white,
     defaultRank: 5,
   },
   {
@@ -79,8 +80,8 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     title: "Print Center",
     subTitle: "Docs, Notes & Binding",
     icon: "printer-outline",
-    bgColor: "#7C3AED",
-    iconColor: "#ffffff",
+    bgColor: colors.violet600,
+    iconColor: colors.white,
     defaultRank: 6,
   },
 ];

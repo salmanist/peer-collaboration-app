@@ -1144,3 +1144,12 @@ a restart — check for a leftover process on the port first.
   - `AppSidebar.tsx`: Prominent gold-accented `⭐ Admin Center` navigation item with `ADMIN` badge visible strictly to Salman and Zahra.
   - `HomeScreen.tsx`: Top Admin Control Center quick-access banner visible strictly to Salman and Zahra.
 
+
+
+## AI Chatbot - University Assistant (document Q&A)
+- Purpose: answers student questions only from uploaded university PDFs; says "I could not find that in the documents." otherwise. Every question is logged in chatbot_chatbotquery.
+- Tables: chatbot_document (title, file name, uploader, active flag), chatbot_chunk (page, position, text, 768-number embedding; no vector index), chatbot_chatbotquery.
+- Loading: `manage.py load_document <pdf> --title "..." [--replace] [--dry-run] [--admin-email x]` (pypdf, ~200-word pieces with overlap, all-or-nothing). `reembed_documents` re-embeds everything after changing the embedding model. Pages without text (scans) are skipped; there is no OCR.
+- Search: embeddings come from the local Ollama model `nomic-embed-text` (settings OLLAMA_URL, EMBEDDING_MODEL; dimension set once in EMBEDDING_DIMENSIONS). The question is cleaned of filler/university words, searched by meaning (original + cleaned) and by keyword, and merged by reciprocal rank fusion. Ollama must be running.
+- Answers: Gemini (CHATBOT_TEXT_MODELS tried in order, 10s timeout each) writes a short Markdown answer with bold terms and page references. CHATBOT_MIN_SIMILARITY (0.60) and Gemini's own refusal are the "I don't know" guards.
+- API: POST /api/chatbot/ask/ (JWT, 10 questions/min per user). Contract: docs/api-contracts/chatbot.md. Mobile: ChatbotScreen, opened from the Home "Ask me" button and the sidebar.

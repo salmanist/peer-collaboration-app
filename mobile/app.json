@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#0C4A38",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -57,8 +57,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "7cb6beac-e7a7-4002-a83f-061a81ccd94b"
+        "projectId": "6bb54afb-bfaf-4ac9-bc8b-ecdb3629106b"
       }
-    }
+    },
+    "owner": "salmansaeed16"
   }
 }

@@ -86,7 +86,7 @@ export default function PublicResourceRequestsScreen() {
           ) : (
             <Pressable style={styles.offerButton} onPress={() => router.push(`/resources/wanted/offer/${request.id}`)}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <MaterialCommunityIcons name="send-outline" size={13} color="#ffffff" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="send-outline" size={13} color={appColors.white} style={{ marginRight: 4 }} />
                 <Text style={styles.offerButtonText}>Send offer</Text>
               </View>
             </Pressable>
@@ -105,7 +105,7 @@ export default function PublicResourceRequestsScreen() {
         </View>
         <Pressable style={styles.addButton} onPress={() => router.push("/resources/wanted/create")}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 2 }} />
+            <MaterialCommunityIcons name="plus" size={14} color={appColors.white} style={{ marginRight: 2 }} />
             <Text style={styles.addButtonText}>Request</Text>
           </View>
         </Pressable>
@@ -117,7 +117,7 @@ export default function PublicResourceRequestsScreen() {
         <>
           {errorMessage ? (
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#b91c1c" style={{ marginRight: 4 }} />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
               <Text style={styles.errorText}>{errorMessage}</Text>
             </View>
           ) : null}
@@ -151,10 +151,10 @@ const styles = StyleSheet.create({
   title: { color: appColors.text, fontSize: 26, fontWeight: "700" },
   subtitle: { color: appColors.textSecondary, marginTop: 4 },
   addButton: { backgroundColor: appColors.primary, borderRadius: 8, paddingHorizontal: 13, paddingVertical: 10 },
-  addButtonText: { color: "#ffffff", fontWeight: "700" },
+  addButtonText: { color: appColors.white, fontWeight: "700" },
   list: { paddingBottom: 24 },
   emptyList: { flexGrow: 1, alignItems: "center", justifyContent: "center" },
-  card: { backgroundColor: "#ffffff", borderColor: appColors.border, borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 12, padding: 16 },
+  card: { backgroundColor: appColors.white, borderColor: appColors.border, borderRadius: 12, borderWidth: 1, gap: 8, marginBottom: 12, padding: 16 },
   cardTitle: { color: appColors.text, fontSize: 17, fontWeight: "700" },
   exchange: { color: appColors.primary, fontWeight: "700", textTransform: "capitalize" },
   description: { color: appColors.textSecondary, lineHeight: 20 },
@@ -162,8 +162,8 @@ const styles = StyleSheet.create({
   ownRequest: { color: appColors.textSecondary, fontWeight: "700" },
   offerSent: { color: appColors.primary, fontWeight: "700", textTransform: "capitalize" },
   offerButton: { alignSelf: "flex-start", backgroundColor: appColors.primary, borderRadius: 7, paddingHorizontal: 12, paddingVertical: 9 },
-  offerButtonText: { color: "#ffffff", fontWeight: "700" },
+  offerButtonText: { color: appColors.white, fontWeight: "700" },
   emptyText: { color: appColors.textSecondary, textAlign: "center" },
-  errorText: { color: "#b91c1c", marginBottom: 12 },
+  errorText: { color: appColors.red700, marginBottom: 12 },
 });
 

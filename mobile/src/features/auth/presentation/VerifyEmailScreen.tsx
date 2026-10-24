@@ -82,9 +82,9 @@ export default function VerifyEmailScreen() {
           ) : null}
 
           {error ? (
-            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FEF2F2", padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#FECACA", marginBottom: 14, gap: 8 }}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" />
-              <Text style={{ color: "#B91C1C", fontSize: 13, flex: 1, fontWeight: "600" }}>{error}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: appColors.red50, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: appColors.red200, marginBottom: 14, gap: 8 }}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} />
+              <Text style={{ color: appColors.red700, fontSize: 13, flex: 1, fontWeight: "600" }}>{error}</Text>
             </View>
           ) : null}
 
@@ -114,7 +114,7 @@ export default function VerifyEmailScreen() {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#000000" />
+              <ActivityIndicator color={appColors.black} />
             ) : (
               <Text style={styles.submitButtonText}>Confirm & Activate Account</Text>
             )}
@@ -138,13 +138,13 @@ export default function VerifyEmailScreen() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
     paddingHorizontal: 24,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
   },
   brandBox: {
     alignItems: "center",
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: appColors.surfaceMuted,
-    borderColor: "#FDBF1E",
+    borderColor: appColors.gold,
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
@@ -211,14 +211,14 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   errorBanner: {
-    backgroundColor: "#FEE2E2",
-    color: "#B91C1C",
+    backgroundColor: appColors.dangerBg,
+    color: appColors.red700,
     padding: 12,
     borderRadius: 10,
     marginBottom: 14,
     fontSize: 13,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: appColors.red200,
   },
   fieldLabel: {
     fontSize: 13,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   submitButton: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButtonText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 15,
   },

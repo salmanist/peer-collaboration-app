@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "../../../core/ui/AppText";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { listRideHistory, type RideHistory } from "../data/ridesApi";
@@ -36,16 +36,16 @@ export default function RideHistoryScreen() {
   );
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={styles.root}>
       {/* Top Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable
           onPress={() => goBack("/(app)/rides")}
           accessibilityLabel="Back"
           hitSlop={10}
           style={styles.backBtn}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Ride Travel History</Text>
@@ -56,7 +56,7 @@ export default function RideHistoryScreen() {
       <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}>
         {!!error && (
           <Pressable style={styles.errorBox} onPress={() => setRetry((value) => value + 1)}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" />
+            <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} />
             <Text style={styles.errorText}>{error} Tap to retry.</Text>
           </Pressable>
         )}
@@ -102,7 +102,7 @@ export default function RideHistoryScreen() {
 
             {/* Real-time Rides Section */}
             <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-              <MaterialCommunityIcons name="lightning-bolt" size={18} color="#D97706" />
+              <MaterialCommunityIcons name="lightning-bolt" size={18} color={appColors.warning} />
               <Text style={styles.sectionTitle}>Real-time Campus Lifts</Text>
               <View style={styles.countBadge}>
                 <Text style={styles.countBadgeText}>{data.realtime.length}</Text>
@@ -159,35 +159,36 @@ export default function RideHistoryScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
   },
   header: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: appColors.border,
+    paddingBottom: 12 + headerGrow,
+    backgroundColor: appColors.headerBg,
   },
   backBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: appColors.surfaceMuted,
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: appColors.border,
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   subtitle: {
     fontSize: 12,
-    color: appColors.textSecondary,
+    color: appColors.onHeaderMuted,
     marginTop: 1,
   },
   scrollContent: {
@@ -197,16 +198,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     fontSize: 13,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
   sectionHeader: {
@@ -255,7 +256,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   realtimeCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,

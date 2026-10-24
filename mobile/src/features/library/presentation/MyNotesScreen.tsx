@@ -1,5 +1,5 @@
 import { Skeleton } from "../../../core/components/Skeleton";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -94,7 +94,7 @@ export default function MyNotesScreen() {
       {/* Top Nav Bar */}
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/library")}>
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Shared Notes</Text>
         <View style={{ width: 36 }} />
@@ -125,7 +125,7 @@ export default function MyNotesScreen() {
                 style={styles.uploadBtn}
                 onPress={() => router.push("/(app)/library/notes/upload" as any)}
               >
-                <MaterialCommunityIcons name="plus" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="plus" size={18} color={appColors.white} style={{ marginRight: 6 }} />
                 <Text style={styles.uploadBtnText}>Share Notes</Text>
               </Pressable>
             </View>
@@ -173,7 +173,7 @@ export default function MyNotesScreen() {
                 onPress={() => confirmDelete(item)}
                 disabled={deletingId === item.id}
               >
-                <MaterialCommunityIcons name="trash-can-outline" size={16} color="#DC2626" />
+                <MaterialCommunityIcons name="trash-can-outline" size={16} color={appColors.danger} />
                 <Text style={[styles.actionText, styles.deleteText]}>
                   {deletingId === item.id ? "Deleting..." : "Delete"}
                 </Text>
@@ -193,29 +193,31 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   list: {
     padding: 16,
@@ -253,7 +255,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   uploadBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -264,7 +266,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -288,7 +290,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   semesterBadge: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -296,7 +298,7 @@ const styles = StyleSheet.create({
   semesterBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#B45309",
+    color: appColors.amber700,
   },
   courseBadge: {
     backgroundColor: appColors.surfaceMuted,
@@ -360,10 +362,10 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   deleteBtn: {
-    backgroundColor: "#FEF2F2",
-    borderColor: "#FEE2E2",
+    backgroundColor: appColors.red50,
+    borderColor: appColors.dangerBg,
   },
   deleteText: {
-    color: "#DC2626",
+    color: appColors.danger,
   },
 });

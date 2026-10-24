@@ -47,7 +47,7 @@ function LocationField({
         <MaterialCommunityIcons
           name={slot === "pickup" ? "circle-slice-8" : "map-marker"}
           size={16}
-          color={slot === "pickup" ? appColors.icon : "#DC2626"}
+          color={slot === "pickup" ? appColors.icon : appColors.danger}
         />
       </View>
       <View style={styles.flex1}>
@@ -76,7 +76,7 @@ function LocationField({
         <MaterialCommunityIcons
           name="map-marker-radius"
           size={18}
-          color={isPinning ? "#FFFFFF" : appColors.primary}
+          color={isPinning ? appColors.white : appColors.primary}
         />
       </Pressable>
     </View>
@@ -294,7 +294,7 @@ export function RideBookingSection({
       {/* Error Message */}
       {error && (
         <View style={styles.errorBanner}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
           <Text style={styles.errorText}>{error}</Text>
         </View>
       )}
@@ -361,13 +361,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fieldsCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -428,21 +428,21 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.primaryA08,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.primaryA15,
   },
   pinButtonActive: {
     backgroundColor: appColors.primary,
     borderColor: appColors.primary,
   },
   suggestionsCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: appColors.border,
     paddingHorizontal: 12,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.035,
     shadowRadius: 4,
@@ -495,15 +495,15 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   errorText: {
     flex: 1,
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -520,12 +520,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   fareCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     color: appColors.textSecondary,
   },
   primaryBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",

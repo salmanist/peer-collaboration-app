@@ -1,5 +1,6 @@
 import { colors as appColors } from "../../src/core/ui/theme";
 import { Stack, usePathname } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import {
   AppState,
@@ -87,6 +88,7 @@ export default function AuthenticatedAppLayout() {
         </View>
       ) : null}
 
+      <StatusBar style="light" />
       <View style={styles.content}>
         <Stack screenOptions={{ headerShown: false, animation: "none" }}>
           <Stack.Screen name="index" />
@@ -100,6 +102,7 @@ export default function AuthenticatedAppLayout() {
           <Stack.Screen name="rides" />
           <Stack.Screen name="printing" />
           <Stack.Screen name="ondemand" />
+          <Stack.Screen name="chatbot" />
         </Stack>
       </View>
 

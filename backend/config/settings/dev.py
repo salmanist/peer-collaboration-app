@@ -7,6 +7,6 @@ ALLOWED_HOSTS = ["*"]
 # every module's HTTP request waiting indefinitely during development.
 DATABASES["default"]["OPTIONS"].update({
     "connect_timeout": 10,
-    "pool": {"min_size": 2, "max_size": 6, "timeout": 35},
+    "pool": {"min_size": 2, "max_size": 15, "timeout": 35},
 })
 DATABASES["default"]["CONN_MAX_AGE"] = 0

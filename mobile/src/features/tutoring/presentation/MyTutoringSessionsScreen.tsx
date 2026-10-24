@@ -1,5 +1,5 @@
 import { cleanSampleText } from "../../../core/utils/cleanText";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text } from "../../../core/ui/AppText";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -156,7 +156,7 @@ export function MyTutoringSessionsScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Tutoring Sessions</Text>
         <View style={{ width: 36 }} />
@@ -172,7 +172,7 @@ export function MyTutoringSessionsScreen() {
             <MaterialCommunityIcons
               name="book-open-outline"
               size={14}
-              color={activeTab === "learner" ? "#FDBF1E" : appColors.textSecondary}
+              color={activeTab === "learner" ? appColors.gold : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text
@@ -192,7 +192,7 @@ export function MyTutoringSessionsScreen() {
             <MaterialCommunityIcons
               name="school-outline"
               size={14}
-              color={activeTab === "tutor" ? "#FDBF1E" : appColors.textSecondary}
+              color={activeTab === "tutor" ? appColors.gold : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text
@@ -212,7 +212,7 @@ export function MyTutoringSessionsScreen() {
             <MaterialCommunityIcons
               name="history"
               size={14}
-              color={activeTab === "history" ? "#FDBF1E" : appColors.textSecondary}
+              color={activeTab === "history" ? appColors.gold : appColors.textSecondary}
               style={{ marginRight: 4 }}
             />
             <Text
@@ -376,7 +376,7 @@ export function MyTutoringSessionsScreen() {
                               key={star}
                               name={star <= item.review!.rating ? "star" : "star-outline"}
                               size={15}
-                              color="#FDBF1E"
+                              color={appColors.gold}
                               style={{ marginRight: 2 }}
                             />
                           ))}
@@ -386,7 +386,7 @@ export function MyTutoringSessionsScreen() {
                         </Text>
                       </View>
                       <View style={styles.reviewBadgeTag}>
-                        <MaterialCommunityIcons name="star-check-outline" size={13} color="#B45309" style={{ marginRight: 4 }} />
+                        <MaterialCommunityIcons name="star-check-outline" size={13} color={appColors.amber700} style={{ marginRight: 4 }} />
                         <Text style={styles.reviewBadgeText}>Session Rating</Text>
                       </View>
                     </View>
@@ -419,7 +419,7 @@ export function MyTutoringSessionsScreen() {
                         onPress={() => handleStatusChange(item.id, "accepted")}
                       >
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <MaterialCommunityIcons name="check" size={14} color="#ffffff" style={{ marginRight: 3 }} />
+                          <MaterialCommunityIcons name="check" size={14} color={appColors.white} style={{ marginRight: 3 }} />
                           <Text style={styles.acceptBtnText}>Accept</Text>
                         </View>
                       </Pressable>
@@ -428,7 +428,7 @@ export function MyTutoringSessionsScreen() {
                         onPress={() => handleStatusChange(item.id, "declined")}
                       >
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                          <MaterialCommunityIcons name="close" size={14} color="#DC2626" style={{ marginRight: 3 }} />
+                          <MaterialCommunityIcons name="close" size={14} color={appColors.danger} style={{ marginRight: 3 }} />
                           <Text style={styles.declineBtnText}>Decline</Text>
                         </View>
                       </Pressable>
@@ -452,7 +452,7 @@ export function MyTutoringSessionsScreen() {
                       onPress={() => handleStatusChange(item.id, "completed", item)}
                     >
                       <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <MaterialCommunityIcons name="check-circle-outline" size={15} color="#ffffff" style={{ marginRight: 4 }} />
+                        <MaterialCommunityIcons name="check-circle-outline" size={15} color={appColors.white} style={{ marginRight: 4 }} />
                         <Text style={styles.completeBtnText}>Mark Completed</Text>
                       </View>
                     </Pressable>
@@ -500,9 +500,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -511,21 +513,21 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   tabsRow: {
     flexDirection: "row",
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
@@ -557,7 +559,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   tabBtnTextActive: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
   },
   loadingContainer: {
@@ -576,7 +578,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sessionCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
@@ -623,7 +625,7 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.surfaceMuted,
   },
   badgeDeclined: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
   },
   statusBadgeText: {
     fontSize: 10,
@@ -641,7 +643,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   statusTextDeclined: {
-    color: "#991B1B",
+    color: appColors.red800,
   },
   metaRow: {
     flexDirection: "row",
@@ -697,10 +699,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 9,
     paddingHorizontal: 12,
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   reviewSnippetHeader: {
     flexDirection: "row",
@@ -719,32 +721,32 @@ const styles = StyleSheet.create({
   reviewScoreText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#B45309",
+    color: appColors.amber700,
   },
   reviewBadgeTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF3C7",
+    backgroundColor: appColors.warningBg,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   reviewBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#92400E",
+    color: appColors.onSecondaryContainer,
     letterSpacing: 0.1,
   },
   reviewComment: {
     marginTop: 7,
     paddingTop: 7,
     borderTopWidth: 1,
-    borderTopColor: "#FDE68A",
+    borderTopColor: appColors.amber200,
     fontSize: 12,
     fontStyle: "italic",
-    color: "#78350F",
+    color: appColors.amber900,
     lineHeight: 16,
   },
   cardActions: {
@@ -763,7 +765,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   chatBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -780,7 +782,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   acceptBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 13,
     fontWeight: "800",
   },
@@ -788,11 +790,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     alignItems: "center",
   },
   declineBtnText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -824,13 +826,13 @@ const styles = StyleSheet.create({
   },
   rateBtn: {
     flex: 1,
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: "center",
   },
   rateBtnText: {
-    color: "#000000",
+    color: appColors.black,
     fontSize: 13,
     fontWeight: "800",
   },

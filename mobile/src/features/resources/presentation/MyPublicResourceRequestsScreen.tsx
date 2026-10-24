@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -181,7 +181,7 @@ export default function MyPublicResourceRequestsScreen() {
               onPress={() => deleteRequest(request)}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <MaterialCommunityIcons name="trash-can-outline" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="trash-can-outline" size={14} color={appColors.red700} style={{ marginRight: 4 }} />
                 <Text style={styles.deleteBtnText}>Delete</Text>
               </View>
             </Pressable>
@@ -200,7 +200,7 @@ export default function MyPublicResourceRequestsScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Requests</Text>
         <Pressable
@@ -216,7 +216,7 @@ export default function MyPublicResourceRequestsScreen() {
 
       {errorMessage ? (
         <View style={styles.errorBox}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
       ) : null}
@@ -249,7 +249,7 @@ export default function MyPublicResourceRequestsScreen() {
                 onPress={() => router.push("/(app)/resources/wanted/create" as any)}
               >
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <MaterialCommunityIcons name="plus" size={14} color="#ffffff" style={{ marginRight: 4 }} />
+                  <MaterialCommunityIcons name="plus" size={14} color={appColors.white} style={{ marginRight: 4 }} />
                   <Text style={styles.emptyAddBtnText}>Post New Request</Text>
                 </View>
               </Pressable>
@@ -268,9 +268,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -279,20 +281,20 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   navActionBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 10,
@@ -317,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -365,15 +367,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusFulfilledText: {
-    color: "#1E40AF",
+    color: appColors.blue800,
   },
   statusCancelled: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#FCA5A5",
+    backgroundColor: appColors.dangerBg,
+    borderColor: appColors.red300,
     borderWidth: 1,
   },
   statusCancelledText: {
-    color: "#DC2626",
+    color: appColors.danger,
   },
   descriptionText: {
     color: appColors.textSecondary,
@@ -424,27 +426,27 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   deleteBtn: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   deleteBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 12,
     fontWeight: "700",
   },
   errorBox: {
     margin: 16,
     padding: 12,
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 8,
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 12,
     textAlign: "center",
   },
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyAddBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
     fontSize: 13,
   },

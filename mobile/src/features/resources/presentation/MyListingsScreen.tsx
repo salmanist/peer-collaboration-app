@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text } from "../../../core/ui/AppText";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -56,7 +56,7 @@ function getCategoryBg(category: ResourceCategory): string {
     case "books": return appColors.surfaceMuted;
     case "notes": return appColors.surfaceMuted;
     case "stationery": return appColors.surfaceMuted;
-    case "lab_equipment": return "#FCE7F3";
+    case "lab_equipment": return appColors.pink100;
     default: return appColors.border;
   }
 }
@@ -285,7 +285,7 @@ export default function MyListingsScreen() {
               onPress={() => deleteListing(listing)}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <MaterialCommunityIcons name="trash-can-outline" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="trash-can-outline" size={14} color={appColors.red700} style={{ marginRight: 4 }} />
                 <Text style={styles.deleteBtnText}>Delete</Text>
               </View>
             </Pressable>
@@ -410,7 +410,7 @@ export default function MyListingsScreen() {
               onPress={() => deleteRequest(request)}
             >
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-                <MaterialCommunityIcons name="trash-can-outline" size={14} color="#B91C1C" style={{ marginRight: 4 }} />
+                <MaterialCommunityIcons name="trash-can-outline" size={14} color={appColors.red700} style={{ marginRight: 4 }} />
                 <Text style={styles.deleteBtnText}>Delete</Text>
               </View>
             </Pressable>
@@ -429,7 +429,7 @@ export default function MyListingsScreen() {
           style={styles.navBackBtn}
           onPress={handleBack}
         >
-          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
+          <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>
           {activeTab === "listings" ? "My Shared Listings" : "My Resource Requests"}
@@ -447,7 +447,7 @@ export default function MyListingsScreen() {
             <MaterialCommunityIcons
               name="package-variant"
               size={16}
-              color={activeTab === "listings" ? "#FDBF1E" : appColors.textSecondary}
+              color={activeTab === "listings" ? appColors.gold : appColors.textSecondary}
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.tabText, activeTab === "listings" && styles.activeTabText]}>
@@ -463,7 +463,7 @@ export default function MyListingsScreen() {
             <MaterialCommunityIcons
               name="hand-wave-outline"
               size={16}
-              color={activeTab === "requests" ? "#FDBF1E" : appColors.textSecondary}
+              color={activeTab === "requests" ? appColors.gold : appColors.textSecondary}
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.tabText, activeTab === "requests" && styles.activeTabText]}>
@@ -475,7 +475,7 @@ export default function MyListingsScreen() {
 
       {errorMessage ? (
         <View style={styles.errorBox}>
-          <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#B91C1C" style={{ marginRight: 4 }} />
+          <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.red700} style={{ marginRight: 4 }} />
           <Text style={styles.errorText}>{errorMessage}</Text>
         </View>
       ) : null}
@@ -559,9 +559,11 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -570,16 +572,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   navSpacer: {
     width: 36,
@@ -595,21 +597,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 30,
     gap: 8,
-    shadowColor: "#000000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.035,
     shadowRadius: 8,
     elevation: 6,
     borderWidth: 1.5,
-    borderColor: "#FDBF1E",
+    borderColor: appColors.gold,
   },
   floatingActionBtnIcon: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontSize: 16,
     fontWeight: "900",
   },
   floatingActionBtnText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: -0.2,
@@ -636,8 +638,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   activeTab: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 2,
@@ -667,7 +669,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderColor: appColors.border,
     borderRadius: 16,
     borderWidth: 1,
@@ -731,7 +733,7 @@ const styles = StyleSheet.create({
   },
   priceTagPaid: {
     backgroundColor: appColors.surfaceMuted,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
     borderWidth: 1,
   },
   priceTagText: {
@@ -828,17 +830,17 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   deleteBtn: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   deleteBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 12,
     fontWeight: "700",
     textAlign: "center",
@@ -913,15 +915,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   statusFulfilledText: {
-    color: "#1E40AF",
+    color: appColors.blue800,
   },
   statusCancelled: {
-    backgroundColor: "#FEE2E2",
-    borderColor: "#FCA5A5",
+    backgroundColor: appColors.dangerBg,
+    borderColor: appColors.red300,
     borderWidth: 1,
   },
   statusCancelledText: {
-    color: "#DC2626",
+    color: appColors.danger,
   },
   descriptionText: {
     color: appColors.textSecondary,
@@ -937,11 +939,11 @@ const styles = StyleSheet.create({
   errorBox: {
     margin: 16,
     padding: 12,
-    backgroundColor: "#fee2e2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 8,
   },
   errorText: {
-    color: "#b91c1c",
+    color: appColors.red700,
     fontSize: 12,
     textAlign: "center",
   },
@@ -973,7 +975,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyAddBtnText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
     fontSize: 13,
   },

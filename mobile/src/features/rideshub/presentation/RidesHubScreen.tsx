@@ -1,5 +1,5 @@
 import { API_REQUEST_TIMEOUT_MS } from "../../../core/network/apiClient";
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -215,7 +215,7 @@ export default function RidesHubScreen() {
         label: "Ride History",
         subtitle: "Your offered, requested, and real-time rides",
         icon: "history",
-        iconColor: "#FDBF1E",
+        iconColor: appColors.gold,
         onPress: () => router.push("/(app)/rides/history" as any),
       },
     ],
@@ -328,7 +328,7 @@ export default function RidesHubScreen() {
             {/* Trips List */}
             {tripsError && (
               <View style={styles.errorBox}>
-                <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
                 <Text style={styles.errorText}>{tripsError}</Text>
                 <Pressable accessibilityRole="button" onPress={() => setTripsRetry(value => value + 1)} hitSlop={8}><Text style={{ color: appColors.primary, fontWeight: "700" }}>Retry</Text></Pressable>
               </View>
@@ -380,7 +380,7 @@ export default function RidesHubScreen() {
           }
         }}
       >
-        <MaterialCommunityIcons name="plus" size={28} color="#ffffff" />
+        <MaterialCommunityIcons name="plus" size={28} color={appColors.white} />
       </Pressable>
     </View>
   );
@@ -392,19 +392,21 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   compactTopNav: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 4,
+    paddingBottom: 4 + headerGrow,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#EFF0EF",
+    borderBottomColor: appColors.headerBg,
   },
   compactNavTitle: {
     fontSize: 18,
     fontWeight: "900",
-    color: appColors.primary,
+    color: appColors.onHeader,
     letterSpacing: -0.3,
   },
   modeTabsContainer: {
@@ -428,8 +430,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   modeTabActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 2,
@@ -462,8 +464,8 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   subModeTabActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000000",
+    backgroundColor: appColors.white,
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
@@ -523,7 +525,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   activeRideCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 20,
     alignItems: "center",
@@ -550,7 +552,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   driverCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -585,11 +587,11 @@ const styles = StyleSheet.create({
   pendingBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFBEB",
+    backgroundColor: appColors.amber50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FDE68A",
+    borderColor: appColors.amber200,
   },
   pendingBannerText: {
     flex: 1,
@@ -607,23 +609,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryBtnText: {
-    color: "#FFFFFF",
+    color: appColors.white,
     fontSize: 14,
     fontWeight: "800",
   },
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
     flex: 1,
     fontSize: 12,
-    color: "#DC2626",
+    color: appColors.danger,
     fontWeight: "600",
   },
   floatingAddBtn: {

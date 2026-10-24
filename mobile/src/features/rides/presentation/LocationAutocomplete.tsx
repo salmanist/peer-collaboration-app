@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     overflow: "hidden",
     marginTop: 4,
     shadowColor: appColors.text,

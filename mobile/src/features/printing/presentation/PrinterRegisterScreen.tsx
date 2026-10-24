@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { goBack } from "../../../core/navigation/goBack";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { Text, TextInput } from "../../../core/ui/AppText";
@@ -81,7 +81,7 @@ export default function PrinterRegisterScreen() {
   if (!isLoaded && !error) {
     return <View style={styles.rootContainer}>
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} /></Pressable>
+        <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} /></Pressable>
         <Text style={styles.topNavTitle}>Printer Setup</Text><View style={{ width: 36 }} />
       </View>
       <LoadingSkeleton variant="form" />
@@ -142,7 +142,7 @@ export default function PrinterRegisterScreen() {
                 value={supportsColor}
                 onValueChange={setSupportsColor}
                 trackColor={{ true: appColors.primary, false: appColors.border }}
-                thumbColor="#FFFFFF"
+                thumbColor={appColors.white}
               />
             </View>
 
@@ -157,14 +157,14 @@ export default function PrinterRegisterScreen() {
                 value={supportsDoubleSided}
                 onValueChange={setSupportsDoubleSided}
                 trackColor={{ true: appColors.primary, false: appColors.border }}
-                thumbColor="#FFFFFF"
+                thumbColor={appColors.white}
               />
             </View>
           </View>
 
           {error && (
             <View style={styles.errorBox}>
-              <MaterialCommunityIcons name="alert-circle-outline" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
@@ -175,7 +175,7 @@ export default function PrinterRegisterScreen() {
             disabled={isBusy}
           >
             {isBusy ? (
-              <ActivityIndicator color="#000000" size="small" />
+              <ActivityIndicator color={appColors.black} size="small" />
             ) : (
               <Text style={styles.primaryBtnText}>
                 {isPrinter ? "Save Changes" : "Register as Campus Printer"}
@@ -189,7 +189,7 @@ export default function PrinterRegisterScreen() {
               onPress={handleStop}
               disabled={isBusy}
             >
-              <MaterialCommunityIcons name="printer-off" size={16} color="#DC2626" style={{ marginRight: 6 }} />
+              <MaterialCommunityIcons name="printer-off" size={16} color={appColors.danger} style={{ marginRight: 6 }} />
               <Text style={styles.stopBtnText}>Deactivate Printer Profile</Text>
             </Pressable>
           )}
@@ -204,29 +204,31 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
-    backgroundColor: "#FFFFFF",
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
+    backgroundColor: appColors.headerBg,
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 8 + headerGrow,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   topNavTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   scrollContent: {
     padding: 16,
@@ -246,7 +248,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.primaryA08,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -269,7 +271,7 @@ const styles = StyleSheet.create({
     color: appColors.text,
   },
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderWidth: 1,
     borderColor: appColors.border,
     borderRadius: 10,
@@ -308,20 +310,20 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
   },
   errorText: {
-    color: "#B91C1C",
+    color: appColors.red700,
     fontSize: 13,
     fontWeight: "600",
     flex: 1,
   },
   primaryBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -336,7 +338,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryBtnText: {
-    color: "#000000",
+    color: appColors.black,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -344,15 +346,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: appColors.red50,
     borderRadius: 12,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
+    borderColor: appColors.dangerBg,
     marginTop: 8,
   },
   stopBtnText: {
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "700",
   },

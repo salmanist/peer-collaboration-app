@@ -176,20 +176,20 @@ export default function CampusNotificationCenterModal() {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    backgroundColor: appColors.inkA08,
     justifyContent: "flex-end",
   },
   backdropPressable: {
     flex: 1,
   },
   sheetContainer: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "85%",
     minHeight: "50%",
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    shadowColor: "#000000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.035,
     shadowRadius: 12,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   unreadCountPill: {
-    backgroundColor: "#EF4444",
+    backgroundColor: appColors.red500,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 10,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   unreadCountText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#ffffff",
+    color: appColors.white,
   },
   headerActionRow: {
     flexDirection: "row",
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   itemCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#EF4444",
+    backgroundColor: appColors.red500,
   },
   itemTimeText: {
     fontSize: 11,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   itemFooter: {
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.05)",
+    borderTopColor: appColors.blackA05,
     paddingTop: 8,
     flexDirection: "row",
     justifyContent: "space-between",

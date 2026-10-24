@@ -114,7 +114,7 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
                   <MaterialCommunityIcons
                     name="shield-crown"
                     size={16}
-                    color="#FDBF1E"
+                    color={appColors.gold}
                   />
                 </View>
                 <Text style={styles.adminNavText}>Admin Center</Text>
@@ -249,6 +249,25 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
               </View>
               <Text style={[styles.navigationText, pathname.startsWith("/printing") && styles.currentNavigationText]}>
                 Print Center
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* University Assistant */}
+          <Pressable
+            style={[styles.navigationItem, pathname === "/chatbot" && styles.currentNavigationItem]}
+            onPress={() => navigate("/chatbot")}
+          >
+            <View style={styles.navigationContent}>
+              <View style={styles.navIconBox}>
+                <MaterialCommunityIcons
+                  name="robot-outline"
+                  size={18}
+                  color={pathname === "/chatbot" ? appColors.primary : appColors.textSecondary}
+                />
+              </View>
+              <Text style={[styles.navigationText, pathname === "/chatbot" && styles.currentNavigationText]}>
+                University Assistant
               </Text>
             </View>
           </Pressable>
@@ -404,7 +423,7 @@ export default function AppSidebar({ onNavigate, onClose }: AppSidebarProps) {
 const styles = StyleSheet.create({
   sidebarWrapper: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: appColors.white,
   },
   sidebar: {
     flex: 1,
@@ -436,7 +455,7 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
   },
   caption: {
     color: appColors.textSecondary,
@@ -468,7 +487,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   adminNavItemActive: {
-    backgroundColor: "#082601",
+    backgroundColor: appColors.primaryDark,
   },
   adminIconBox: {
     width: 26,
@@ -480,18 +499,18 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   adminNavText: {
-    color: "#ffffff",
+    color: appColors.white,
     fontWeight: "800",
     fontSize: 13,
   },
   adminNavTag: {
-    backgroundColor: "rgba(253, 191, 30, 0.18)",
+    backgroundColor: appColors.goldA18,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 5,
   },
   adminNavTagText: {
-    color: "#FDBF1E",
+    color: appColors.gold,
     fontWeight: "800",
     fontSize: 9,
     letterSpacing: 0.5,
@@ -581,7 +600,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   notificationDot: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     borderColor: appColors.primary,
     borderRadius: 5,
     borderWidth: 1,

@@ -1,4 +1,4 @@
-import { colors as appColors } from "../../../core/ui/theme";
+import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { Text } from "../../../core/ui/AppText";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { router } from "expo-router";
@@ -116,7 +116,7 @@ export default function DriverScreen() {
   if (!profile && !error) {
     return <View style={styles.container}>
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
-        <Pressable style={styles.navBackBtn} onPress={handleBack} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} /></Pressable>
+        <Pressable style={styles.navBackBtn} onPress={handleBack} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} /></Pressable>
         <Text style={styles.topNavTitle}>Driver Mode</Text><View style={{ width: 36 }} />
       </View>
       <LoadingSkeleton variant="list" />
@@ -137,7 +137,7 @@ export default function DriverScreen() {
         <View style={styles.centerCardContainer}>
           <View style={styles.pendingCard}>
             <View style={styles.warningCircle}>
-              <MaterialCommunityIcons name="clock-outline" size={32} color="#B45309" />
+              <MaterialCommunityIcons name="clock-outline" size={32} color={appColors.amber700} />
             </View>
             <Text style={styles.pendingTitle}>Vehicle Approval Required</Text>
             <Text style={styles.pendingSubtitle}>
@@ -200,7 +200,7 @@ export default function DriverScreen() {
                 value={isOnline}
                 onValueChange={toggleOnline}
                 trackColor={{ true: appColors.primary, false: appColors.border }}
-                thumbColor="#FFFFFF"
+                thumbColor={appColors.white}
               />
             )}
           </View>
@@ -208,7 +208,7 @@ export default function DriverScreen() {
 
         {error ? (
           <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="alert-circle-outline" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -315,29 +315,31 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.background,
   },
   topNavBar: {
+    borderTopWidth: headerGrow,
+    borderTopColor: appColors.headerBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: "#FFFFFF",
+    paddingBottom: 10 + headerGrow,
+    backgroundColor: appColors.headerBg,
     borderBottomWidth: 1,
-    borderBottomColor: appColors.border,
+    borderBottomColor: appColors.headerBg,
   },
   navBackBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(13, 62, 2, 0.08)",
+    backgroundColor: appColors.headerControlBg,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(13, 62, 2, 0.15)",
+    borderColor: appColors.headerControlBorder,
   },
   topNavTitle: {
     fontSize: 17,
     fontWeight: "800",
-    color: appColors.primary,
+    color: appColors.onHeader,
   },
   onlinePill: {
     flexDirection: "row",
@@ -388,13 +390,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   pendingCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
     padding: 24,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.035,
     shadowRadius: 3,
@@ -425,12 +427,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -468,15 +470,15 @@ const styles = StyleSheet.create({
   errorBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEE2E2",
+    backgroundColor: appColors.dangerBg,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#FCA5A5",
+    borderColor: appColors.red300,
   },
   errorText: {
     flex: 1,
-    color: "#DC2626",
+    color: appColors.danger,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -503,7 +505,7 @@ const styles = StyleSheet.create({
     color: appColors.primary,
   },
   emptyStateCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
@@ -524,12 +526,12 @@ const styles = StyleSheet.create({
     maxWidth: 260,
   },
   requestCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.white,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: appColors.border,
     padding: 16,
-    shadowColor: "#000",
+    shadowColor: appColors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 4.5,
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
   },
   routeTimelineLine: {
     width: 2,
@@ -621,7 +623,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   primaryBtn: {
-    backgroundColor: "#FDBF1E",
+    backgroundColor: appColors.gold,
     paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",

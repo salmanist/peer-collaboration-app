@@ -62,7 +62,7 @@ export const ModuleOptionsMenu: React.FC<ModuleOptionsMenuProps> = ({
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <MaterialCommunityIcons name="dots-horizontal" size={20} color={appColors.primary} />
+        <MaterialCommunityIcons name="dots-horizontal" size={18} color={appColors.primary} />
         {hasNotification && <View style={styles.triggerBadgeDot} />}
       </TouchableOpacity>
 
@@ -159,12 +159,12 @@ export const ModuleOptionsMenu: React.FC<ModuleOptionsMenuProps> = ({
 
 const styles = StyleSheet.create({
   triggerButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255, 255, 255, 0.88)",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: appColors.gold,
     borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.85)",
+    borderColor: appColors.gold,
     shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.035,
@@ -181,23 +181,23 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#DC2626",
+    backgroundColor: appColors.danger,
     borderWidth: 1.5,
-    borderColor: "#ffffff",
+    borderColor: appColors.white,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.08)",
+    backgroundColor: appColors.inkA08,
   },
   popupContainer: {
     position: "absolute",
     right: 16,
     minWidth: 230,
     maxWidth: 295,
-    backgroundColor: "rgba(255, 255, 255, 0.88)",
+    backgroundColor: appColors.whiteA88,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(226, 232, 240, 0.85)",
+    borderColor: appColors.borderA85,
     shadowColor: appColors.text,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.035,
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(241, 245, 249, 0.85)",
+    borderBottomColor: appColors.surfaceContainerA85,
   },
   popupHeaderTitle: {
     fontSize: 11,
@@ -230,11 +230,11 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
   },
   menuItemPressed: {
-    backgroundColor: "rgba(13, 62, 2, 0.06)",
+    backgroundColor: appColors.primaryA06,
   },
   menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(241, 245, 249, 0.85)",
+    borderBottomColor: appColors.surfaceContainerA85,
   },
   iconContainer: {
     width: 32,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 9.5,
     fontWeight: "900",
-    color: "#FDBF1E",
+    color: appColors.gold,
   },
   dotBadge: {
     width: 7,
