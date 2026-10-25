@@ -123,3 +123,13 @@ Every field on `accounts.User` is now either roster-derived (`full_name`, `depar
 ## Dummy dataset (simulated university API)
 
 `backend/accounts/fixtures/dummy_students.csv` — 30 sample students (mixed department/year/gender) standing in for a real university records feed. Load with `python manage.py import_roster backend/accounts/fixtures/dummy_students.csv` before registering test accounts.
+
+## Forgot / reset password
+
+- `POST auth/forgot-password/` body `{ "email": "<roll>@lgu.edu.pk" }`. Emails a 6-digit code (valid 15 minutes) to that university address. `404` if no account. `429` after 3 requests per email in 15 minutes. In development with no SMTP configured the response also carries `debug_otp`.
+- `POST auth/reset-password/` body `{ "email", "code", "new_password" }` (min 6 chars). `400` for a wrong or expired code. `429` after 5 wrong codes per email (locked for 15 minutes).
+
+## Sign-up code: email first, text message second
+
+- `POST auth/register/` now emails the 6-digit code to the student's university address (no text message). Response: `{ detail, sms_available, phone_number (masked, only when sms_available), debug_otp (dev only) }`. `sms_available` is true only when the server has an SMS provider (`SMS_ENABLED`) and this student has a phone on file; the app shows the phone option only then.
+- `POST auth/resend-code/` body `{ "email", "channel": "email" | "sms" }` (default email). `400` if already verified or SMS unavailable, `404` unknown email, `429` after 3 requests per email in 15 minutes.

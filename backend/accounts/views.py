@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.http import Http404
 from rest_framework import generics, permissions, status
@@ -11,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import EmailVerification, PersonalProfile, StudentRoster, User
 from .serializers import (
     ForgotPasswordSerializer,
+    ResendCodeSerializer,
     RegisterSerializer,
     ResetPasswordSerializer,
     UserSerializer,
@@ -19,23 +21,55 @@ from .serializers import (
 )
 
 
-def send_otp_sms_and_email(user, verification):
-    phone = user.phone_number or ""
-    # 1. Print SMS Dispatch to Server Console
-    print("\n" + "=" * 60)
-    print(" [SMS GATEWAY DISPATCH]")
-    print(f" To Mobile Number: {phone or 'Not configured on roster'}")
-    print(f" Student Account : {user.display_name} ({user.email})")
-    print(f" SMS Content     : Your LGU verification code is [{verification.code}]. Valid for 15 minutes.")
-    print("=" * 60 + "\n")
-
-    # 2. Also send via Django email backend
+def send_signup_email(user, verification):
     send_mail(
-        subject="Verify your LGU Peer Network account",
-        message=f"Your verification code is {verification.code}. It expires in 15 minutes.",
+        subject="Verify your LGU Peer account",
+        message=(
+            f"Your verification code is {verification.code}. "
+            f"It expires in {settings.EMAIL_OTP_LIFETIME_MINUTES} minutes.\n\n"
+            "If you did not create an account, you can ignore this email."
+        ),
         from_email=None,
         recipient_list=[user.email],
     )
+
+
+def send_sms(phone, message):
+    # ponytail: no SMS gateway is connected. Implement this with a provider (e.g. Twilio) and set SMS_ENABLED=true
+    # in .env; until then the app never offers the phone option.
+    raise NotImplementedError("No SMS provider configured")
+
+
+def masked(phone):
+    return (phone[:4] + "****" + phone[-3:]) if len(phone) >= 7 else phone
+
+
+def code_echo(body, verification):
+    # The code is only echoed back when emails are not really sent (console backend in dev).
+    if settings.DEBUG and settings.EMAIL_BACKEND.endswith("console.EmailBackend"):
+        body["debug_otp"] = verification.code
+    return body
+
+
+RESET_WINDOW_SECONDS = settings.RESET_WINDOW_MINUTES * 60
+
+
+def send_reset_email(user, verification):
+    send_mail(
+        subject="Your LGU Peer password reset code",
+        message=(
+            f"Hello {user.display_name or 'student'},\n\n"
+            f"Your password reset code is {verification.code}. "
+            f"It expires in {settings.EMAIL_OTP_LIFETIME_MINUTES} minutes.\n\n"
+            "If you did not ask to reset your password, you can ignore this email."
+        ),
+        from_email=None,
+        recipient_list=[user.email],
+    )
+
+
+def too_many_attempts(message):
+    return Response({"detail": message}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -48,19 +82,51 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
 
         verification = EmailVerification.objects.create(user=user)
-        send_otp_sms_and_email(user, verification)
+        send_signup_email(user, verification)
 
-        phone = user.phone_number
-        masked_phone = (phone[:4] + "****" + phone[-3:]) if len(phone) >= 7 else phone
-
+        sms_available = settings.SMS_ENABLED and bool(user.phone_number)
         body = {
-            "detail": f"Registration successful. Verification code sent via SMS to your mobile number ({masked_phone or 'registered on file'}) and email.",
-            "phone_number": masked_phone,
+            "detail": f"Account created. We emailed a 6-digit code to {user.email}.",
+            "sms_available": sms_available,
+            "phone_number": masked(user.phone_number) if sms_available else "",
         }
-        if settings.DEBUG:
-            body["debug_otp"] = verification.code
-        return Response(body, status=status.HTTP_201_CREATED)
+        return Response(code_echo(body, verification), status=status.HTTP_201_CREATED)
 
+
+class ResendCodeView(APIView):
+    """Sends a fresh sign-up code by email (default) or, when an SMS provider is connected, by text message."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = ResendCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].strip().lower()
+        channel = serializer.validated_data["channel"]
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({"detail": "No registered account found with this LGU email."}, status=status.HTTP_404_NOT_FOUND)
+        if user.is_email_verified:
+            return Response({"detail": "This account is already verified. You can log in."}, status=status.HTTP_400_BAD_REQUEST)
+        if channel == "sms" and not (settings.SMS_ENABLED and user.phone_number):
+            return Response({"detail": "Text messages are not available. Please use the email code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        requests_key = f"verify-resend:{email}"
+        sent_count = cache.get(requests_key, 0)
+        if sent_count >= settings.RESET_CODE_REQUESTS_PER_WINDOW:
+            return too_many_attempts(f"Too many requests. Please wait {settings.RESET_WINDOW_MINUTES} minutes and try again.")
+        cache.set(requests_key, sent_count + 1, RESET_WINDOW_SECONDS)
+
+        verification = EmailVerification.objects.create(user=user)
+        if channel == "sms":
+            send_sms(user.phone_number, f"Your LGU Peer verification code is {verification.code}. It expires in {settings.EMAIL_OTP_LIFETIME_MINUTES} minutes.")
+            detail = f"We texted a 6-digit code to {masked(user.phone_number)}."
+        else:
+            send_signup_email(user, verification)
+            detail = f"We emailed a new 6-digit code to {email}."
+        return Response(code_echo({"detail": detail}, verification))
 
 
 class VerifyEmailView(APIView):
@@ -104,19 +170,17 @@ class ForgotPasswordView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        requests_key = f"reset-requests:{email}"
+        sent_count = cache.get(requests_key, 0)
+        if sent_count >= settings.RESET_CODE_REQUESTS_PER_WINDOW:
+            return too_many_attempts(f"Too many reset requests. Please wait {settings.RESET_WINDOW_MINUTES} minutes and try again.")
+        cache.set(requests_key, sent_count + 1, RESET_WINDOW_SECONDS)
+
         verification = EmailVerification.objects.create(user=user)
-        send_otp_sms_and_email(user, verification)
+        send_reset_email(user, verification)
 
-        phone = user.phone_number
-        masked_phone = (phone[:4] + "****" + phone[-3:]) if len(phone) >= 7 else phone
-
-        body = {
-            "detail": f"Password reset OTP sent via SMS ({masked_phone or 'registered phone'}) and email.",
-            "phone_number": masked_phone,
-        }
-        if settings.DEBUG:
-            body["debug_otp"] = verification.code
-        return Response(body, status=status.HTTP_200_OK)
+        body = {"detail": f"We sent a 6-digit reset code to {email}. Open your university inbox to find it."}
+        return Response(code_echo(body, verification), status=status.HTTP_200_OK)
 
 
 class ResetPasswordView(APIView):
@@ -129,9 +193,15 @@ class ResetPasswordView(APIView):
         code = serializer.validated_data["code"].strip()
         new_password = serializer.validated_data["new_password"]
 
+        wrong_key = f"reset-wrong:{email}"
+        wrong_count = cache.get(wrong_key, 0)
+        if wrong_count >= settings.RESET_MAX_WRONG_CODES:
+            return too_many_attempts(f"Too many wrong codes. Please wait {settings.RESET_WINDOW_MINUTES} minutes, then request a new code.")
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
+            cache.set(wrong_key, wrong_count + 1, RESET_WINDOW_SECONDS)
             return Response(
                 {"detail": "Invalid email or reset code."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -139,10 +209,12 @@ class ResetPasswordView(APIView):
 
         verification = user.verifications.filter(code=code).order_by("-created_at").first()
         if verification is None or verification.is_expired():
+            cache.set(wrong_key, wrong_count + 1, RESET_WINDOW_SECONDS)
             return Response(
                 {"detail": "Invalid or expired reset code. Please request a new code."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        cache.delete(wrong_key)
 
         user.set_password(new_password)
         user.is_email_verified = True

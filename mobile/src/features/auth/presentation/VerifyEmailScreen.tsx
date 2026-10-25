@@ -16,7 +16,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { verifyEmail } from "../data/authApi";
+import { resendCode, verifyEmail } from "../data/authApi";
 
 export default function VerifyEmailScreen() {
   const insets = useSafeAreaInsets();
@@ -26,8 +26,25 @@ export default function VerifyEmailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const phone = params.phone ?? "";
+  const [info, setInfo] = useState("");
+  const [isResending, setIsResending] = useState(false);
+
+  const phone = params.phone ?? ""; // only present when the server offers text-message codes
   const topOffset = Math.max(insets.top, Platform.OS === "android" ? (StatusBar.currentHeight || 28) : 20);
+
+  const handleResend = async (channel: "email" | "sms") => {
+    setError(null);
+    setInfo("");
+    setIsResending(true);
+    try {
+      const data = await resendCode(email.trim().toLowerCase(), channel);
+      setInfo(data.debug_otp ? `${data.detail} (Test code: ${data.debug_otp})` : data.detail);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? "Could not send a new code. Please try again.");
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError(null);
@@ -72,14 +89,14 @@ export default function VerifyEmailScreen() {
             Enter the 6-digit confirmation code sent to your registered LGU account.
           </Text>
 
-          {phone ? (
-            <View style={styles.smsNotice}>
-              <MaterialCommunityIcons name="cellphone-message" size={20} color={appColors.primary} />
-              <Text style={styles.smsNoticeText}>
-                Confirmation code sent via SMS to <Text style={styles.boldText}>{phone}</Text> and your LGU email.
-              </Text>
-            </View>
-          ) : null}
+          <View style={styles.smsNotice}>
+            <MaterialCommunityIcons name="email-outline" size={20} color={appColors.primary} />
+            <Text style={styles.smsNoticeText}>
+              We emailed the code to <Text style={styles.boldText}>{email || "your LGU email"}</Text>. Open that inbox (check spam too).
+            </Text>
+          </View>
+
+          {info ? <Text style={styles.infoText}>{info}</Text> : null}
 
           {error ? (
             <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: appColors.red50, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: appColors.red200, marginBottom: 14, gap: 8 }}>
@@ -121,8 +138,16 @@ export default function VerifyEmailScreen() {
           </Pressable>
 
           <View style={styles.backLinkWrap}>
+            <Pressable onPress={() => void handleResend("email")} disabled={isResending}>
+              <Text style={styles.backLinkText}>Didn't get the email? Send a new code</Text>
+            </Pressable>
+            {phone ? (
+              <Pressable style={{ marginTop: 12 }} onPress={() => void handleResend("sms")} disabled={isResending}>
+                <Text style={styles.secondaryLinkText}>Send the code to my phone ({phone}) instead</Text>
+              </Pressable>
+            ) : null}
             <Pressable
-              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 16 }}
               onPress={() => router.replace("/(auth)/login" as any)}
             >
               <MaterialCommunityIcons name="arrow-left" size={16} color={appColors.primary} style={{ marginRight: 4 }} />
@@ -265,6 +290,18 @@ const styles = StyleSheet.create({
   backLinkWrap: {
     alignItems: "center",
     marginTop: 16,
+  },
+  secondaryLinkText: {
+    color: appColors.textSecondary,
+    fontSize: 12,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  infoText: {
+    color: appColors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 12,
   },
   backLinkText: {
     color: appColors.primary,

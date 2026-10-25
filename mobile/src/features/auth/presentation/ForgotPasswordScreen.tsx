@@ -26,7 +26,6 @@ export default function ForgotPasswordScreen() {
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [phoneInfo, setPhoneInfo] = useState("");
   const [debugOtp, setDebugOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,7 +48,6 @@ export default function ForgotPasswordScreen() {
 
     try {
       const data = await forgotPassword(cleanEmail);
-      if (data.phone_number) setPhoneInfo(data.phone_number);
       if (data.debug_otp) setDebugOtp(data.debug_otp);
       setStep("reset");
     } catch (err: any) {
@@ -175,7 +173,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.card}>
             <Text style={styles.cardHeading}>Enter Verification Code</Text>
             <Text style={styles.cardDesc}>
-              We sent a 6-digit reset code to your registered email and mobile number {phoneInfo ? `(${phoneInfo})` : ""}.
+              We sent a 6-digit reset code to {email.trim().toLowerCase()}. Open your university inbox, copy the code and enter it below. It expires in 15 minutes.
             </Text>
 
             {debugOtp ? (

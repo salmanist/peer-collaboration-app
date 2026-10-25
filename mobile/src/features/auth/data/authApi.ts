@@ -18,7 +18,8 @@ export interface LoginResponse {
 
 export interface RegisterResponse {
   detail: string;
-  phone_number?: string;
+  sms_available?: boolean; // true only when the server can text codes and this student has a phone on file
+  phone_number?: string; // masked
   debug_otp?: string;
 }
 
@@ -27,6 +28,11 @@ export async function register(payload: RegisterPayload) {
   return data;
 }
 
+
+export async function resendCode(email: string, channel: "email" | "sms" = "email") {
+  const { data } = await apiClient.post<{ detail: string; debug_otp?: string }>("/auth/resend-code/", { email, channel });
+  return data;
+}
 
 export async function verifyEmail(email: string, code: string) {
   const { data } = await apiClient.post<{ detail: string }>("/auth/verify-email/", { email, code });
@@ -50,8 +56,7 @@ export async function updateMe(patch: Partial<Pick<AuthedUser, "bio" | "skills" 
 
 export interface ForgotPasswordResponse {
   detail: string;
-  phone_number?: string;
-  debug_otp?: string;
+  debug_otp?: string; // only present when the server does not really send email (dev)
 }
 
 export async function forgotPassword(email: string) {

@@ -118,9 +118,28 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Dev default: prints the OTP to the runserver console instead of sending real
-# email. Swap to an SMTP backend when the project has a provider to hand.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# With EMAIL_HOST set (root .env) codes are emailed for real over SMTP; without it the
+# OTP is only printed to the runserver console (dev default).
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_BACKEND = (
+    "django.core.mail.backends.smtp.EmailBackend"
+    if EMAIL_HOST
+    else "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@lgu.edu.pk")
+
+# Text-message codes need a paid SMS provider. Off until send_sms() in accounts/views.py is implemented.
+SMS_ENABLED = os.environ.get("SMS_ENABLED", "").lower() == "true"
+
+# Password-reset limits (counted per email in the cache, so no DB table is needed).
+# ponytail: the default local-memory cache is per process; use a shared cache if the backend runs several workers.
+RESET_MAX_WRONG_CODES = 5
+RESET_CODE_REQUESTS_PER_WINDOW = 3
+RESET_WINDOW_MINUTES = 15
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

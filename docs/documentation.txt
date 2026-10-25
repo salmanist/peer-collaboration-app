@@ -1153,3 +1153,16 @@ a restart — check for a leftover process on the port first.
 - Search: embeddings come from the local Ollama model `nomic-embed-text` (settings OLLAMA_URL, EMBEDDING_MODEL; dimension set once in EMBEDDING_DIMENSIONS). The question is cleaned of filler/university words, searched by meaning (original + cleaned) and by keyword, and merged by reciprocal rank fusion. Ollama must be running.
 - Answers: Gemini (CHATBOT_TEXT_MODELS tried in order, 10s timeout each) writes a short Markdown answer with bold terms and page references. CHATBOT_MIN_SIMILARITY (0.60) and Gemini's own refusal are the "I don't know" guards.
 - API: POST /api/chatbot/ask/ (JWT, 10 questions/min per user). Contract: docs/api-contracts/chatbot.md. Mobile: ChatbotScreen, opened from the Home "Ask me" button and the sidebar.
+
+## Forgot password (email delivery and limits)
+- The reset code is emailed to the student's university address. Set EMAIL_HOST, EMAIL_PORT, EMAIL_USE_TLS, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD and DEFAULT_FROM_EMAIL in the root .env to send through SMTP; with EMAIL_HOST empty the code is only printed in the server console and returned as debug_otp (dev only).
+- Limits are per email and kept in the Django cache (no DB table): 3 code requests and 5 wrong codes per 15 minutes, then HTTP 429. The default cache is per process; use a shared cache if the backend runs several workers.
+
+## Replacing roster emails with real ones (rename_roster_emails)
+- The roster email is also the student's login name and the key that links an account to its name, department, gender, session and phone, so it must never be edited in only one place.
+- `manage.py rename_roster_emails <csv> [--dry-run]` takes a CSV with `old_email,new_email` and renames the roster row and the registered account together in one transaction. Checks (all-or-nothing): valid emails, new address ends with @lgu.edu.pk, old address is on the roster, no duplicates, new address not already used by another student. Run with --dry-run first.
+- If an old address is in ADMIN_EMAILS (.env) the command warns; update that variable too. Students log in with the new email afterwards. Roster rows of students who have not registered yet are renamed too.
+
+## Sign-up verification code: email first, SMS second
+- Registration emails the code to the roster/login email (same SMTP settings as password reset). The fake "SMS" console print was removed.
+- The verify screen offers "Send a new code" (email) and, only when the server reports `sms_available`, "Send the code to my phone instead". Texting needs a paid provider: implement `send_sms()` in accounts/views.py and set SMS_ENABLED=true in .env; until then the option is hidden and the resend endpoint refuses `channel=sms`.

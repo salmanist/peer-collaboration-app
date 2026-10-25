@@ -56,6 +56,11 @@ class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
+class ResendCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    channel = serializers.ChoiceField(choices=["email", "sms"], default="email")
+
+
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)

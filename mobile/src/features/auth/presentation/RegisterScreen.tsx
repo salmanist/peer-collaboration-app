@@ -67,7 +67,7 @@ export default function RegisterScreen() {
         pathname: "/(auth)/verify-email",
         params: {
           email: cleanEmail,
-          phone: res?.phone_number ?? "",
+          phone: res?.sms_available ? (res.phone_number ?? "") : "", // only set when the text-message option exists
         },
       });
     } catch (err: unknown) {
