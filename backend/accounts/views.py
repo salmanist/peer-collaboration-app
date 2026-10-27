@@ -7,7 +7,8 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.exceptions import InvalidToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import EmailVerification, PersonalProfile, StudentRoster, User
 from .serializers import (
@@ -19,6 +20,15 @@ from .serializers import (
     PersonalProfileSerializer,
     VerifyEmailSerializer,
 )
+
+
+class SafeRefreshView(TokenRefreshView):
+    # A token whose user was deleted (e.g. after a DB reset) must read as 401, not crash with 500.
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except User.DoesNotExist:
+            raise InvalidToken("User no longer exists")
 
 
 def send_signup_email(user, verification):

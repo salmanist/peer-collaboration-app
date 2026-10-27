@@ -72,7 +72,11 @@ Request:
 
 `seats_total`: 1–8. `departure_date`: must not be in the past. `same_gender_only: true` requires the caller to have a `gender` set on their account (roster-sourced) — otherwise `400`.
 
-`departure_lat`/`departure_lng`/`destination_lat`/`destination_lng` are all optional. A lat given without its matching lng (or vice versa) for the same leg is rejected with `400`. Both pairs can be omitted entirely — the ride is simply not geocoded and stays discoverable via text search only.
+`departure_lat`/`departure_lng`/`destination_lat`/`destination_lng` are optional and carry an exact map pin for that leg.
+- No coordinates: `departure`/`destination` must be a curated `Location` name; its curated coordinates are stored.
+- Curated name + pin: the curated name is kept and the pin coordinates are stored, but the pin must be within 5 km of that area, otherwise `400` ("Pin is too far from the chosen area.").
+- Pin only (name not curated): the name is used as the label (e.g. "Pinned on map") and the point must lie inside the Lahore bounding box (lat 31.2-31.8, lng 73.9-74.7), otherwise `400`.
+- A lat without its lng (or vice versa) for the same leg is `400`.
 
 Response `201`: the created ride object.
 
@@ -161,3 +165,12 @@ Response `200`:
 Marks one of the caller's own notifications as read. `404` if it isn't the caller's.
 
 Response `200`: the updated notification object.
+
+## One-trip-at-a-time rule
+
+A student with a trip under way cannot offer, request, join or accept another. "Under way" = a started scheduled ride (as driver or accepted passenger), an active Ride Now trip (as rider or driver), or an accepted lift-board request. Blocked actions (`POST rides/`, `POST rides/<id>/join/`, `POST ondemand/rides/`, `POST ondemand/rides/<id>/accept/`, `POST ondemand/peer-requests/`, `POST ondemand/peer-requests/<id>/respond/`) answer `400` with `{"detail": "You have a ride in progress. Finish it before offering or requesting another."}`.
+
+## GET `rides/active/`
+
+Auth: required. Returns `{"trip": null}` when the student is free, otherwise
+`{"trip": {"type": "scheduled" | "ondemand" | "peer", "id": 16, "status": "in_progress", "from": "DHA Phase 6", "to": "Gulberg III", "partner_name": "..."}}` (`partner_name` only for `peer`). The Ride Sharing screen polls it every 15 seconds and pins the trip as a banner above the tabs.

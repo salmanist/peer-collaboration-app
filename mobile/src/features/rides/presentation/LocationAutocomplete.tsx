@@ -13,7 +13,9 @@ import {
   type ViewStyle,
 } from "react-native";
 
+import type { LatLng } from "../../ondemand/data/ondemandApi";
 import { searchLocations, type RideLocation } from "../data/ridesApi";
+import { PinPickerModal } from "./PinPickerModal";
 
 const DEBOUNCE_MS = 250;
 const BLUR_CLOSE_DELAY_MS = 200;
@@ -28,6 +30,8 @@ export interface LocationAutocompleteProps {
   containerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
   inputContainerStyle?: StyleProp<ViewStyle>;
+  // Shows a pin button so the student can refine the chosen area (or pick from scratch) on a map.
+  enablePin?: boolean;
 }
 
 export function LocationAutocomplete({
@@ -40,18 +44,30 @@ export function LocationAutocomplete({
   containerStyle,
   labelStyle,
   inputContainerStyle,
+  enablePin,
 }: LocationAutocompleteProps) {
   const [query, setQuery] = useState(textValue ?? value?.name ?? "");
   const [results, setResults] = useState<RideLocation[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The dropdown area last picked, and the exact pin dropped on top of it (if any).
+  const [area, setArea] = useState<RideLocation | null>(null);
+  const [pin, setPin] = useState<LatLng | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const canPin = !!enablePin;
+  const areaForPin = area ?? (value && value.id !== 0 ? value : null);
 
   useEffect(() => {
     if (textValue !== undefined) {
       setQuery(textValue);
     } else if (value !== undefined) {
       setQuery(value?.name ?? "");
+    }
+    // The parent cleared the field (e.g. form reset): forget the area and pin too.
+    if (value === null) {
+      setArea(null);
+      setPin(null);
     }
   }, [textValue, value]);
 
@@ -69,6 +85,8 @@ export function LocationAutocomplete({
 
   const handleChangeText = (text: string) => {
     setQuery(text);
+    setArea(null);
+    setPin(null);
     onTextChange?.(text);
     onChange?.(null);
     setIsOpen(true);
@@ -85,6 +103,8 @@ export function LocationAutocomplete({
   };
 
   const handleSelect = (location: RideLocation) => {
+    setArea(location);
+    setPin(null);
     setQuery(location.name);
     onTextChange?.(location.name);
     onChange?.(location);
@@ -93,10 +113,22 @@ export function LocationAutocomplete({
   };
 
   const handleClear = () => {
+    setArea(null);
+    setPin(null);
     setQuery("");
     onTextChange?.("");
     onChange?.(null);
     setResults([]);
+  };
+
+  const handlePinConfirm = (point: LatLng, label: string) => {
+    // The area name stays; only the coordinates become exact. A pin with no area is named by the student.
+    const name = areaForPin?.name ?? label;
+    setPin(point);
+    setQuery(name);
+    onTextChange?.(name);
+    onChange?.({ id: areaForPin?.id ?? 0, name, lat: point.lat, lng: point.lng });
+    setIsPickerOpen(false);
   };
 
   return (
@@ -113,6 +145,12 @@ export function LocationAutocomplete({
           onFocus={handleFocus}
           onBlur={() => setTimeout(() => setIsOpen(false), BLUR_CLOSE_DELAY_MS)}
         />
+        {canPin ? (
+          <Pressable onPress={() => setIsPickerOpen(true)} hitSlop={8} accessibilityLabel="Pin exact location on map" style={styles.pinButton}>
+            <MaterialCommunityIcons name={pin ? "map-marker-check" : "crosshairs-gps"} size={20} color={appColors.primary} />
+            {pin ? <Text style={styles.pinTag}>Pinned</Text> : null}
+          </Pressable>
+        ) : null}
         {query ? (
           <Pressable onPress={handleClear} hitSlop={8}>
             <MaterialCommunityIcons name="close-circle" size={16} color={appColors.textMuted} />
@@ -147,6 +185,17 @@ export function LocationAutocomplete({
           )}
         </View>
       )}
+
+      {canPin && (
+        <PinPickerModal
+          visible={isPickerOpen}
+          areaName={areaForPin?.name ?? null}
+          center={pin ?? (areaForPin ? { lat: areaForPin.lat, lng: areaForPin.lng } : null)}
+          initialPin={pin}
+          onCancel={() => setIsPickerOpen(false)}
+          onConfirm={handlePinConfirm}
+        />
+      )}
     </View>
   );
 }
@@ -180,6 +229,8 @@ const styles = StyleSheet.create({
     color: appColors.text,
     padding: 0,
   },
+  pinButton: { flexDirection: "row", alignItems: "center", gap: 4, marginHorizontal: 8 },
+  pinTag: { fontSize: 11, fontWeight: "700", color: appColors.primary },
   dropdown: {
     borderWidth: 1,
     borderColor: appColors.border,

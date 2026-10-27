@@ -10,6 +10,7 @@ from accounts.models import StudentRoster
 from common.geo import haversine_km
 from common.notifications import notify
 
+from .active import active_trip, ensure_free
 from .models import Location, Ride, RideJoinRequest, expire_stale_rides
 from .serializers import LocationSerializer, RideJoinRequestSerializer, RideSerializer
 
@@ -109,7 +110,17 @@ class RideListCreateView(generics.ListCreateAPIView):
         ]
 
     def perform_create(self, serializer):
+        ensure_free(self.request.user)
         serializer.save(offerer=self.request.user)
+
+
+class ActiveTripView(APIView):
+    """The caller's trip under way (any ride feature), pinned at the top of Ride Sharing."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({"trip": active_trip(request.user)})
 
 
 class RideHistoryView(APIView):
@@ -288,6 +299,7 @@ class RideJoinView(APIView):
     def post(self, request, pk):
         ride = get_object_or_404(Ride.objects.select_related("offerer"), pk=pk)
         requester = request.user
+        ensure_free(requester)
 
         if ride.offerer == requester:
             return Response({"detail": "You can't request to join your own ride."}, status=status.HTTP_400_BAD_REQUEST)

@@ -85,7 +85,11 @@ export default function OfferRideScreen() {
     try {
       const ride = await createRide({
         departure: departure.name,
+        departure_lat: departure.lat,
+        departure_lng: departure.lng,
         destination: destination.name,
+        destination_lat: destination.lat,
+        destination_lng: destination.lng,
         departure_date: departureDate.trim(),
         departure_time: `${String(hour24).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`,
         seats_total: Number(seatsTotal),
@@ -131,6 +135,7 @@ export default function OfferRideScreen() {
           placeholder="Departure Location (e.g. DHA Phase 5, Lahore)"
           value={departure}
           onChange={setDeparture}
+          enablePin
         />
 
         {/* Destination Location */}
@@ -138,6 +143,7 @@ export default function OfferRideScreen() {
           placeholder="Destination (e.g. LGU Campus Main Gate)"
           value={destination}
           onChange={setDestination}
+          enablePin
         />
 
         {/* Departure Date */}
@@ -227,7 +233,7 @@ export default function OfferRideScreen() {
                     style={{ marginRight: 4 }}
                   />
                   <Text style={[styles.optionPillText, isSelected && styles.optionPillTextSelected]}>
-                    `${num} Seat${Number(num) > 1 ? "s" : ""}`
+                    {`${num} Seat${Number(num) > 1 ? "s" : ""}`}
                   </Text>
                 </View>
               </Pressable>

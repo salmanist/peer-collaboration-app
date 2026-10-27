@@ -4,8 +4,14 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from accounts.models import User, prime_roster_cache
+from common.geo import haversine_km
 
 from .models import Location, Ride, RideJoinRequest
+
+# A pin refining a curated area may sit at most this far from the area's centre.
+PIN_MAX_DISTANCE_KM = 5
+# (min lat, max lat, min lng, max lng)
+LAHORE_BOX = (31.2, 31.8, 73.9, 74.7)
 
 
 class RideUserSerializer(serializers.ModelSerializer):
@@ -77,9 +83,8 @@ class RideSerializer(serializers.ModelSerializer):
         return same_gender_only
 
     def validate(self, attrs):
-        # departure/destination must be a location picked from the Location table, never
-        # freeform text — resolve each against it and overwrite whatever lat/lng the client
-        # sent with the curated coordinates, so search radius math is never trusting user input.
+        # Each leg is either a curated Location (its coordinates win), a curated Location
+        # refined by an exact pin near it, or a pin on its own inside the Lahore box.
         for text_key, lat_key, lng_key in [
             ("departure", "departure_lat", "departure_lng"),
             ("destination", "destination_lat", "destination_lng"),
@@ -87,12 +92,26 @@ class RideSerializer(serializers.ModelSerializer):
             text = attrs.get(text_key)
             if text is None:
                 continue
-            location = Location.objects.filter(name__iexact=text.strip()).first()
-            if location is None:
-                raise serializers.ValidationError({text_key: "Pick a location from the suggestions."})
-            attrs[text_key] = location.name
-            attrs[lat_key] = location.lat
-            attrs[lng_key] = location.lng
+            lat, lng = attrs.get(lat_key), attrs.get(lng_key)
+            if (lat is None) != (lng is None):
+                raise serializers.ValidationError({text_key: "Send both latitude and longitude for a pin."})
+            text = text.strip()
+            location = Location.objects.filter(name__iexact=text).first()
+            if lat is None:
+                if location is None:
+                    raise serializers.ValidationError({text_key: "Pick a location from the suggestions."})
+                attrs[text_key], attrs[lat_key], attrs[lng_key] = location.name, location.lat, location.lng
+            elif location is not None:
+                if haversine_km(location.lat, location.lng, lat, lng) > PIN_MAX_DISTANCE_KM:
+                    raise serializers.ValidationError({text_key: "Pin is too far from the chosen area."})
+                attrs[text_key] = location.name
+            else:
+                if not text:
+                    raise serializers.ValidationError({text_key: "Name your pinned location."})
+                # ponytail: a rectangle around Lahore, not a real boundary; swap for a polygon if the service area grows.
+                if not (LAHORE_BOX[0] <= lat <= LAHORE_BOX[1] and LAHORE_BOX[2] <= lng <= LAHORE_BOX[3]):
+                    raise serializers.ValidationError({text_key: "Pin must be inside Lahore."})
+                attrs[text_key] = text
 
         departure_date = attrs.get("departure_date")
         departure_time = attrs.get("departure_time")

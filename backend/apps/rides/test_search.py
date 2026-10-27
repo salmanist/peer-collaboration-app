@@ -73,3 +73,43 @@ class RideSearchTests(TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(response.data["offerer"]["id"], self.user.id)
         self.assertEqual(response.data["pending_request_count"], 0)
+
+
+class RidePinTests(TestCase):
+    # Checks the serializer directly (no user needed), so these run on a bare test database.
+    def setUp(self):
+        from .models import Location
+        Location.objects.create(name="Paragon City", lat=31.4120, lng=74.2380)
+        self.day = str(timezone.localdate() + datetime.timedelta(days=1))
+
+    def check(self, **leg):
+        from .serializers import RideSerializer
+        body = {"departure": "Paragon City", "destination": "Paragon City", "departure_date": self.day,
+                "departure_time": "09:00:00", "seats_total": 2}
+        body.update(leg)
+        serializer = RideSerializer(data=body)
+        return serializer.is_valid(), serializer
+
+    def test_area_with_nearby_pin_keeps_name_and_pin(self):
+        ok, serializer = self.check(departure_lat=31.4130, departure_lng=74.2390)
+        self.assertTrue(ok, serializer.errors)
+        self.assertEqual(serializer.validated_data["departure"], "Paragon City")
+        self.assertAlmostEqual(serializer.validated_data["departure_lat"], 31.4130)
+
+    def test_area_without_pin_uses_curated_coordinates(self):
+        ok, serializer = self.check()
+        self.assertTrue(ok, serializer.errors)
+        self.assertAlmostEqual(serializer.validated_data["departure_lat"], 31.4120)
+
+    def test_area_with_far_pin_rejected(self):
+        self.assertFalse(self.check(departure_lat=31.55, departure_lng=74.40)[0])
+
+    def test_pin_only_inside_and_outside_lahore(self):
+        self.assertTrue(self.check(departure="Pinned on map", departure_lat=31.5, departure_lng=74.3)[0])
+        self.assertFalse(self.check(departure="Pinned on map", departure_lat=24.8, departure_lng=67.0)[0])
+
+    def test_unknown_name_without_pin_rejected(self):
+        self.assertFalse(self.check(departure="Nowhere")[0])
+
+    def test_lat_without_lng_rejected(self):
+        self.assertFalse(self.check(departure_lat=31.41)[0])

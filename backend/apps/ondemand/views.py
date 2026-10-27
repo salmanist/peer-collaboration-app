@@ -15,6 +15,8 @@ from rest_framework.views import APIView
 from common.geo import haversine_km
 from common.notifications import notify
 
+from apps.rides.active import ensure_free
+
 from .fare import route_between
 from .models import OnDemandRide, PeerRideChatMessage, PeerRideRequest, Place, RideProfile, get_rate_per_km, reset_to_rider
 from .serializers import (
@@ -194,8 +196,7 @@ class RideCreateView(APIView):
         if profile.role == RideProfile.Role.DRIVER and profile.is_approved:
             return _error("Approved drivers can't request rides.", status.HTTP_403_FORBIDDEN)
         _expire_unanswered()
-        if _active_ride(request.user):
-            return _error("You already have a ride in progress.")
+        ensure_free(request.user)
 
         serializer = RideRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -250,6 +251,7 @@ class RideAcceptView(APIView):
         if not profile.is_live:
             return _error("Go online first.")
         _expire_unanswered()
+        ensure_free(request.user)
 
         with transaction.atomic():
             # The row lock is what makes "first driver wins": a second driver waits here, then sees it taken.
@@ -387,6 +389,7 @@ class PeerRideRequestListCreateView(APIView):
 
     def post(self, request):
         _expire_peer_requests()
+        ensure_free(request.user)
         # A student can't have more than one OPEN request at a time.
         if PeerRideRequest.objects.filter(poster=request.user, status=PeerRideRequest.Status.OPEN).exists():
             return _error("You already have an open ride request. Cancel it before posting another.")
@@ -443,6 +446,7 @@ class PeerRideRequestRespondView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk):
+        ensure_free(request.user)
         with transaction.atomic():
             obj = get_object_or_404(PeerRideRequest.objects.select_for_update(), pk=pk)
             if obj.poster_id == request.user.id:

@@ -5,7 +5,6 @@ import {
   Alert,
   Animated,
   Image,
-  ImageBackground,
   Modal,
   Platform,
   Pressable,
@@ -466,12 +465,8 @@ export default function HomeScreen() {
                 style={[styles.spotlightBannerCard, { width: cardWidth }]}
                 onPress={() => setSelectedEventForModal(evt)}
               >
-                <ImageBackground
-                  source={evtImage}
-                  style={styles.spotlightBgImage}
-                  imageStyle={{ borderRadius: 16 }}
-                  resizeMode="cover"
-                >
+                <View style={styles.spotlightBgImage}>
+                  <Image source={evtImage} style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} resizeMode="cover" />
                   <View style={styles.spotlightDarkGradientOverlay}>
                     <View style={styles.spotlightContentContainer}>
                       <View style={styles.spotlightWhitePill}>
@@ -514,7 +509,7 @@ export default function HomeScreen() {
                       ))}
                     </View>
                   </View>
-                </ImageBackground>
+                </View>
               </Pressable>
             );
           })}

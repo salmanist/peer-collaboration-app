@@ -84,6 +84,11 @@ backend/apps/rides/. See docs/api-contracts/rides.md for the endpoint contract.
 Offer/search/join/accept/decline/cancel rides, optional same_gender_only filter (resolved via
 StudentRoster gender, same pattern as accounts). Proximity search via expo-location client-side
 geocoding + haversine_km() (backend/common/geo.py), text-substring fallback for ungeocoded rides.
+Location picking: the dropdown of curated Lahore areas stays. In Offer Ride and the Live Lift Board each field also has a pin button (phone and web; the web map is an iframe of the same Leaflet page):
+pick an area then pin the exact spot (name stays, coordinates become exact; the backend accepts a pin only within 5 km of the area), or pin with no area
+(label "Pinned on map" or a student-given name; the point must sit inside the Lahore box in RideSerializer). Ride Now already had free pins. Component:
+rides/presentation/PinPickerModal.tsx via LocationAutocomplete enablePin; RideMap takes a center prop.
+One trip at a time: backend/apps/rides/active.py (active_trip, ensure_free) blocks offering/requesting/joining/accepting while the student has a trip under way (started carpool, active Ride Now, accepted lift-board request); GET /api/rides/active/ feeds the pinned ActiveTripBanner at the top of RidesHubScreen.
 Times are stored/sent as 24-hour "HH:MM:SS" but always displayed 12-hour with AM/PM on mobile -
 formatTime12h() in ridesApi.ts is the one shared conversion, used by every screen that shows
 departure_time (List/Detail/MyRides). OfferRideScreen's time input is separately 12-hour already
@@ -1166,3 +1171,10 @@ a restart — check for a leftover process on the port first.
 ## Sign-up verification code: email first, SMS second
 - Registration emails the code to the roster/login email (same SMTP settings as password reset). The fake "SMS" console print was removed.
 - The verify screen offers "Send a new code" (email) and, only when the server reports `sms_available`, "Send the code to my phone instead". Texting needs a paid provider: implement `send_sms()` in accounts/views.py and set SMS_ENABLED=true in .env; until then the option is hidden and the resend endpoint refuses `channel=sms`.
+
+FILE STORAGE (salman)
+Uploads use Django's default_storage. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME in .env (see
+backend/.env.example) and files go to a private Cloudflare R2 bucket via django-storages (config/settings/base.py, STORAGES).
+Every file URL is then a signed link that expires after 24 hours (a list screen left open longer shows broken links until refreshed).
+With the variables blank, files stay on local disk under backend/media (local dev, tests). To move existing local files into the
+bucket run: python manage.py upload_media_to_r2 --dry-run, then without --dry-run (same file names, never deletes local files, safe to repeat).

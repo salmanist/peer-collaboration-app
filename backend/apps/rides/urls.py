@@ -2,6 +2,7 @@ from .views import RideHistoryView
 from django.urls import path
 
 from .views import (
+    ActiveTripView,
     LocationListView,
     MyRidesView,
     RideCancelView,
@@ -16,6 +17,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("active/", ActiveTripView.as_view(), name="rides-active"),
     path("history/", RideHistoryView.as_view(), name="rides-history"),
     path("locations/", LocationListView.as_view(), name="rides-locations"),
     path("", RideListCreateView.as_view(), name="rides-list"),

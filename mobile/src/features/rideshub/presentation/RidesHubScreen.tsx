@@ -22,9 +22,10 @@ import { useDataStore } from "../../../core/data/DataStore";
 import { getCurrentRide, getMyRideProfile, type RideProfile, type OnDemandRide } from "../../ondemand/data/ondemandApi";
 import { PeerLiftBoard } from "../../ondemand/presentation/PeerLiftBoard";
 import { PIN_LABEL, RideBookingSection, type Stop } from "../../ondemand/presentation/RideBookingSection";
-import { listAvailableRides, type Ride } from "../../rides/data/ridesApi";
+import { getActiveTrip, listAvailableRides, type ActiveTrip, type Ride } from "../../rides/data/ridesApi";
 import { TripCard, TripSkeletonList } from "../../rides/presentation/TripCard";
 import { usePolling } from "../../ondemand/presentation/usePolling";
+import { ActiveTripBanner } from "./ActiveTripBanner";
 
 const TRIPS_CACHE_KEY = "rides:default";
 
@@ -39,6 +40,8 @@ export default function RidesHubScreen() {
   const [profile, setProfile] = useState<RideProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [currentRide, setCurrentRide] = useState<OnDemandRide | null>(null);
+  // The trip under way (any ride feature); shown pinned above the tabs so it is always the first thing seen.
+  const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [showBooking, setShowBooking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -192,6 +195,14 @@ export default function RidesHubScreen() {
   const isPendingDriver = profile?.role === "driver" && !profile.is_approved;
 
   usePolling(async () => {
+    try {
+      setActiveTrip(await getActiveTrip());
+    } catch {
+      // keep whatever was shown during a brief connection drop
+    }
+  }, 15000);
+
+  usePolling(async () => {
     if (activeTab !== "ondemand") return;
     try {
       setCurrentRide(await getCurrentRide());
@@ -261,6 +272,8 @@ export default function RidesHubScreen() {
           )}
         </View>
       </View>
+
+      {activeTrip && <ActiveTripBanner trip={activeTrip} />}
 
       {/* Mode Switcher Tabs */}
       <View style={styles.modeTabsContainer}>

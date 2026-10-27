@@ -4,7 +4,7 @@ import { goBack } from "../../../core/navigation/goBack";
 import { Text } from "../../../core/ui/AppText";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -17,6 +17,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSessionStore } from "../../../core/auth/session";
+import { getFareQuote } from "../../ondemand/data/ondemandApi";
+import { RideMap } from "../../ondemand/presentation/RideMap";
 import {
   acceptRequest,
   cancelRide,
@@ -55,6 +57,8 @@ export default function RideDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isActing, setIsActing] = useState(false);
+  // Road path between the two points (from the same routing service the fare quote uses).
+  const [roadPath, setRoadPath] = useState<[number, number][] | undefined>(undefined);
 
   const topOffset = insets.top > 0 ? insets.top : Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
 
@@ -73,6 +77,18 @@ export default function RideDetailScreen() {
       setIsLoading(false);
     }
   }, [rideId, user?.id]);
+
+  const fromLat = ride?.departure_lat, fromLng = ride?.departure_lng, toLat = ride?.destination_lat, toLng = ride?.destination_lng;
+  useEffect(() => {
+    if (fromLat == null || fromLng == null || toLat == null || toLng == null) return;
+    let isCurrent = true;
+    getFareQuote({ lat: fromLat, lng: fromLng }, { lat: toLat, lng: toLng })
+      .then((quote) => isCurrent && setRoadPath(quote.route))
+      .catch(() => {}); // no route: the map keeps its dashed straight line
+    return () => {
+      isCurrent = false;
+    };
+  }, [fromLat, fromLng, toLat, toLng]);
 
   useFocusEffect(
     useCallback(() => {
@@ -166,6 +182,16 @@ export default function RideDetailScreen() {
               </View>
             </View>
           </View>
+
+          {/* Start and end points on the map (only when the ride has coordinates) */}
+          {(ride.departure_lat != null || ride.destination_lat != null) && (
+            <RideMap
+              pickup={ride.departure_lat != null && ride.departure_lng != null ? { lat: ride.departure_lat, lng: ride.departure_lng } : null}
+              drop={ride.destination_lat != null && ride.destination_lng != null ? { lat: ride.destination_lat, lng: ride.destination_lng } : null}
+              route={roadPath}
+              height={220}
+            />
+          )}
 
           {/* Trip Details Chips */}
           <View style={styles.chipsRow}>

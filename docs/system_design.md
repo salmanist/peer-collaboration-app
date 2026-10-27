@@ -72,9 +72,9 @@ backend/
 - **Auth:** JWT via `djangorestframework-simplejwt`, endpoints `/api/auth/{register,verify-email,login,refresh,me}/`.
 - **Pagination:** DRF `PageNumberPagination` → `{count, next, previous, results}`.
 - **Filtering:** `django-filter` + DRF `SearchFilter` (`?category=&course=&search=&page=`).
-- **File uploads:** always through `common.storage.save_upload()` — local disk/`MEDIA_ROOT` during the build; real S3-style storage (`django-storages`) deferred to hardening if time allows.
+- **File uploads:** Django `FileField`/`ImageField` through `default_storage`. With the four `R2_*` variables set, files live in a private Cloudflare R2 bucket (`django-storages` S3 backend) and every file URL is a signed link valid for 24 hours; without them, files stay on local disk under `MEDIA_ROOT` (local dev and tests). `manage.py upload_media_to_r2` copies existing local files into the bucket.
 - **Messaging:** one generic `Thread`/`Message` model in `common` (content-type + object-id), reused by Resource Sharing, Lost & Found, and Community — not three independent chat implementations.
-- **Notifications:** centralized `common.notifications.notify()`, FCM-backed — nothing in the SRS needs a duplex channel, so no Django Channels/WebSockets.
+- **Notifications:** centralized `common.notifications.notify()` stores in-app notifications that the app fetches; FCM push is still planned, not built. Chat in the Marketplace, Lost & Found, Tutoring and Ride modules uses Django Channels WebSockets.
 - **Moderation:** Django's built-in `django.contrib.admin` with `status` fields + admin actions — no custom admin panel.
 
 ## 7. AI Chatbot / RAG Architecture
@@ -94,7 +94,7 @@ Decisions made to close gaps/bugs found in `SRS.md`, documented here rather than
 - **Ratings ERD bug:** `Rating` FKs to `TutoringSession` (which itself FKs tutor + student), not directly to tutor/student — the SRS diagram's direct FK would let ratings be duplicated or unlinked from a specific session, undermining REQ PT 05.
 - **No admin app planned in SRS §2.3**, yet moderation is required (Digital Library approval REQ DL 04, reports on listings/posts/users §5.5) — resolved via `django.contrib.admin`.
 - **Real-time mechanism unnamed in SRS §3.4** — resolved as FCM push, not Django Channels/WebSockets.
-- **File/image storage location vague** ("cloud storage platforms," §3.3) — resolved via `common.storage.save_upload()`, backed by local disk during the build.
+- **File/image storage location vague** ("cloud storage platforms," §3.3) — resolved as Cloudflare R2 (S3-compatible, private bucket, signed links) through `django-storages`, with local disk as the fallback when R2 is not configured.
 - **Account deactivation on graduation (§5.5)** has no institutional data feed to sync against — resolved as a manual `is_active` toggle in Django admin, documented as a known limitation.
 - **300–500 concurrent users (NFR)** won't be genuinely validated on this timeline/budget — demonstrate the load-testing *approach* at reduced scale (locust/k6, ~50–100 concurrent), record actual numbers rather than asserting the NFR is met.
 

@@ -78,6 +78,11 @@ export interface RideSearchParams {
 export interface CreateRidePayload {
   departure: string;
   destination: string;
+  // Exact coordinates: the curated area's own, or a pin dropped near it / on its own.
+  departure_lat?: number;
+  departure_lng?: number;
+  destination_lat?: number;
+  destination_lng?: number;
   departure_date: string;
   departure_time: string;
   seats_total: number;
@@ -179,4 +184,19 @@ export interface RideHistory {
 export async function listRideHistory() {
   const { data } = await apiClient.get<RideHistory>("/rides/history/");
   return data;
+}
+
+// A trip that is under way for this student, from any ride feature (null when free).
+export interface ActiveTrip {
+  type: "scheduled" | "ondemand" | "peer";
+  id: number;
+  status: string;
+  from: string;
+  to: string;
+  partner_name?: string;
+}
+
+export async function getActiveTrip() {
+  const { data } = await apiClient.get<{ trip: ActiveTrip | null }>("/rides/active/");
+  return data.trip;
 }

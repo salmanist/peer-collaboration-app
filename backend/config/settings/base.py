@@ -112,10 +112,39 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-# Local disk during the build (Digital Library document uploads); swap to
-# django-storages/S3 later by only changing DEFAULT_FILE_STORAGE.
+# Uploads go to Cloudflare R2 (S3-compatible, private bucket, signed links) when all four R2_*
+# variables are set; otherwise they stay on local disk under MEDIA_ROOT (local dev, tests).
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME", "")
+USE_R2 = all([R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME])
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+if USE_R2:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": R2_BUCKET_NAME,
+            "endpoint_url": f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+            "access_key": R2_ACCESS_KEY_ID,
+            "secret_key": R2_SECRET_ACCESS_KEY,
+            "region_name": "auto",
+            "signature_version": "s3v4",
+            "default_acl": None,
+            "file_overwrite": False,
+            # Private bucket: every file URL is a signed link that stops working after this many seconds.
+            # ponytail: a list screen left open longer than this shows broken links until refreshed.
+            "querystring_auth": True,
+            "querystring_expire": 86400,
+        },
+    }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # With EMAIL_HOST set (root .env) codes are emailed for real over SMTP; without it the

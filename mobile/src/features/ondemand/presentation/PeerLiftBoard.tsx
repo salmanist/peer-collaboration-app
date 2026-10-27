@@ -24,6 +24,7 @@ import {
   type PeerRideRequest,
 } from "../data/ondemandApi";
 import { usePolling } from "./usePolling";
+import type { RideLocation } from "../../rides/data/ridesApi";
 import { LocationAutocomplete } from "../../rides/presentation/LocationAutocomplete";
 
 const POPULAR_LOCATIONS = [
@@ -63,6 +64,9 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
   const [kind, setKind] = useState<PeerRequestKind>("offering");
   const [seats, setSeats] = useState(3);
   const [pickup, setPickup] = useState("");
+  // Coordinates from a dropdown area or a pin; null when the student only typed text.
+  const [pickupSpot, setPickupSpot] = useState<RideLocation | null>(null);
+  const [dropSpot, setDropSpot] = useState<RideLocation | null>(null);
   const [drop, setDrop] = useState("");
   const [departureTime, setDepartureTime] = useState("In 5 mins");
   const [note, setNote] = useState("");
@@ -163,11 +167,15 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
         seats: kind === "offering" ? seats : 1,
         pickup_label: pickup.trim(),
         drop_label: drop.trim(),
+        ...(pickupSpot && { pickup_lat: pickupSpot.lat, pickup_lng: pickupSpot.lng }),
+        ...(dropSpot && { drop_lat: dropSpot.lat, drop_lng: dropSpot.lng }),
         departure_time: departureTime,
         note: note.trim(),
       });
       setPickup("");
       setDrop("");
+      setPickupSpot(null);
+      setDropSpot(null);
       setDepartureTime("In 5 mins");
       setNote("");
       onCloseModal();
@@ -508,6 +516,8 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                 placeholder="Pickup Location (e.g. Main Gate)"
                 textValue={pickup}
                 onTextChange={setPickup}
+                onChange={setPickupSpot}
+                enablePin
               />
             </View>
 
@@ -517,6 +527,8 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                 placeholder="Destination (e.g. DHA Phase 5)"
                 textValue={drop}
                 onTextChange={setDrop}
+                onChange={setDropSpot}
+                enablePin
               />
             </View>
 
