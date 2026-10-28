@@ -1,8 +1,11 @@
 from django.db import IntegrityError, transaction
-from django.db.models import Q, Case, When, Value, IntegerField, Count
+from django.db.models import BooleanField, Case, Count, Exists, IntegerField, OuterRef, Q, Value, When
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import generics, permissions, status
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from rest_framework import generics, parsers, permissions, status
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -10,9 +13,10 @@ from accounts.models import StudentRoster
 from common.geo import haversine_km
 from common.notifications import notify
 
-from .active import active_trip, ensure_free
-from .models import Location, Ride, RideJoinRequest, expire_stale_rides
-from .serializers import LocationSerializer, RideJoinRequestSerializer, RideSerializer
+from .active import active_trip, ensure_can_offer, ensure_free
+from .chat import CLOSED_MESSAGE, broadcast_closed, chat_group, has_chat, is_closed, is_participant
+from .models import Location, Ride, RideChatMessage, RideJoinRequest, expire_stale_rides
+from .serializers import LocationSerializer, RideChatMessageSerializer, RideJoinRequestSerializer, RideSerializer
 
 RIDE_MATCH_RADIUS_KM = 5
 LOCATION_SUGGESTION_LIMIT = 15
@@ -67,7 +71,14 @@ class RideListCreateView(generics.ListCreateAPIView):
         expire_stale_rides()
         user = self.request.user
         params = self.request.query_params
-        queryset = Ride.objects.filter(Q(seats_available__gt=0, status=Ride.Status.OPEN) | Q(offerer=user, status__in=[Ride.Status.OPEN, Ride.Status.IN_PROGRESS])).select_related("offerer")
+        live = [Ride.Status.OPEN, Ride.Status.IN_PROGRESS]
+        accepted = RideJoinRequest.objects.filter(ride=OuterRef("pk"), status=RideJoinRequest.Status.ACCEPTED)
+        # A rider whose request was accepted keeps seeing that ride even when it is full.
+        queryset = Ride.objects.annotate(
+            has_accepted=Exists(accepted), i_am_accepted=Exists(accepted.filter(requester=user)),
+        ).filter(
+            Q(seats_available__gt=0, status=Ride.Status.OPEN) | Q(offerer=user, status__in=live) | Q(i_am_accepted=True, status__in=live)
+        ).select_related("offerer")
 
         date = params.get("date")
         if date:
@@ -77,7 +88,12 @@ class RideListCreateView(generics.ListCreateAPIView):
         # gender lives on StudentRoster now, not User, so match offerers by email membership.
         matching_gender_emails = StudentRoster.objects.filter(gender__iexact=user.gender).values("email")
         queryset = queryset.filter(Q(same_gender_only=False) | Q(offerer__email__in=matching_gender_emails))
-        queryset = queryset.annotate(own_trip_order=Case(When(offerer=user, then=Value(0)), default=Value(1), output_field=IntegerField())).order_by("own_trip_order", "departure_date", "departure_time")
+        # Top of the list: rides with a live chat (driver with an accepted rider, or the accepted rider), then your own posted ride.
+        chat_live = (Q(offerer=user, has_accepted=True) | Q(i_am_accepted=True)) & Q(status__in=live)
+        queryset = queryset.annotate(
+            chat_flag=Case(When(chat_live, then=Value(True)), default=Value(False), output_field=BooleanField()),
+            own_trip_order=Case(When(chat_live, then=Value(0)), When(offerer=user, then=Value(1)), default=Value(2), output_field=IntegerField()),
+        ).order_by("own_trip_order", "departure_date", "departure_time")
 
         # Match each word anywhere in the route or driver's roster name.
         for term in params.get("q", "").strip().split():
@@ -111,6 +127,7 @@ class RideListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         ensure_free(self.request.user)
+        ensure_can_offer(self.request.user)
         serializer.save(offerer=self.request.user)
 
 
@@ -289,6 +306,7 @@ class RideCompleteView(APIView):
         ride.status = Ride.Status.COMPLETED
         ride.completed_at = timezone.now()
         ride.save(update_fields=["status", "completed_at"])
+        broadcast_closed(ride)  # ending the ride closes every chat of this ride
 
         return Response(RideSerializer(ride, context={"request": request}).data)
 
@@ -391,3 +409,50 @@ class RideJoinRequestDeclineView(APIView):
         notify(join_request.requester, f"Your request to join the ride to {join_request.ride.destination} was declined.", target=join_request)
 
         return Response(RideJoinRequestSerializer(join_request).data)
+
+
+class RideChatMessageListView(generics.ListCreateAPIView):
+    """Messages between the offerer and one accepted rider. Sending stops once the ride has ended."""
+
+    serializer_class = RideChatMessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+
+    def get_join_request(self):
+        join_request = get_object_or_404(RideJoinRequest.objects.select_related("ride", "requester", "ride__offerer"), pk=self.kwargs["pk"])
+        if not is_participant(join_request, self.request.user.id):
+            raise PermissionDenied("You are not a participant in this ride.")
+        if not has_chat(join_request):
+            raise PermissionDenied("The chat opens once the driver accepts the request.")
+        return join_request
+
+    def get_queryset(self):
+        return RideChatMessage.objects.select_related("sender").filter(join_request=self.get_join_request())
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response.data["is_closed"] = is_closed(self.get_join_request())
+        return response
+
+    def perform_create(self, serializer):
+        join_request = self.get_join_request()
+        if is_closed(join_request):
+            raise ValidationError({"detail": CLOSED_MESSAGE})
+        body = str(self.request.data.get("body", "")).strip()
+        image = self.request.FILES.get("image")
+        if not body and not image:
+            raise ValidationError({"detail": "Message must contain text or an image."})
+        message = serializer.save(join_request=join_request, sender=self.request.user, body=body, image=image)
+
+        layer = get_channel_layer()
+        if layer:
+            async_to_sync(layer.group_send)(chat_group(join_request.id), {"type": "chat.message", "message": {
+                "id": message.id,
+                "request": join_request.id,
+                "sender_id": self.request.user.id,
+                "sender_name": self.request.user.display_name,
+                "body": message.body,
+                "image": message.image.url if message.image else None,
+                "created_at": message.created_at.isoformat(),
+            }})
+

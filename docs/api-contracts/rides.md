@@ -174,3 +174,29 @@ A student with a trip under way cannot offer, request, join or accept another. "
 
 Auth: required. Returns `{"trip": null}` when the student is free, otherwise
 `{"trip": {"type": "scheduled" | "ondemand" | "peer", "id": 16, "status": "in_progress", "from": "DHA Phase 6", "to": "Gulberg III", "partner_name": "..."}}` (`partner_name` only for `peer`). The Ride Sharing screen polls it every 15 seconds and pins the trip as a banner above the tabs.
+
+
+## Carpool live chat
+
+One chat per **accepted** join request, between the offerer (driver) and that rider. It opens when the offerer accepts the request and
+closes automatically when the offerer ends the ride (`POST rides/<id>/complete/`, the only way a ride ends). Once closed, history stays
+readable but nobody can send.
+
+- `GET rides/requests/<join_request_id>/messages/`: participants only (`403` for others, and `403` while the request is still pending). Returns
+  `{count, next, previous, results: [{id, request, sender_id, sender_name, body, image, created_at}], is_closed}`.
+- `POST rides/requests/<join_request_id>/messages/` (JSON or multipart with `body` and/or `image`): `201` with the message; `400`
+  `{"detail": "This ride has ended. The chat is closed."}` after the ride ended.
+- WebSocket `ws/rides/requests/<join_request_id>/chat/?token=<access token>`: send `{"body": "..."}`; receive
+  `{"type": "message", "message": {...}}`, `{"type": "closed", "detail": "..."}` when the ride ends, and `{"type": "error", "detail": "..."}`.
+  Closes with code 4403 for non-participants.
+- `GET rides/<id>/` and the ride lists now include `my_request_id`: the caller's accepted join request id (the chat key), `null` until accepted.
+
+
+## One posted ride at a time, and list order
+
+`POST rides/` is refused with `400 {"detail": "You already have a ride posted. Finish or cancel it before posting another."}` while the caller has
+an open or in-progress ride of their own. A ride ends by being completed (driver taps End Ride), cancelled, or expiring (an open ride nobody
+started 30 minutes after its departure time).
+
+`GET rides/` order: (1) rides with a live chat (driver with an accepted rider, or the accepted rider; those rides stay listed even when full),
+(2) the caller's own posted ride, (3) everything else by date and time. Every ride carries `chat_active` (true for tier 1) so the app can colour it.

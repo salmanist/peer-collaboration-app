@@ -14,6 +14,8 @@ export interface CampusNotificationItem {
   is_active: boolean;
   is_popup_dismissed: boolean;
   is_read: boolean;
+  // True for campus-wide broadcasts from the admins (not a private alert for this student).
+  is_broadcast?: boolean;
 }
 
 export interface NotificationListResponse {

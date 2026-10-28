@@ -17,7 +17,7 @@ const services: Recommendation[] = [
   { id: "marketplace", module: "marketplace", title: "Explore student resources", label: "Marketplace", icon: "storefront-outline", route: "/(app)/resources", keywords: "books equipment" },
   { id: "library", module: "library", title: "Discover notes and projects", label: "Digital Library", icon: "bookshelf", route: "/(app)/library", keywords: "study programming research notes" },
   { id: "lost", module: "lost_and_found", title: "Check campus lost and found", label: "Lost & Found", icon: "magnify", route: "/(app)/lost-and-found", keywords: "lost found" },
-  { id: "rides", module: "ride_sharing", title: "Find your campus carpool", label: "Ride Sharing", icon: "car-multiple", route: "/(app)/rides", keywords: "transport commute" },
+  { id: "rides", module: "ride_sharing", title: "Find a ride on campus", label: "Ride Sharing", icon: "car-multiple", route: "/(app)/rides", keywords: "transport commute" },
   { id: "print", module: "print_center", title: "Print your study documents", label: "Print Center", icon: "printer-outline", route: "/(app)/printing", keywords: "print documents" },
 ];
 

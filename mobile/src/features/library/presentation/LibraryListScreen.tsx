@@ -15,6 +15,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DepartmentDropdown } from "../../../core/components/DepartmentDropdown";
+import { CoursePicker } from "../../../core/ui/CoursePicker";
+import type { AcademicCourse } from "../../../core/network/coursesApi";
 import { ModuleOptionsMenu, type ModuleDropdownItem } from "../../../core/components/ModuleOptionsMenu";
 import { useDataStore } from "../../../core/data/DataStore";
 import { listLibraryProjects, type LibraryProject } from "../data/libraryApi";
@@ -58,6 +60,8 @@ export default function LibraryListScreen() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [search, setSearch] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("all");
+  // Course Notes are filtered by course; Projects keep the department filter.
+  const [selectedCourse, setSelectedCourse] = useState<AcademicCourse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,12 +129,9 @@ export default function LibraryListScreen() {
   }, [projects, selectedDept]);
 
   const filteredNotes = useMemo(() => {
-    if (!selectedDept || selectedDept === "all") return notes;
-    return notes.filter(
-      (n) =>
-        n.department.toLowerCase() === selectedDept.toLowerCase(),
-    );
-  }, [notes, selectedDept]);
+    if (!selectedCourse) return notes;
+    return notes.filter((n) => n.course.toLowerCase() === selectedCourse.code.toLowerCase());
+  }, [notes, selectedCourse]);
 
   const uploadHref =
     activeTab === "projects" ? "/(app)/library/upload" : "/(app)/library/notes/upload";
@@ -263,18 +264,34 @@ export default function LibraryListScreen() {
         </View>
       </View>
 
-      {/* Department Dropdown Filter */}
+      {/* Filter: department for Projects, course for Course Notes */}
       <View style={styles.filterBar}>
-        <DepartmentDropdown
-          selectedDepartment={selectedDept}
-          onSelectDepartment={(deptName, deptObj) => {
-            setSelectedDept(deptObj?.short_name || deptName);
-          }}
-          isFilter
-          allLabel="All Departments"
-          placeholder="Filter by Department"
-          style={styles.deptDropdown}
-        />
+        {activeTab === "projects" ? (
+          <DepartmentDropdown
+            selectedDepartment={selectedDept}
+            onSelectDepartment={(deptName, deptObj) => {
+              setSelectedDept(deptObj?.short_name || deptName);
+            }}
+            isFilter
+            allLabel="All Departments"
+            placeholder="Filter by Department"
+            style={styles.deptDropdown}
+          />
+        ) : (
+          <View style={styles.courseFilterRow}>
+            <CoursePicker
+              placeholder="Filter by Course"
+              value={selectedCourse}
+              onChange={setSelectedCourse}
+              containerStyle={{ flex: 1 }}
+            />
+            {selectedCourse && (
+              <Pressable onPress={() => setSelectedCourse(null)} hitSlop={8} accessibilityLabel="Clear course filter">
+                <MaterialCommunityIcons name="close-circle" size={22} color={appColors.textMuted} />
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Content List */}
@@ -320,7 +337,7 @@ export default function LibraryListScreen() {
               </Text>
               <Text style={styles.emptySub}>
                 {search || selectedDept !== "all"
-                  ? "Try adjusting your search terms or department filter."
+                  ? "Try adjusting your search terms or filter."
                   : activeTab === "projects"
                   ? "Be the first student to publish your project or FYP!"
                   : "Be the first student to share course notes!"}
@@ -565,6 +582,11 @@ const styles = StyleSheet.create({
   },
   deptDropdown: {
     width: "100%",
+  },
+  courseFilterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   list: {
     paddingHorizontal: 16,

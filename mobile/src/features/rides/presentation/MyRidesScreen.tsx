@@ -91,7 +91,7 @@ export default function MyRidesScreen() {
               <MaterialCommunityIcons name="car-multiple" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={styles.emptyTitle}>No Trips Offered Yet</Text>
               <Text style={styles.emptySub}>
-                Carpools and scheduled trips you offer to other students will be tracked here.
+                Scheduled rides you offer to other students will be tracked here.
               </Text>
               <Pressable
                 style={styles.offerBtn}

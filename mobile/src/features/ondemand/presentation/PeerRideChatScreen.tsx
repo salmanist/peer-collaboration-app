@@ -46,7 +46,20 @@ function getImageUrl(imagePath: string | null) {
   return `${host}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
 }
 
-export function PeerRideChatScreen() {
+// Where a chat gets its messages from. The lift board and the scheduled carpools share this one screen.
+export interface ChatSource {
+  fetchMessages: (id: number) => Promise<{ results: PeerRideChatMessage[]; is_closed?: boolean }>;
+  sendMessage: (id: number, payload: { body?: string; imageUri?: string }) => Promise<PeerRideChatMessage>;
+  socketPath: (id: number) => string;
+}
+
+const PEER_SOURCE: ChatSource = {
+  fetchMessages: fetchPeerRideChatMessages,
+  sendMessage: sendPeerRideChatMessage,
+  socketPath: (id) => `/ws/ondemand/peer-requests/${id}/chat/`,
+};
+
+export function PeerRideChatScreen({ source = PEER_SOURCE }: { source?: ChatSource }) {
   const { requestId, partnerName, routeSummary } = useLocalSearchParams<{
     requestId: string;
     partnerName?: string;
@@ -65,6 +78,8 @@ export function PeerRideChatScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  // Set once the ride has ended: history stays readable but nobody can send any more.
+  const [isClosed, setIsClosed] = useState(false);
   const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
 
   const addMessage = useCallback((message: PeerRideChatMessage) => {
@@ -77,7 +92,8 @@ export function PeerRideChatScreen() {
   const syncMessages = useCallback(async () => {
     if (!Number.isInteger(parsedRequestId)) return;
     try {
-      const response = await fetchPeerRideChatMessages(parsedRequestId);
+      const response = await source.fetchMessages(parsedRequestId);
+      if (response?.is_closed) setIsClosed(true);
       if (response?.results) {
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
@@ -87,7 +103,7 @@ export function PeerRideChatScreen() {
         });
       }
     } catch {}
-  }, [parsedRequestId]);
+  }, [parsedRequestId, source]);
 
   useEffect(() => {
     if (!Number.isInteger(parsedRequestId) || !accessToken) {
@@ -103,7 +119,7 @@ export function PeerRideChatScreen() {
       if (!isActive) return;
       try {
         const socket = new WebSocket(
-          `${websocketBaseUrl()}/ws/ondemand/peer-requests/${parsedRequestId}/chat/?token=${encodeURIComponent(accessToken)}`,
+          `${websocketBaseUrl()}${source.socketPath(parsedRequestId)}?token=${encodeURIComponent(accessToken)}`,
         );
         socketRef.current = socket;
 
@@ -116,6 +132,9 @@ export function PeerRideChatScreen() {
             const payload = JSON.parse(event.data);
             if (payload.type === "message" && payload.message) {
               addMessage(payload.message as PeerRideChatMessage);
+            }
+            if (payload.type === "closed" && isActive) {
+              setIsClosed(true);
             }
             if (payload.type === "error" && isActive) {
               setErrorMessage(payload.detail);
@@ -143,9 +162,10 @@ export function PeerRideChatScreen() {
 
     const startChat = async () => {
       try {
-        const response = await fetchPeerRideChatMessages(parsedRequestId);
+        const response = await source.fetchMessages(parsedRequestId);
         if (!isActive) return;
         setMessages(response.results);
+        setIsClosed(!!response.is_closed);
         connectSocket();
       } catch {
         if (isActive) setErrorMessage("Could not load this ride chat. Please try again.");
@@ -168,7 +188,7 @@ export function PeerRideChatScreen() {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [accessToken, parsedRequestId, addMessage, syncMessages]);
+  }, [accessToken, parsedRequestId, addMessage, syncMessages, source]);
 
   const sendMessage = async () => {
     const body = draft.trim();
@@ -182,7 +202,7 @@ export function PeerRideChatScreen() {
 
     try {
       if (photoToSend) {
-        const newMsg = await sendPeerRideChatMessage(parsedRequestId, {
+        const newMsg = await source.sendMessage(parsedRequestId, {
           body: textToSend,
           imageUri: photoToSend.uri,
         });
@@ -192,7 +212,7 @@ export function PeerRideChatScreen() {
       } else if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         socketRef.current.send(JSON.stringify({ body: textToSend }));
       } else {
-        const newMsg = await sendPeerRideChatMessage(parsedRequestId, { body: textToSend });
+        const newMsg = await source.sendMessage(parsedRequestId, { body: textToSend });
         if (newMsg) {
           addMessage(newMsg);
         }
@@ -324,7 +344,7 @@ export function PeerRideChatScreen() {
       />
 
       {/* Selected Image Preview */}
-      {selectedImage && (
+      {selectedImage && !isClosed && (
         <View style={styles.imagePreviewWrap}>
           <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} />
           <Pressable style={styles.removeImageBtn} onPress={() => setSelectedImage(null)}>
@@ -333,7 +353,13 @@ export function PeerRideChatScreen() {
         </View>
       )}
 
-      {/* Input Bar */}
+      {/* Input Bar (replaced by a notice once the ride has ended) */}
+      {isClosed ? (
+        <View style={styles.closedBar}>
+          <MaterialCommunityIcons name="lock-outline" size={16} color={appColors.textMuted} />
+          <Text style={styles.closedText}>This ride has ended. The chat is closed.</Text>
+        </View>
+      ) : (
       <View style={styles.inputBar}>
         <Pressable
           style={styles.attachBtn}
@@ -361,6 +387,7 @@ export function PeerRideChatScreen() {
           )}
         </Pressable>
       </View>
+      )}
 
       {/* Image Picker Modal */}
       <ImageSourceModal
@@ -388,6 +415,17 @@ export function PeerRideChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  closedBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 16,
+    backgroundColor: appColors.surfaceMuted,
+    borderTopWidth: 1,
+    borderTopColor: appColors.border,
+  },
+  closedText: { fontSize: 13, fontWeight: "600", color: appColors.textMuted },
   container: {
     flex: 1,
     backgroundColor: appColors.background,

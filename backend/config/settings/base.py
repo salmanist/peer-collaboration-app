@@ -212,6 +212,7 @@ EMBEDDING_MODEL = "nomic-embed-text"  # must output EMBEDDING_DIMENSIONS numbers
 # Below this similarity the bot says it does not know. nomic scores on the handbooks: answerable 0.63-0.81, off-topic <=0.64,
 # so this is deliberately low and Gemini's "could not find" reply is the second guard.
 CHATBOT_MIN_SIMILARITY = 0.60
-CHATBOT_TEXT_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]  # tried in order; free-tier speed varies a lot
-CHATBOT_ANSWER_TIMEOUT_MS = 10000  # per model attempt (Google minimum is 10s)
+# Tried in order; free-tier speed varies a lot. Measured 2026-10-27: the *-lite models were overloaded (503) or took 20s+.
+CHATBOT_TEXT_MODELS = ["gemini-3-flash-preview", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
+CHATBOT_ANSWER_TIMEOUT_MS = 20000  # per model attempt (Google minimum is 10s)
 CHATBOT_CONTEXT_CHUNKS = 6

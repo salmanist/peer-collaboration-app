@@ -16,6 +16,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useSessionStore } from "../../../core/auth/session";
 import { fetchTutor } from "../data/tutoringApi";
 import { TutorProfileSkeleton } from "../../../core/components/Skeleton";
 import { useDataStore } from "../../../core/store/DataStoreContext";
@@ -50,6 +51,7 @@ export function TutorProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const tutorId = Number(id);
   const { tutors } = useDataStore();
+  const currentUser = useSessionStore((state) => state.user);
 
   const cachedTutor = (tutors || []).find((t: TutorProfile) => t.id === tutorId) || null;
 
@@ -251,17 +253,21 @@ export function TutorProfileScreen() {
       >
         <View style={{ flex: 1 }}>
           <Text style={styles.bottomBarTitle}>
-            Academic Session
+            {tutor?.user_id === currentUser?.id ? "This is your profile" : "Academic Session"}
           </Text>
           <Text style={styles.bottomBarSub}>Peer-to-peer collaboration</Text>
         </View>
 
-        <Pressable
-          style={styles.bookButton}
-          onPress={() => setIsBookModalVisible(true)}
-        >
-          <Text style={styles.bookButtonText}>Book Session ➔</Text>
-        </Pressable>
+        {tutor?.user_id === currentUser?.id ? (
+          // You can't book yourself: send tutors to edit their own profile instead.
+          <Pressable style={styles.bookButton} onPress={() => router.push("/(app)/tutoring/setup" as any)}>
+            <Text style={styles.bookButtonText}>Edit my profile</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.bookButton} onPress={() => setIsBookModalVisible(true)}>
+            <Text style={styles.bookButtonText}>Book Session ➔</Text>
+          </Pressable>
+        )}
       </View>
 
       {/* Booking Modal */}

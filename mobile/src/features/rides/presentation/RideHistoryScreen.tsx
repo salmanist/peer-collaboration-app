@@ -68,7 +68,7 @@ export default function RideHistoryScreen() {
             {/* Scheduled Carpools Section */}
             <View style={styles.sectionHeader}>
               <MaterialCommunityIcons name="calendar-check" size={18} color={appColors.primary} />
-              <Text style={styles.sectionTitle}>Scheduled Carpools</Text>
+              <Text style={styles.sectionTitle}>Scheduled Rides</Text>
               <View style={styles.countBadge}>
                 <Text style={styles.countBadgeText}>{data.scheduled.length}</Text>
               </View>
@@ -96,7 +96,7 @@ export default function RideHistoryScreen() {
               })
             ) : (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>No completed scheduled carpools yet.</Text>
+                <Text style={styles.emptyText}>No completed scheduled rides yet.</Text>
               </View>
             )}
 

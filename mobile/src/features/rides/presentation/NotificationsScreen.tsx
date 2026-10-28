@@ -85,7 +85,7 @@ export default function NotificationsScreen() {
             <MaterialCommunityIcons name="bell-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
             <Text style={styles.emptyTitle}>No Notifications Yet</Text>
             <Text style={styles.emptySub}>
-              Updates on your carpools and join requests will show up here.
+              Updates on your rides and join requests will show up here.
             </Text>
           </View>
         }

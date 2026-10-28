@@ -27,6 +27,10 @@ export interface Ride {
   started_at: string | null;
   completed_at: string | null;
   my_request_status: JoinRequestStatus | null;
+  // The rider's accepted join request; the carpool chat is keyed on it (null until accepted).
+  my_request_id: number | null;
+  // True while this student has a live chat on the ride (driver with an accepted rider, or the accepted rider).
+  chat_active?: boolean;
   pending_request_count?: number | null;
   created_at: string;
 }
@@ -200,3 +204,36 @@ export async function getActiveTrip() {
   const { data } = await apiClient.get<{ trip: ActiveTrip | null }>("/rides/active/");
   return data.trip;
 }
+
+// ---- Carpool live chat: one chat per accepted join request, closed when the driver ends the ride.
+export interface RideChatMessage {
+  id: number;
+  request: number;
+  sender_id: number;
+  sender_name: string;
+  body: string;
+  image: string | null;
+  created_at: string;
+}
+
+export async function fetchRideChatMessages(joinRequestId: number) {
+  const { data } = await apiClient.get<{ results: RideChatMessage[]; is_closed: boolean }>(
+    `/rides/requests/${joinRequestId}/messages/`
+  );
+  return data;
+}
+
+export async function sendRideChatMessage(joinRequestId: number, payload: { body?: string; imageUri?: string }) {
+  const form = new FormData();
+  if (payload.body) form.append("body", payload.body);
+  if (payload.imageUri) {
+    const filename = payload.imageUri.split("/").pop() || "chat.jpg";
+    const type = filename.split(".").pop()?.toLowerCase() === "png" ? "image/png" : "image/jpeg";
+    form.append("image", { uri: payload.imageUri, name: filename, type } as any);
+  }
+  const { data } = await apiClient.post<RideChatMessage>(`/rides/requests/${joinRequestId}/messages/`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+

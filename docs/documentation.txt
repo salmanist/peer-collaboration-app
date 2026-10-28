@@ -1178,3 +1178,26 @@ backend/.env.example) and files go to a private Cloudflare R2 bucket via django-
 Every file URL is then a signed link that expires after 24 hours (a list screen left open longer shows broken links until refreshed).
 With the variables blank, files stay on local disk under backend/media (local dev, tests). To move existing local files into the
 bucket run: python manage.py upload_media_to_r2 --dry-run, then without --dry-run (same file names, never deletes local files, safe to repeat).
+
+PEER TUTORING - leaving the tutor programme (salman)
+DELETE /api/tutoring/tutors/me/ (MyTutorProfileView) deletes the caller's TutorProfile (rating summary goes with it) and cancels the
+upcoming pending/accepted sessions they were due to teach, notifying those learners; finished sessions and reviews stay as history.
+In the app: Edit Tutor Profile -> "Stop being a tutor" (confirm). Tutors can book other tutors like any student; their own profile
+screen shows "Edit my profile" instead of Book Session, and their own card in the feed is tagged "(You)".
+
+
+
+CARPOOL LIVE CHAT (salman)
+Same live chat as Lost & Found / Peer Tutoring, for scheduled carpools. Model RideChatMessage (rides app) hangs off the accepted
+RideJoinRequest, so the driver has one chat per accepted rider. Rules live in apps/rides/chat.py: the chat exists once the request is
+accepted and is closed once the ride is no longer open/in progress. The driver's "End Ride" button (POST rides/<id>/complete/) is the only
+way a ride ends; it pushes {"type": "closed"} to every open chat, after which sending is refused (REST 400, WebSocket error) and the screen
+shows "This ride has ended. The chat is closed." with history still readable. WebSocket: ws/rides/requests/<join_request_id>/chat/
+(RideChatConsumer). App: RideChatScreen is a thin wrapper around the shared PeerRideChatScreen (it takes a ChatSource); the Chat button
+sits on each accepted rider in the driver's Trip Details and on the rider's own request status. Route: app/(app)/rides/chat/[requestId].tsx
+(new folder: restart Expo once).
+
+One posted ride at a time: apps/rides/active.py ensure_can_offer() blocks POST /api/rides/ while the driver has an open/in-progress ride (stale
+open rides past the 30-minute grace do not count). List order and colours: RideListCreateView puts live-chat rides first, then your own posted
+ride; TripCard shows your own ride in light green (green50) and a live-chat ride in a deeper green (successBg, emerald border) with a "Live chat
+open" line.

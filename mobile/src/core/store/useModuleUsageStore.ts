@@ -68,7 +68,7 @@ export const DEFAULT_CAMPUS_MODULES: ModuleConfig[] = [
     id: "ride_sharing",
     isDummy: true,
     title: "Ride Sharing",
-    subTitle: "Campus Commute & Carpool",
+    subTitle: "Campus Commute & Rides",
     icon: "car-multiple",
     bgColor: colors.pink600,
     iconColor: colors.white,

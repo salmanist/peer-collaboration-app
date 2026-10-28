@@ -71,7 +71,8 @@ class TutorProfileListCreateView(generics.ListCreateAPIView):
     ordering = ["-average_rating", "-total_reviews"]
 
     def get_queryset(self):
-        qs = TutorProfile.objects.select_related("user").filter(is_active=True)
+        # You never see yourself in the list of tutors to book.
+        qs = TutorProfile.objects.select_related("user").filter(is_active=True).exclude(user=self.request.user)
 
         profile_type = self.request.query_params.get("profile_type")
         if profile_type == "tutor":
@@ -155,7 +156,7 @@ class TutorProfileDetailView(generics.RetrieveUpdateAPIView):
             raise PermissionDenied("You can only edit your own tutor profile.")
 
 
-class MyTutorProfileView(generics.RetrieveUpdateAPIView):
+class MyTutorProfileView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TutorProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -164,6 +165,31 @@ class MyTutorProfileView(generics.RetrieveUpdateAPIView):
         if profile is None:
             raise Http404("You have not set up a tutor profile yet.")
         return profile
+
+    def perform_destroy(self, instance):
+        """Stop being a tutor: the profile (and its rating summary) is deleted and the student goes back to
+        a plain learner. Upcoming sessions they were due to teach are cancelled and the learners told;
+        finished sessions and the reviews people left stay as history."""
+        user = self.request.user
+        with transaction.atomic():
+            upcoming = TutoringSession.objects.select_related("learner").filter(
+                tutor=user,
+                status__in=[TutoringSession.Status.PENDING, TutoringSession.Status.ACCEPTED],
+                scheduled_at__gt=timezone.now(),
+            )
+            for session in upcoming:
+                session.status = TutoringSession.Status.CANCELLED
+                session.save(update_fields=["status", "updated_at"])
+                create_user_notification(
+                    recipient=session.learner,
+                    title="Tutoring session cancelled",
+                    message=f"{user.full_name} is no longer a tutor, so your {session.subject_or_skill} session was cancelled.",
+                    priority="high",
+                    sender=user,
+                    category="sessions",
+                    action_url="/(app)/tutoring",
+                )
+            instance.delete()
 
 
 class TutoringSessionListCreateView(generics.ListCreateAPIView):
@@ -201,7 +227,7 @@ class TutoringSessionListCreateView(generics.ListCreateAPIView):
             learner_name = getattr(self.request.user, "full_name", None) or self.request.user.email
             subject = serializer.validated_data.get("subject", "Peer Tutoring")
             create_user_notification(
-                recipient=tutor_profile.user,
+                recipient=session.tutor,
                 title="New Peer Tutoring Request 🎓",
                 message=f"{learner_name} requested a {subject} study session with you.",
                 priority="high",

@@ -18,7 +18,6 @@ class ResourceListing(models.Model):
     class Condition(models.TextChoices):
         NEW = "new", "New"
         USED = "used", "Used"
-        DIGITAL = "digital", "Digital"
 
     class ExchangeType(models.TextChoices):
         FREE = "free", "Free"

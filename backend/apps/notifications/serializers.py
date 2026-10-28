@@ -6,6 +6,8 @@ class CampusNotificationSerializer(serializers.ModelSerializer):
     created_by_name = serializers.SerializerMethodField()
     is_popup_dismissed = serializers.SerializerMethodField()
     is_read = serializers.SerializerMethodField()
+    # True for admin broadcasts to everyone (no target student), so the app can make them stand out.
+    is_broadcast = serializers.SerializerMethodField()
 
     class Meta:
         model = CampusNotification
@@ -23,8 +25,12 @@ class CampusNotificationSerializer(serializers.ModelSerializer):
             "is_active",
             "is_popup_dismissed",
             "is_read",
+            "is_broadcast",
         ]
         read_only_fields = ["id", "created_by", "created_at"]
+
+    def get_is_broadcast(self, obj):
+        return obj.target_user_id is None
 
     def get_created_by_name(self, obj):
         if obj.created_by:

@@ -37,9 +37,11 @@ import { fetchTutors } from "../../tutoring/data/tutoringApi";
 import { fetchLostAndFoundItems } from "../../lost_and_found/data/lostAndFoundApi";
 
 const LGU_BANNER_IMAGE = require("../../../../assets/lgu_preview_clean.png");
-const STUDENTS_STUDY_IMAGE = require("../../../../assets/students_study.png");
-const LGU_BUILDING_IMAGE = require("../../../../assets/lgu_building.png");
-const CARNIVAL_IMAGE = require("../../../../assets/carnival_highlight.png");
+// Campus Highlights backgrounds: one sharp image per card (the old ones were a 137px thumbnail, a letterboxed
+// photo and a screenshot with text baked in). Swap in real event photos here when available.
+const CARNIVAL_IMAGE = require("../../../../assets/event_carnival.jpg");
+const TECH_TALK_IMAGE = require("../../../../assets/lgu_preview_clean.png");
+const MIDTERMS_IMAGE = require("../../../../assets/lgu_campus.png");
 
 interface CampusSpotlightEvent {
   id: string;
@@ -458,7 +460,7 @@ export default function HomeScreen() {
           scrollEventThrottle={16}
         >
           {upcomingEvents.map((evt, idx) => {
-            const evtImage = idx === 0 ? CARNIVAL_IMAGE : idx === 1 ? STUDENTS_STUDY_IMAGE : LGU_BUILDING_IMAGE;
+            const evtImage = idx === 0 ? CARNIVAL_IMAGE : idx === 1 ? TECH_TALK_IMAGE : MIDTERMS_IMAGE;
             return (
               <Pressable
                 key={evt.id}

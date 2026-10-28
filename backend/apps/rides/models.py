@@ -4,6 +4,8 @@ import time
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 
 # A ride left open past its departure time (never started, never cancelled)
@@ -101,3 +103,27 @@ class RideJoinRequest(models.Model):
 
     def __str__(self):
         return f"{self.requester} -> {self.ride} ({self.status})"
+
+
+class RideChatMessage(models.Model):
+    """Live chat between the offerer and one accepted rider. It opens when the rider is accepted and
+    closes when the offerer ends the ride (see rides/chat.py)."""
+
+    join_request = models.ForeignKey(RideJoinRequest, on_delete=models.CASCADE, related_name="chat_messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ride_chat_messages")
+    body = models.TextField(max_length=1500, blank=True, default="")
+    image = models.ImageField(upload_to="ride_chat_images/", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Msg {self.id} on join request {self.join_request_id} by {self.sender_id}"
+
+
+@receiver(post_delete, sender=RideChatMessage)
+def delete_chat_image_with_message(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)
+

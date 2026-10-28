@@ -96,6 +96,13 @@ export default function RideDetailScreen() {
     }, [load]),
   );
 
+  const openChat = (joinRequestId: number, partnerName: string) => {
+    router.push({
+      pathname: "/(app)/rides/chat/[requestId]",
+      params: { requestId: String(joinRequestId), partnerName, routeSummary: `${ride?.departure} → ${ride?.destination}` },
+    } as any);
+  };
+
   const runAction = async (action: () => Promise<unknown>) => {
     setError(null);
     setIsActing(true);
@@ -260,7 +267,7 @@ export default function RideDetailScreen() {
                 disabled={isActing}
               >
                 <MaterialCommunityIcons name="check-circle-outline" size={18} color={appColors.white} style={{ marginRight: 6 }} />
-                <Text style={styles.primaryBtnText}>Mark Ride Completed</Text>
+                <Text style={styles.primaryBtnText}>End Ride</Text>
               </Pressable>
             )}
 
@@ -273,7 +280,7 @@ export default function RideDetailScreen() {
               <View style={styles.emptyRequestsCard}>
                 <MaterialCommunityIcons name="inbox-outline" size={32} color={appColors.textSecondary} style={{ marginBottom: 6 }} />
                 <Text style={styles.emptyRequestsTitle}>No Requests Yet</Text>
-                <Text style={styles.emptyRequestsSub}>Requests to carpool with you will appear here.</Text>
+                <Text style={styles.emptyRequestsSub}>Requests to join your ride will appear here.</Text>
               </View>
             ) : (
               requests.map((request) => {
@@ -289,6 +296,15 @@ export default function RideDetailScreen() {
                         <Text style={[styles.badgeText, { color: reqTone.text }]}>{request.status.toUpperCase()}</Text>
                       </View>
                     </View>
+
+                    {request.status === "accepted" && (
+                      <Pressable style={styles.chatBtn} onPress={() => openChat(request.id, request.requester.full_name)}>
+                        <MaterialCommunityIcons name="chat-outline" size={16} color={appColors.primary} style={{ marginRight: 6 }} />
+                        <Text style={styles.chatBtnText}>
+                          {ride.status === "completed" ? "View chat (closed)" : `Chat with ${request.requester.full_name}`}
+                        </Text>
+                      </Pressable>
+                    )}
 
                     {request.status === "pending" && ride.status === "open" && (
                       <View style={styles.requestActionsRow}>
@@ -329,7 +345,7 @@ export default function RideDetailScreen() {
                 ) : (
                   <>
                     <MaterialCommunityIcons name="car-seat" size={20} color={appColors.white} style={{ marginRight: 8 }} />
-                    <Text style={styles.primaryBtnText}>Request to Join Carpool</Text>
+                    <Text style={styles.primaryBtnText}>Request to Join Ride</Text>
                   </>
                 )}
               </Pressable>
@@ -337,7 +353,7 @@ export default function RideDetailScreen() {
 
             {ride.my_request_status && (
               <View style={styles.statusBox}>
-                <Text style={styles.statusBoxLabel}>Your Carpool Request</Text>
+                <Text style={styles.statusBoxLabel}>Your Ride Request</Text>
                 <View
                   style={[
                     styles.badge,
@@ -360,6 +376,15 @@ export default function RideDetailScreen() {
                   </Text>
                 </View>
               </View>
+            )}
+
+            {ride.my_request_status === "accepted" && ride.my_request_id != null && (
+              <Pressable style={[styles.chatBtn, { marginTop: 12 }]} onPress={() => openChat(ride.my_request_id as number, ride.offerer.full_name)}>
+                <MaterialCommunityIcons name="chat-outline" size={16} color={appColors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.chatBtnText}>
+                  {ride.status === "completed" ? "View chat (closed)" : `Chat with ${ride.offerer.full_name}`}
+                </Text>
+              </Pressable>
             )}
           </View>
         )}
@@ -617,6 +642,18 @@ const styles = StyleSheet.create({
     borderTopColor: appColors.border,
     paddingTop: 8,
   },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: appColors.primary,
+    backgroundColor: appColors.white,
+  },
+  chatBtnText: { color: appColors.primary, fontSize: 13, fontWeight: "700" },
   acceptBtn: {
     flex: 1,
     flexDirection: "row",

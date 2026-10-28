@@ -3,12 +3,16 @@
 "Under way" means any of: a scheduled carpool that was started (as driver or accepted passenger),
 a Ride Now trip still active (as rider or driver), or a matched lift-board request.
 ondemand models are imported inside the function so the two apps stay loosely coupled."""
+import datetime
+
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework.exceptions import APIException
 
-from .models import Ride, RideJoinRequest
+from .models import EXPIRY_GRACE_MINUTES, Ride, RideJoinRequest
 
 BUSY_MESSAGE = "You have a ride in progress. Finish it before offering or requesting another."
+OFFER_BLOCKED_MESSAGE = "You already have a ride posted. Finish or cancel it before posting another."
 
 
 class BusyError(APIException):
@@ -48,3 +52,13 @@ def ensure_free(user):
     """Call at the top of every offer / request / join / accept action."""
     if active_trip(user):
         raise BusyError()
+
+
+def ensure_can_offer(user):
+    """One posted ride at a time: the previous ride must have ended (completed, cancelled or expired)."""
+    cutoff = timezone.now() - datetime.timedelta(minutes=EXPIRY_GRACE_MINUTES)
+    for ride in Ride.objects.filter(offerer=user, status__in=[Ride.Status.OPEN, Ride.Status.IN_PROGRESS]):
+        # An open ride nobody started within the grace period is as good as expired, even before the lazy expiry runs.
+        if ride.status == Ride.Status.IN_PROGRESS or ride.departure_datetime >= cutoff:
+            raise BusyError(OFFER_BLOCKED_MESSAGE)
+

@@ -14,9 +14,15 @@ export function TripCard({ ride }: { ride: Ride }) {
   const pendingCount = ride.pending_request_count || 0;
   return (
     <Pressable
-      style={styles.card}
+      style={[styles.card, isMine && styles.cardMine, ride.chat_active && styles.cardLive]}
       onPress={() => router.push(`/(app)/rides/${ride.id}`)}
     >
+      {ride.chat_active && (
+        <View style={styles.liveRow}>
+          <MaterialCommunityIcons name="chat-processing-outline" size={15} color={appColors.emerald800} />
+          <Text style={styles.liveText}>{isMine ? "Live chat open with your rider" : "Live chat open with your driver"}</Text>
+        </View>
+      )}
       {isMine && <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <Text style={{ fontSize: 12, fontWeight: "700", color: appColors.primary }}>You posted</Text>
         {pendingCount > 0 && <View accessibilityLabel={`${pendingCount} pending join requests`} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
@@ -95,6 +101,11 @@ export function TripSkeletonList() {
 
 
 const styles = StyleSheet.create({
+  // Your own posted ride: light green. A ride with a live chat: a deeper green so it stands out at the top.
+  cardMine: { backgroundColor: appColors.green50, borderColor: appColors.emerald100 },
+  cardLive: { backgroundColor: appColors.successBg, borderColor: appColors.emerald500 },
+  liveRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  liveText: { fontSize: 12, fontWeight: "700", color: appColors.emerald800 },
   card: {
     backgroundColor: appColors.white,
     borderRadius: 16,

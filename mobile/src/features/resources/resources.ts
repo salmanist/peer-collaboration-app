@@ -5,7 +5,7 @@ export type ResourceCategory =
   | "lab_equipment"
   | "other";
 
-export type ResourceCondition = "new" | "used" | "digital";
+export type ResourceCondition = "new" | "used";
 
 export type ResourceExchangeType = "free" | "lend" | "exchange" | "sell" | "rent";
 

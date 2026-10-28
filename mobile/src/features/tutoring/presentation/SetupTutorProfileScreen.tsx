@@ -24,6 +24,7 @@ import { Skeleton } from "../../../core/components/Skeleton";
 import { useDataStore } from "../../../core/store/DataStoreContext";
 import {
   createTutorProfile,
+  deleteMyTutorProfile,
   fetchAcademicCourses,
   fetchMyTutorProfile,
   fetchSkillTopics,
@@ -84,6 +85,37 @@ export function SetupTutorProfileScreen() {
   const [skillCatFilter, setSkillCatFilter] = useState("All");
 
   const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
+
+  const [isStopping, setIsStopping] = useState(false);
+
+  const stopBeingTutor = async () => {
+    setIsStopping(true);
+    setErrorMsg(null);
+    try {
+      await deleteMyTutorProfile();
+      await pollSummary();
+      router.replace("/(app)/tutoring" as any);
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.detail ?? "Couldn't remove your tutor profile. Please try again.");
+    } finally {
+      setIsStopping(false);
+    }
+  };
+
+  const confirmStopBeingTutor = () => {
+    const message =
+      "This deletes your tutor profile and rating, cancels your upcoming sessions as a tutor and returns you to a normal student. You can become a tutor again later.";
+    if (Platform.OS === "web") {
+      if (window.confirm(`Stop being a tutor?
+
+${message}`)) void stopBeingTutor();
+    } else {
+      Alert.alert("Stop being a tutor?", message, [
+        { text: "Keep my profile", style: "cancel" },
+        { text: "Stop being a tutor", style: "destructive", onPress: () => void stopBeingTutor() },
+      ]);
+    }
+  };
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -550,6 +582,24 @@ export function SetupTutorProfileScreen() {
             </Text>
           )}
         </Pressable>
+
+        {/* Only for existing tutors: leave the programme and go back to a plain student */}
+        {existingProfile && (
+          <Pressable
+            style={[styles.stopTutorButton, isStopping && styles.saveButtonDisabled]}
+            onPress={confirmStopBeingTutor}
+            disabled={isStopping}
+          >
+            {isStopping ? (
+              <ActivityIndicator color={appColors.danger} />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="account-remove-outline" size={18} color={appColors.danger} />
+                <Text style={styles.stopTutorText}>Stop being a tutor</Text>
+              </>
+            )}
+          </Pressable>
+        )}
       </ScrollView>
 
       {/* Courses Catalog Modal */}
@@ -1142,6 +1192,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  stopTutorButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: appColors.danger,
+    marginTop: 12,
+  },
+  stopTutorText: { color: appColors.danger, fontSize: 15, fontWeight: "800" },
   saveButtonDisabled: {
     opacity: 0.6,
   },

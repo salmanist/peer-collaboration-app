@@ -93,6 +93,11 @@ export async function createTutorProfile(payload: CreateTutorProfilePayload) {
   return data;
 }
 
+// Stop being a tutor: deletes the profile on the server (upcoming sessions are cancelled there).
+export async function deleteMyTutorProfile() {
+  await apiClient.delete("/tutoring/tutors/me/");
+}
+
 export async function updateTutorProfile(id: number, payload: Partial<CreateTutorProfilePayload>) {
   const { data } = await apiClient.patch<TutorProfile>(`/tutoring/tutors/${id}/`, payload);
   return data;

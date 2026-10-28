@@ -43,7 +43,6 @@ const categoryOptions: { value: ResourceCategory; label: string; icon: keyof typ
 const conditionOptions: { value: ResourceCondition; label: string }[] = [
   { value: "new", label: "New" },
   { value: "used", label: "Used" },
-  { value: "digital", label: "Digital" },
 ];
 
 const shareExchangeOptions: { value: ResourceExchangeType; label: string }[] = [

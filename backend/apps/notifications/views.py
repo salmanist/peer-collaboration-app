@@ -142,7 +142,9 @@ class AdminNotificationListCreateView(APIView):
                 {"detail": "Admin access required"}, status=status.HTTP_403_FORBIDDEN
             )
 
-        notifications = CampusNotification.objects.select_related("created_by").all()
+        # Broadcast history only: rows with a target_user are private per-student alerts
+        # (rides, printing, marketplace...) and don't belong in the Admin Center.
+        notifications = CampusNotification.objects.select_related("created_by").filter(target_user__isnull=True)
         user_states = {
             s.notification_id: s
             for s in UserNotificationState.objects.filter(user=request.user)

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from accounts.models import User, prime_roster_cache
 from common.geo import haversine_km
 
-from .models import Location, Ride, RideJoinRequest
+from .models import Location, Ride, RideChatMessage, RideJoinRequest
 
 # A pin refining a curated area may sit at most this far from the area's centre.
 PIN_MAX_DISTANCE_KM = 5
@@ -36,6 +36,8 @@ class RideListSerializer(serializers.ListSerializer):
 class RideSerializer(serializers.ModelSerializer):
     offerer = RideUserSerializer(read_only=True)
     my_request_status = serializers.SerializerMethodField()
+    my_request_id = serializers.SerializerMethodField()
+    chat_active = serializers.SerializerMethodField()
     pending_request_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -47,7 +49,7 @@ class RideSerializer(serializers.ModelSerializer):
             "departure_date", "departure_time",
             "seats_total", "seats_available", "same_gender_only", "status",
             "started_at", "completed_at",
-            "my_request_status", "pending_request_count", "created_at",
+            "my_request_status", "my_request_id", "chat_active", "pending_request_count", "created_at",
         ]
         read_only_fields = ["id", "offerer", "seats_available", "status", "started_at", "completed_at", "created_at"]
 
@@ -59,6 +61,29 @@ class RideSerializer(serializers.ModelSerializer):
         if counts is not None:
             return counts.get(ride.id, 0)
         return ride.join_requests.filter(status="pending").count()
+
+    def get_chat_active(self, ride):
+        """True while the caller has a live chat on this ride (driver with an accepted rider, or the accepted rider)."""
+        flag = getattr(ride, "chat_flag", None)  # precomputed by the list query
+        if flag is not None:
+            return bool(flag)
+        request = self.context.get("request")
+        if ride.status not in (Ride.Status.OPEN, Ride.Status.IN_PROGRESS) or request is None or not request.user.is_authenticated:
+            return False
+        accepted = ride.join_requests.filter(status=RideJoinRequest.Status.ACCEPTED)
+        if ride.offerer_id != request.user.id:
+            accepted = accepted.filter(requester=request.user)
+        return accepted.exists()
+
+    def get_my_request_id(self, ride):
+        """The caller's accepted join request - what the carpool chat is keyed on (None until accepted)."""
+        statuses = self.context.get("user_join_request_statuses")
+        if statuses is not None and statuses.get(ride.id) != RideJoinRequest.Status.ACCEPTED:
+            return None
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return None
+        return ride.join_requests.filter(requester=request.user, status=RideJoinRequest.Status.ACCEPTED).values_list("id", flat=True).first()
 
     def get_my_request_status(self, ride):
         statuses = self.context.get("user_join_request_statuses")
@@ -142,3 +167,16 @@ class RideJoinRequestSerializer(serializers.ModelSerializer):
         list_serializer_class = RideJoinRequestListSerializer
         fields = ["id", "ride", "requester", "status", "created_at"]
         read_only_fields = ["id", "ride", "requester", "status", "created_at"]
+
+
+class RideChatMessageSerializer(serializers.ModelSerializer):
+    request = serializers.IntegerField(source="join_request_id", read_only=True)
+    sender_id = serializers.IntegerField(source="sender.id", read_only=True)
+    sender_name = serializers.CharField(source="sender.display_name", read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = RideChatMessage
+        fields = ["id", "request", "sender_id", "sender_name", "body", "image", "created_at"]
+        read_only_fields = ["id", "request", "sender_id", "sender_name", "created_at"]
+

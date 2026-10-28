@@ -6,6 +6,7 @@ from .views import (
     LocationListView,
     MyRidesView,
     RideCancelView,
+    RideChatMessageListView,
     RideCompleteView,
     RideDetailView,
     RideJoinRequestAcceptView,
@@ -28,6 +29,7 @@ urlpatterns = [
     path("<int:pk>/start/", RideStartView.as_view(), name="rides-start"),
     path("<int:pk>/complete/", RideCompleteView.as_view(), name="rides-complete"),
     path("<int:pk>/requests/", RideJoinRequestListView.as_view(), name="rides-requests"),
+    path("requests/<int:pk>/messages/", RideChatMessageListView.as_view(), name="rides-chat-messages"),
     path("requests/<int:pk>/accept/", RideJoinRequestAcceptView.as_view(), name="rides-request-accept"),
     path("requests/<int:pk>/decline/", RideJoinRequestDeclineView.as_view(), name="rides-request-decline"),
 ]

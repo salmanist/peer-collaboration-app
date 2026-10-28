@@ -115,6 +115,7 @@ export default function CampusNotificationCenterModal() {
                     style={({ pressed }) => [
                       styles.itemCard,
                       !item.is_read && styles.itemCardUnread,
+                      item.is_broadcast && styles.itemCardBroadcast,
                       pressed && styles.itemCardPressed,
                     ]}
                     onPress={() => {
@@ -125,17 +126,24 @@ export default function CampusNotificationCenterModal() {
                     }}
                   >
                     <View style={styles.itemTopRow}>
-                      <View style={[styles.noticeIconWrap, { backgroundColor: target.badgeBg }]}>
-                        <MaterialCommunityIcons
-                          name={target.icon as any}
-                          size={13}
-                          color={target.accentColor}
-                          style={{ marginRight: 5 }}
-                        />
-                        <Text style={[styles.noticeTagText, { color: target.accentColor }]}>
-                          {target.categoryLabel}
-                        </Text>
-                      </View>
+                      {item.is_broadcast ? (
+                        <View style={[styles.noticeIconWrap, styles.broadcastTag]}>
+                          <MaterialCommunityIcons name="bullhorn" size={13} color={appColors.primary} style={{ marginRight: 5 }} />
+                          <Text style={[styles.noticeTagText, { color: appColors.primary }]}>CAMPUS BROADCAST</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.noticeIconWrap, { backgroundColor: target.badgeBg }]}>
+                          <MaterialCommunityIcons
+                            name={target.icon as any}
+                            size={13}
+                            color={target.accentColor}
+                            style={{ marginRight: 5 }}
+                          />
+                          <Text style={[styles.noticeTagText, { color: target.accentColor }]}>
+                            {target.categoryLabel}
+                          </Text>
+                        </View>
+                      )}
 
                       <View style={styles.itemTimeRow}>
                         {!item.is_read && <View style={styles.unreadDot} />}
@@ -279,6 +287,16 @@ const styles = StyleSheet.create({
   itemCardUnread: {
     backgroundColor: appColors.surfaceMuted,
     borderColor: appColors.border,
+  },
+  // Broadcasts get a gold edge and warm tint so they stand out from private alerts.
+  itemCardBroadcast: {
+    backgroundColor: appColors.goldA18,
+    borderColor: appColors.gold,
+    borderLeftWidth: 5,
+  },
+  broadcastTag: {
+    backgroundColor: appColors.gold,
+    borderRadius: 8,
   },
   itemTopRow: {
     flexDirection: "row",

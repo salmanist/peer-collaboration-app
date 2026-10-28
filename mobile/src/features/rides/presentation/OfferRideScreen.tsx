@@ -126,7 +126,7 @@ export default function OfferRideScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>List an Available Ride</Text>
           <Text style={styles.subtitle}>
-            Share your route, departure time, and carpool with peers on campus.
+            Share your route and departure time with peers on campus.
           </Text>
         </View>
 

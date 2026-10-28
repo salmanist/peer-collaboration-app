@@ -121,7 +121,7 @@ export function TutorDiscoveryFeedScreen() {
   };
 
   const filteredTutors = useMemo(() => {
-    let list = tutors;
+    let list = tutors.filter((t) => t.user_id !== user?.id);
     if (activeTab === "tutor") {
       list = list.filter((t) => t.profile_type === "tutor" || t.profile_type === "both");
     } else if (activeTab === "mentor") {
@@ -228,6 +228,7 @@ export function TutorDiscoveryFeedScreen() {
             { paddingBottom: Math.max(insets.bottom + 50, 70) },
           ]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadData(true)} />}
+          ListHeaderComponent={<Text style={styles.listHeading}>Available Tutors</Text>}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <MaterialCommunityIcons name="school-outline" size={48} color={appColors.textSecondary} style={{ marginBottom: 12 }} />
@@ -446,6 +447,13 @@ const styles = StyleSheet.create({
   tagPillTextActive: {
     color: appColors.gold,
     fontWeight: "800",
+  },
+  listHeading: {
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    color: appColors.primary,
+    marginTop: 8,
   },
   listContent: {
     padding: 16,

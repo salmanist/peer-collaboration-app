@@ -289,7 +289,7 @@ export default function RidesHubScreen() {
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.modeTabText, activeTab === "scheduled" && styles.modeTabTextActive]}>
-              Scheduled Carpools
+              Scheduled
             </Text>
           </View>
         </Pressable>
@@ -306,7 +306,7 @@ export default function RidesHubScreen() {
               style={{ marginRight: 6 }}
             />
             <Text style={[styles.modeTabText, activeTab === "ondemand" && styles.modeTabTextActive]}>
-              Ride Now (On-Demand)
+              On-Demand
             </Text>
           </View>
         </Pressable>
@@ -355,8 +355,8 @@ export default function RidesHubScreen() {
                 <Text style={styles.emptyTitle}>{searchQuery ? "No matching rides" : "No Scheduled Trips Available"}</Text>
                 <Text style={styles.emptySub}>
                   {searchQuery ? "Try another area, destination, or driver name." : drop
-                    ? "No student carpools heading there right now. Switch to 'Ride Now' or offer a trip!"
-                    : "Nobody has posted a carpool yet. Be the first to offer a seat!"}
+                    ? "No student rides heading there right now. Switch to 'On-Demand' or offer a ride!"
+                    : "Nobody has posted a ride yet. Be the first to offer a seat!"}
                 </Text>
               </View>
             ) : (

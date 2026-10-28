@@ -133,7 +133,7 @@ class Command(BaseCommand):
             "category": "stationery", "condition": "used", "exchange_type": "sell", "price": Decimal("2500.00"),
             "description": "Works perfectly, new batteries. Allowed in exams."})
         notes, _ = ResourceListing.objects.get_or_create(owner=z, title="Database Systems handwritten notes", defaults={
-            "category": "notes", "course": "CS-302", "condition": "digital", "exchange_type": "free",
+            "category": "notes", "course": "CS-302", "condition": "used", "exchange_type": "free",
             "description": "Clean scanned notes covering normalization, SQL and transactions."})
         ResourceListing.objects.get_or_create(owner=z, title="Arduino starter kit", defaults={
             "category": "lab_equipment", "condition": "new", "exchange_type": "rent", "price": Decimal("200.00"),

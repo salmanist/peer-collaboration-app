@@ -34,7 +34,6 @@ const categoryOptions: { value: ResourceCategory; label: string }[] = [
 const conditionOptions: { value: ResourceCondition; label: string }[] = [
   { value: "new", label: "Brand New" },
   { value: "used", label: "Used / Pre-owned" },
-  { value: "digital", label: "Digital Copy" },
 ];
 
 const exchangeOptions: { value: ResourceExchangeType; label: string }[] = [
