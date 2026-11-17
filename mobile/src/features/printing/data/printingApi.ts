@@ -41,6 +41,7 @@ export interface PrinterProfile {
   location_note: string;
   supports_color: boolean;
   supports_double_sided: boolean;
+  is_approved?: boolean;
   average_rating: number | null;
   rating_count: number;
 }
@@ -49,6 +50,7 @@ export interface PrinterSettings {
   location_note: string;
   supports_color: boolean;
   supports_double_sided: boolean;
+  is_approved?: boolean;
 }
 
 interface Paginated<T> {

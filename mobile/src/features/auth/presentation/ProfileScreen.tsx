@@ -22,6 +22,7 @@ import { useSessionStore } from "../../../core/auth/session";
 import { useCollapsibleHeader } from "../../../core/navigation/useCollapsibleHeader";
 import { ProfileSkeleton } from "../../../core/components/Skeleton";
 import { fetchMe, updateMe } from "../data/authApi";
+import { fetchAdminPendingSummary } from "../../admin/data/adminApi";
 import { useCampusNotificationStore } from "../../notifications/useCampusNotificationStore";
 
 // Helpers for formatting
@@ -84,6 +85,7 @@ export default function ProfileScreen() {
   const [gender, setGender] = useState<"male" | "female" | "other">("other");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [adminPendingTotal, setAdminPendingTotal] = useState(0);
 
   const editProfile = () => {
     setBio(user?.bio || "");
@@ -112,8 +114,16 @@ export default function ProfileScreen() {
       fetchMe()
         .then((me) => updateUser(me))
         .catch(() => {});
+      const userIsAdmin =
+        user?.role === "admin" ||
+        (user?.email && ["salman@lgu.edu.pk", "zahra@lgu.edu.pk"].includes(user.email.toLowerCase()));
+      if (userIsAdmin) {
+        fetchAdminPendingSummary()
+          .then((summary) => setAdminPendingTotal(summary.total || 0))
+          .catch(() => {});
+      }
     }
-  }, [accessToken, updateUser]);
+  }, [accessToken, updateUser, user?.role, user?.email]);
 
   const topOffset = insets.top > 0 ? insets.top : (Platform.OS === "android" ? (StatusBar.currentHeight || 0) : 0);
   const { headerTranslateY, handleScroll } = useCollapsibleHeader(topOffset + 34 + 2 * headerGrow);
@@ -225,8 +235,15 @@ export default function ProfileScreen() {
                 <MaterialCommunityIcons name="shield-crown" size={24} color={appColors.primary} />
               </View>
               <View style={styles.adminCardBody}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Text style={styles.adminCardTitle}>Admin Center</Text>
+                  {adminPendingTotal > 0 && (
+                    <View style={{ backgroundColor: appColors.danger, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 }}>
+                      <Text style={{ color: appColors.white, fontSize: 11, fontWeight: "800" }}>
+                        {adminPendingTotal > 99 ? "99+" : adminPendingTotal} new
+                      </Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.adminCardSub}>
                   Manage students, campus services, and moderation

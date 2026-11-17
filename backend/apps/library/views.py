@@ -4,6 +4,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from common.notifications import notify_admins
 
 from .models import LibraryProject, LibraryProjectFile, Note, NoteFile
 from .serializers import LibraryProjectSerializer, NoteSerializer
@@ -55,6 +56,11 @@ class LibraryProjectListCreateView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         project = serializer.save(author=request.user, status=LibraryProject.Status.PENDING)
         LibraryProjectFile.objects.bulk_create(LibraryProjectFile(project=project, file=f) for f in files)
+        notify_admins(
+            "New Library Project in Admin Center",
+            f"{request.user.full_name or request.user.email} uploaded '{project.title}' for approval.",
+            sender=request.user,
+        )
 
         headers = self.get_success_headers(serializer.data)
         return Response(self.get_serializer(project).data, status=status.HTTP_201_CREATED, headers=headers)
@@ -166,7 +172,8 @@ class NoteListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         # No status filter - every note is visible the instant it's uploaded.
         queryset = (
-            Note.objects.select_related("author", "course", "course__department")
+            Note.objects.filter(status=LibraryProject.Status.APPROVED)
+            .select_related("author", "course", "course__department")
             .prefetch_related("files")
             .annotate(annotated_upvote_count=Count("upvoted_by", distinct=True))
         )
@@ -206,6 +213,11 @@ class NoteListCreateView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         note = serializer.save(author=request.user)
         NoteFile.objects.bulk_create(NoteFile(note=note, file=f) for f in files)
+        notify_admins(
+            "New Course Note in Admin Center",
+            f"{request.user.full_name or request.user.email} uploaded note '{note.title}' for approval.",
+            sender=request.user,
+        )
 
         headers = self.get_success_headers(serializer.data)
         return Response(self.get_serializer(note).data, status=status.HTTP_201_CREATED, headers=headers)
@@ -237,6 +249,9 @@ class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
         if note.author != request.user:
             return Response({"detail": "Only the author can edit this note."}, status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        serializer.save(status=LibraryProject.Status.PENDING)
 
     def destroy(self, request, *args, **kwargs):
         note = self.get_object()

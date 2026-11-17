@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { listNotifications, markNotificationRead, type Notification } from "../data/notificationsApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
@@ -63,7 +64,7 @@ export default function NotificationsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Ride Notifications</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {!!error && <View style={{ padding: 16, gap: 8 }}>

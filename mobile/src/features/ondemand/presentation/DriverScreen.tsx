@@ -27,6 +27,8 @@ import {
   type RideProfile,
 } from "../data/ondemandApi";
 import { usePolling } from "./usePolling";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 export default function DriverScreen() {
   const insets = useSafeAreaInsets();
@@ -117,7 +119,7 @@ export default function DriverScreen() {
     return <View style={styles.container}>
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={handleBack} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} /></Pressable>
-        <Text style={styles.topNavTitle}>Driver Mode</Text><View style={{ width: 36 }} />
+        <Text style={styles.topNavTitle}>Driver Mode</Text><NotificationBellButton />
       </View>
       <LoadingSkeleton variant="list" />
     </View>;
@@ -131,7 +133,7 @@ export default function DriverScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Driver Mode</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
 
         <View style={styles.centerCardContainer}>
@@ -290,7 +292,7 @@ export default function DriverScreen() {
             {/* Accept Button */}
             <Pressable
               style={[styles.primaryBtn, busyId === ride.id && styles.btnDisabled]}
-              onPress={() => accept(ride)}
+              onPress={() => confirmAction("Accept Ride Request?", `Accept ride for ${ride.pickup_label} -> ${ride.drop_label}?`, () => accept(ride), "Accept")}
               disabled={busyId !== null}
             >
               {busyId === ride.id ? (

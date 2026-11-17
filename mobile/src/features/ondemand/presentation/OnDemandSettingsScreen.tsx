@@ -16,6 +16,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { Skeleton } from "../../../core/components/Skeleton";
 import { applyToDrive, getMyRideProfile, stopDriving, type RideProfile } from "../data/ondemandApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 const SEAT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -108,7 +109,7 @@ export default function OnDemandSettingsScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Driver Settings</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
 
         <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
@@ -130,7 +131,7 @@ export default function OnDemandSettingsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>{isDriver ? "Driver Profile" : "Become a Driver"}</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

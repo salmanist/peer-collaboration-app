@@ -31,6 +31,7 @@ import {
 } from "../data/tutoringApi";
 import { RateTutorModal } from "./RateTutorModal";
 import type { TutoringChatMessage, TutoringSession } from "../tutoring";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 function websocketBaseUrl() {
   return API_BASE_URL.replace(/^http/, "ws").replace(/\/api\/?$/, "");
@@ -263,7 +264,7 @@ export function SessionChatScreen() {
             <Skeleton width={130} height={18} borderRadius={4} style={{ marginBottom: 4 }} />
             <Skeleton width={80} height={12} borderRadius={4} />
           </View>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={{ flex: 1, padding: 16, gap: 14 }}>
           <View style={{ alignSelf: "flex-start", width: "65%" }}>

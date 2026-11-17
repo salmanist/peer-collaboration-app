@@ -20,6 +20,8 @@ import { sendHeartbeat } from "../data/driverLocation";
 import { getCurrentRide, getRide, rideAction, type OnDemandRide, type RideStatus } from "../data/ondemandApi";
 import { RideMap } from "./RideMap";
 import { usePolling } from "./usePolling";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 const ACTIVE: RideStatus[] = ["requested", "accepted", "arrived", "in_progress"];
 
@@ -176,7 +178,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>My Ride</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           <LoadingSkeleton variant="ride" />
@@ -194,7 +196,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>My Ride</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           <View style={styles.emptyIconCircle}>
@@ -224,7 +226,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Ride</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView
@@ -297,7 +299,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
           {(canRiderCancel || canDriverCancel) && (
             <Pressable
               style={[styles.dangerOutlineBtn, isBusy && styles.btnDisabled]}
-              onPress={() => act("cancel")}
+              onPress={() => confirmAction("Cancel Ride?", "Are you sure you want to cancel this ride?", () => act("cancel"), "Cancel Ride", true)}
               disabled={isBusy}
             >
               <MaterialCommunityIcons name="close-circle-outline" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
@@ -391,7 +393,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
           {isDriver && ride.status === "in_progress" && (
             <Pressable
               style={[styles.primaryBtn, isBusy && styles.btnDisabled]}
-              onPress={() => act("complete")}
+              onPress={() => confirmAction("Complete Ride?", "Are you sure you want to end and complete this ride?", () => act("complete"), "Complete Ride")}
               disabled={isBusy}
             >
               {isBusy ? (
@@ -425,7 +427,7 @@ export default function ActiveRideScreen({ embedded = false, initialRide, onClos
               </Pressable>
               <Pressable
                 style={[styles.dangerOutlineBtn, isBusy && styles.btnDisabled]}
-                onPress={cancelAndLeave}
+                onPress={() => confirmAction("Cancel Request?", "Are you sure you want to cancel this ride request?", cancelAndLeave, "Cancel Request", true)}
                 disabled={isBusy}
               >
                 <MaterialCommunityIcons name="close" size={18} color={appColors.danger} style={{ marginRight: 6 }} />

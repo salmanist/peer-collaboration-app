@@ -21,6 +21,7 @@ import type { AcademicCourse } from "../../../core/network/coursesApi";
 import { usePersistentCache } from "../../../core/data/PersistentCache";
 import { listCourses } from "../../../core/network/coursesApi";
 import { getNote, updateNote } from "../data/notesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function EditNoteScreen() {
   const insets = useSafeAreaInsets();
@@ -89,7 +90,7 @@ export default function EditNoteScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Edit Notes</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           <LoadingSkeleton variant="form" />
@@ -105,7 +106,7 @@ export default function EditNoteScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Edit Notes</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

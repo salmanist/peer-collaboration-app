@@ -27,6 +27,8 @@ import {
 import { useTutoringNotificationStore } from "../tutoringNotifications";
 import { RateTutorModal } from "./RateTutorModal";
 import type { TutoringSession } from "../tutoring";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 export function MyTutoringSessionsScreen() {
   const router = useRouter();
@@ -159,7 +161,7 @@ export function MyTutoringSessionsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Tutoring Sessions</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {/* Tabs */}
@@ -416,7 +418,7 @@ export function MyTutoringSessionsScreen() {
                     <View style={styles.btnRow}>
                       <Pressable
                         style={styles.acceptBtn}
-                        onPress={() => handleStatusChange(item.id, "accepted")}
+                        onPress={() => confirmAction("Accept Session?", "Are you sure you want to accept this tutoring session request?", () => handleStatusChange(item.id, "accepted"), "Accept")}
                       >
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                           <MaterialCommunityIcons name="check" size={14} color={appColors.white} style={{ marginRight: 3 }} />
@@ -425,7 +427,7 @@ export function MyTutoringSessionsScreen() {
                       </Pressable>
                       <Pressable
                         style={styles.declineBtn}
-                        onPress={() => handleStatusChange(item.id, "declined")}
+                        onPress={() => confirmAction("Decline Session?", "Are you sure you want to decline this tutoring session request?", () => handleStatusChange(item.id, "declined"), "Decline", true)}
                       >
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
                           <MaterialCommunityIcons name="close" size={14} color={appColors.danger} style={{ marginRight: 3 }} />

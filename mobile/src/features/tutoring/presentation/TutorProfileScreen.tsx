@@ -22,6 +22,7 @@ import { TutorProfileSkeleton } from "../../../core/components/Skeleton";
 import { useDataStore } from "../../../core/store/DataStoreContext";
 import { BookSessionModal } from "./BookSessionModal";
 import type { TutorProfile } from "../tutoring";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 // Department code formatter (e.g. BSCS, BSSE, BSIT)
 const formatDepartmentCode = (dept?: any) => {
@@ -81,7 +82,7 @@ export function TutorProfileScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Tutor Profile</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <TutorProfileSkeleton />
       </View>
@@ -114,7 +115,7 @@ export function TutorProfileScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Tutor Profile</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { deleteNote, listMyNotes, type Note } from "../data/notesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 function NoteSkeletonCard() {
   return (
@@ -97,7 +98,7 @@ export default function MyNotesScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Shared Notes</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {isLoading ? (
@@ -143,6 +144,13 @@ export default function MyNotesScreen() {
                   <View style={styles.courseBadge}>
                     <Text style={styles.courseBadgeText}>{item.course}</Text>
                   </View>
+                  {item.status ? (
+                    <View style={[styles.courseBadge, { backgroundColor: item.status === "approved" ? "#DCFCE7" : item.status === "rejected" ? "#FEE2E2" : "#FEF3C7" }]}>
+                      <Text style={[styles.courseBadgeText, { color: item.status === "approved" ? "#166534" : item.status === "rejected" ? "#991B1B" : "#92400E" }]}>
+                        {item.status === "approved" ? "Approved" : item.status === "rejected" ? "Rejected" : "Pending"}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
                 <View style={styles.upvoteChip}>
                   <MaterialCommunityIcons name="thumb-up-outline" size={12} color={appColors.primary} style={{ marginRight: 3 }} />

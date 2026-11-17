@@ -32,6 +32,8 @@ import {
   type Ride,
   type RideJoinRequest,
 } from "../data/ridesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 const statusTone: Record<string, { bg: string; text: string }> = {
   pending: { bg: appColors.amber50, text: appColors.amber700 },
@@ -124,7 +126,7 @@ export default function RideDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Trip Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           <LoadingSkeleton variant="ride" />
@@ -144,7 +146,7 @@ export default function RideDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Trip Details</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView
@@ -251,7 +253,7 @@ export default function RideDetailScreen() {
 
                 <Pressable
                   style={[styles.dangerBtn, { flex: 1 }]}
-                  onPress={() => runAction(() => cancelRide(rideId))}
+                  onPress={() => confirmAction("Cancel Trip?", "Are you sure you want to cancel this ride?", () => runAction(() => cancelRide(rideId)), "Cancel Trip", true)}
                   disabled={isActing}
                 >
                   <MaterialCommunityIcons name="cancel" size={18} color={appColors.danger} style={{ marginRight: 6 }} />
@@ -263,7 +265,7 @@ export default function RideDetailScreen() {
             {ride.status === "in_progress" && (
               <Pressable
                 style={styles.primaryBtn}
-                onPress={() => runAction(() => completeRide(rideId))}
+                onPress={() => confirmAction("End Ride?", "Are you sure you want to end this ride?", () => runAction(() => completeRide(rideId)), "End Ride")}
                 disabled={isActing}
               >
                 <MaterialCommunityIcons name="check-circle-outline" size={18} color={appColors.white} style={{ marginRight: 6 }} />
@@ -310,7 +312,7 @@ export default function RideDetailScreen() {
                       <View style={styles.requestActionsRow}>
                         <Pressable
                           style={styles.acceptBtn}
-                          onPress={() => runAction(() => acceptRequest(request.id))}
+                          onPress={() => confirmAction("Accept Join Request?", `Accept ${request.requester.full_name} onto this ride?`, () => runAction(() => acceptRequest(request.id)), "Accept")}
                           disabled={isActing}
                         >
                           <MaterialCommunityIcons name="check" size={16} color={appColors.white} style={{ marginRight: 4 }} />
@@ -318,7 +320,7 @@ export default function RideDetailScreen() {
                         </Pressable>
                         <Pressable
                           style={styles.declineBtn}
-                          onPress={() => runAction(() => declineRequest(request.id))}
+                          onPress={() => confirmAction("Decline Join Request?", `Decline ${request.requester.full_name}?`, () => runAction(() => declineRequest(request.id)), "Decline", true)}
                           disabled={isActing}
                         >
                           <MaterialCommunityIcons name="close" size={16} color={appColors.danger} style={{ marginRight: 4 }} />

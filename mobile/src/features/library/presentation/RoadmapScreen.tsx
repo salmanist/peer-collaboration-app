@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { roadmapIntro, roadmapStages } from "./roadmapContent";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function RoadmapScreen() {
   const insets = useSafeAreaInsets();
@@ -27,7 +28,7 @@ export default function RoadmapScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>FYP Roadmap & Guide</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

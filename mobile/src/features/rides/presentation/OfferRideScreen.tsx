@@ -19,6 +19,7 @@ import { useSessionStore } from "../../../core/auth/session";
 import { fetchMe } from "../../auth/data/authApi";
 import { createRide, type RideLocation } from "../data/ridesApi";
 import { LocationAutocomplete } from "./LocationAutocomplete";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 const dateStr = (offsetDays: number) => {
   const d = new Date();
@@ -112,7 +113,7 @@ export default function OfferRideScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Offer a Ride</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

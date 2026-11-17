@@ -34,7 +34,7 @@ class PrinterProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrinterProfile
         fields = [
-            "id", "full_name", "department", "location_note", "supports_color", "supports_double_sided",
+            "id", "full_name", "department", "location_note", "supports_color", "supports_double_sided", "is_approved",
             "average_rating", "rating_count",
         ]
 

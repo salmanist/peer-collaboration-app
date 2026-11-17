@@ -23,6 +23,7 @@ import {
   type LibraryProjectStatus,
 } from "../data/libraryApi";
 import { levelBadge } from "./LevelPicker";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 const statusConfig: Record<
   LibraryProjectStatus,
@@ -127,7 +128,7 @@ export default function MyProjectsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Submitted Projects</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {isLoading ? (

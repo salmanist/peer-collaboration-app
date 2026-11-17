@@ -7,7 +7,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.notifications import notify
+from common.notifications import notify, notify_admins
 
 from .models import PrinterProfile, PrintRating, PrintRequest
 from .serializers import PrinterProfileSerializer, PrintRatingSerializer, PrintRequestSerializer
@@ -72,7 +72,7 @@ class PrinterListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return printer_queryset().exclude(user=self.request.user).order_by("-created_at")
+        return printer_queryset().filter(is_approved=True).exclude(user=self.request.user).order_by("-created_at")
 
 
 class PrinterProfileInputSerializer(serializers.ModelSerializer):
@@ -96,7 +96,13 @@ class MyPrinterProfileView(APIView):
     def put(self, request):
         input_serializer = PrinterProfileInputSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
-        PrinterProfile.objects.update_or_create(user=request.user, defaults=input_serializer.validated_data)
+        profile, created = PrinterProfile.objects.update_or_create(user=request.user, defaults=input_serializer.validated_data)
+        if created or not profile.is_approved:
+            notify_admins(
+                "New Printer Request in Admin Center",
+                f"{request.user.full_name or request.user.email} registered as a campus printer. Tap to review.",
+                sender=request.user,
+            )
         return Response(PrinterProfileSerializer(self._current(request.user)).data)
 
     def delete(self, request):
@@ -142,7 +148,10 @@ class AcceptPrintRequestView(PrintRequestActionView):
     def actor_error(self, print_request, user):
         if print_request.requester_id == user.id:
             return "You can't accept your own request."
-        if not PrinterProfile.objects.filter(user=user).exists():
+        profile = PrinterProfile.objects.filter(user=user).first()
+        if not profile:
+            return "Register as a printer first."
+        if not profile.is_approved:
             return "Register as a printer first."
         if print_request.target_printer_id not in (None, user.id):
             return "This request was sent to another printer."

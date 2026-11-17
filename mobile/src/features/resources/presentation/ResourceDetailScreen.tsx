@@ -22,6 +22,7 @@ import { Skeleton, ResourceDetailSkeleton } from "../../../core/components/Skele
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import { createResourceInterestRequest, fetchResourceListing } from "../data/resourcesApi";
 import type { ResourceListing } from "../resources";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 function getImageUrl(imagePath: string | null) {
   if (!imagePath) return null;
@@ -141,7 +142,7 @@ export default function ResourceDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Resource Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
           <ResourceDetailSkeleton />
@@ -158,7 +159,7 @@ export default function ResourceDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.topNavTitle}>Resource Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centered}>
           <MaterialCommunityIcons name="alert-circle-outline" size={44} color={appColors.red700} style={{ marginBottom: 12 }} />
@@ -189,7 +190,7 @@ export default function ResourceDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Resource Details</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

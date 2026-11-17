@@ -57,6 +57,7 @@ class Note(models.Model):
     course = models.ForeignKey("peer_tutoring.AcademicCourse", on_delete=models.SET_NULL, null=True, blank=True, related_name="notes")
     semester = models.CharField(max_length=50, blank=True, default="")
     description = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=10, choices=LibraryProject.Status.choices, default=LibraryProject.Status.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
 
     upvoted_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="upvoted_notes", blank=True)

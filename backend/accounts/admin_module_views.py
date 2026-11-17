@@ -1,4 +1,5 @@
 """Moderation for the library, print center, and shared rides."""
+import os
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -30,10 +31,12 @@ def actions_for(item):
         return ["cancel"] if item.status in OnDemandRide.ACTIVE_STATUSES else ["delete"]
     if isinstance(item, RideProfile):
         return (["revoke"] if item.is_approved else ["approve"]) + ["delete"] if item.role == "driver" else ["delete"]
-    if isinstance(item, LibraryProject):
+    if isinstance(item, PrinterProfile):
+        return (["revoke"] if item.is_approved else ["approve"]) + ["delete"]
+    if isinstance(item, (LibraryProject, Note)):
         return [s for s in LibraryProject.Status.values if s != item.status] + ["delete"]
     if isinstance(item, PrintRequest):
-        return ["cancel"] if item.status in ("open", "accepted") else ["delete"]
+        return (["cancel"] if item.status in ("open", "accepted") else []) + ["delete"]
     if isinstance(item, Ride):
         return ["cancel"] if item.status in ("open", "in_progress") else ["delete"]
     if isinstance(item, RideJoinRequest):
@@ -41,7 +44,7 @@ def actions_for(item):
     return ["delete"]
 
 
-def serialize_item(item, owner_field):
+def serialize_item(item, owner_field, request=None):
     owner = getattr(item, owner_field)
     title = getattr(item, "title", None)
     details = getattr(item, "description", "") or getattr(item, "abstract", "")
@@ -63,6 +66,7 @@ def serialize_item(item, owner_field):
         details += f" · Pages: {item.page_range or 'All'}"
     elif isinstance(item, PrinterProfile):
         title = f"Printer: {owner.email}"
+        state = "approved" if item.is_approved else "pending"
         details = f"{item.location_note} · Color: {item.supports_color} · Double-sided: {item.supports_double_sided}"
     elif isinstance(item, PrintRating):
         title = f"{item.score}/5 · Print #{item.request_id}"
@@ -73,8 +77,21 @@ def serialize_item(item, owner_field):
     elif isinstance(item, RideJoinRequest):
         title = f"{item.ride.departure} → {item.ride.destination}"
         details = f"Join request · Driver: {item.ride.offerer.email}"
+    files = []
+    if isinstance(item, (LibraryProject, Note)):
+        for f in item.files.all():
+            if f.file:
+                url = f.file.url
+                if request is not None:
+                    url = request.build_absolute_uri(url)
+                files.append({"name": os.path.basename(f.file.name) or "Document", "url": url})
+    elif isinstance(item, PrintRequest) and item.document:
+        url = item.document.url
+        if request is not None:
+            url = request.build_absolute_uri(url)
+        files.append({"name": os.path.basename(item.document.name) or "Print Document", "url": url})
     return {"id": item.pk, "title": title, "description": details, "status": state,
-            "owner_email": owner.email, "created_at": item.created_at, "actions": actions_for(item)}
+            "owner_email": owner.email, "created_at": item.created_at, "actions": actions_for(item), "files": files}
 
 
 class AdminModuleView(APIView):
@@ -100,6 +117,8 @@ class AdminModuleView(APIView):
             qs = qs.select_related("printer")
         if model == OnDemandRide:
             qs = qs.select_related("driver")
+        if model in (LibraryProject, Note):
+            qs = qs.prefetch_related("files")
         query = request.query_params.get("search", "").strip()
         if query:
             filters = Q(**{f"{owner}__email__icontains": query})
@@ -117,7 +136,7 @@ class AdminModuleView(APIView):
         paginator = PageNumberPagination()
         paginator.page_size = 30
         page = paginator.paginate_queryset(qs, request)
-        return paginator.get_paginated_response([serialize_item(item, owner) for item in page])
+        return paginator.get_paginated_response([serialize_item(item, owner, request=request) for item in page])
 
     @transaction.atomic
     def patch(self, request, module):
@@ -150,10 +169,15 @@ class AdminModuleView(APIView):
                 item.is_online = False
             item.save(update_fields=["is_approved", "is_online"])
             notify(item.user, f"Your on-demand driver approval was {'granted' if item.is_approved else 'revoked'} by an administrator.", target=item)
-        elif isinstance(item, LibraryProject):
+        elif isinstance(item, PrinterProfile):
+            item.is_approved = action == "approve"
+            item.save(update_fields=["is_approved"])
+            notify(item.user, f"Your printer profile approval was {'granted' if item.is_approved else 'revoked'} by an administrator.", target=item)
+        elif isinstance(item, (LibraryProject, Note)):
             item.status = action
             item.save(update_fields=["status"])
-            notify(item.author, f'Your library project "{item.title}" was marked {action} by an administrator.', target=item)
+            label = "library project" if isinstance(item, LibraryProject) else "note"
+            notify(item.author, f'Your {label} "{item.title}" was marked {action} by an administrator.', target=item)
         elif isinstance(item, (PrintRequest, Ride, OnDemandRide)):
             item.status = "cancelled"
             if isinstance(item, OnDemandRide):

@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Platform, Pressable, StatusBar, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function MyResourcesScreen() {
   const insets = useSafeAreaInsets();
@@ -20,7 +21,7 @@ export default function MyResourcesScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Resources</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <View style={styles.content}>

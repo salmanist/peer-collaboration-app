@@ -29,6 +29,7 @@ import type {
   ResourceCondition,
   ResourceExchangeType,
 } from "../resources";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 type PostMode = "share" | "request";
 
@@ -165,7 +166,7 @@ export default function CreateResourceScreen() {
         <Text style={styles.topNavTitle}>
           {postMode === "share" ? "Share an Item" : "Post a Request"}
         </Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

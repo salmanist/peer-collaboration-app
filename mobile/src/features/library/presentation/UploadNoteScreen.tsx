@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CoursePicker } from "../../../core/ui/CoursePicker";
 import type { AcademicCourse } from "../../../core/network/coursesApi";
 import { submitNote } from "../data/notesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function UploadNoteScreen() {
   const insets = useSafeAreaInsets();
@@ -78,7 +79,7 @@ export default function UploadNoteScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Notes Published</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
 
         <View style={styles.centerContainer}>
@@ -108,7 +109,7 @@ export default function UploadNoteScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Share Course Notes</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

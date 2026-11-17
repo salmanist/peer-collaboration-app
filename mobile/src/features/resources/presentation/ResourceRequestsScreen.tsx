@@ -25,6 +25,8 @@ import {
 } from "../data/resourcesApi";
 import { useResourceNotificationStore } from "../resourceNotifications";
 import type { ResourceInterestRequest, ResourceInterestRequestStatus } from "../resources";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 function labelStatus(status: ResourceInterestRequestStatus) {
   return status[0].toUpperCase() + status.slice(1);
@@ -100,7 +102,7 @@ export default function ResourceRequestsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Interest Requests</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {errorMessage ? (
@@ -227,7 +229,7 @@ function RequestCard({
         <View style={styles.actionRow}>
           <Pressable
             style={styles.acceptBtn}
-            onPress={() => void onUpdate(interestRequest.id, "accepted")}
+            onPress={() => confirmAction("Accept Request?", "Are you sure you want to accept this resource request?", () => onUpdate(interestRequest.id, "accepted"), "Accept")}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
               <MaterialCommunityIcons name="check" size={14} color={appColors.white} style={{ marginRight: 4 }} />
@@ -236,7 +238,7 @@ function RequestCard({
           </Pressable>
           <Pressable
             style={styles.declineBtn}
-            onPress={() => void onUpdate(interestRequest.id, "declined")}
+            onPress={() => confirmAction("Decline Request?", "Are you sure you want to decline this resource request?", () => onUpdate(interestRequest.id, "declined"), "Decline", true)}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
               <MaterialCommunityIcons name="close" size={14} color={appColors.red700} style={{ marginRight: 4 }} />

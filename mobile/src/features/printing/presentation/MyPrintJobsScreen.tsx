@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { listMyPrintRequests, listOpenPrintRequests, type PrintRequest } from "../data/printingApi";
 import { RequestCard, RequestSkeletonCard } from "./printUi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 interface JobSection {
   title: string;
@@ -66,7 +67,7 @@ export default function MyPrintJobsScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Print Jobs</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {isLoading ? (

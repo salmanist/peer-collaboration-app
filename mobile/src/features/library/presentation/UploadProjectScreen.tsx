@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DepartmentDropdown } from "../../../core/components/DepartmentDropdown";
 import { submitLibraryProject, type LibraryProjectLevel } from "../data/libraryApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 const LEVELS: { value: LibraryProjectLevel; label: string }[] = [
   { value: "simple", label: "Simple Project" },
@@ -86,7 +87,7 @@ export default function UploadProjectScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Submission Received</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
 
         <View style={styles.centerContainer}>
@@ -120,7 +121,7 @@ export default function UploadProjectScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Submit a Project</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

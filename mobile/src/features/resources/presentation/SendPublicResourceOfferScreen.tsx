@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { createPublicResourceOffer } from "../data/resourcesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function SendPublicResourceOfferScreen() {
   const insets = useSafeAreaInsets();
@@ -55,7 +56,7 @@ export default function SendPublicResourceOfferScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Fulfill Request</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

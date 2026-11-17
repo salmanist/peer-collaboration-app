@@ -1,6 +1,7 @@
 import { colors as appColors } from "../../../core/ui/theme";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { FelloLogo } from "../../../core/components/FelloLogo";
+import { PasswordInput } from "../../../core/components/PasswordInput";
 import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -120,13 +121,11 @@ export default function RegisterScreen() {
             keyboardType="email-address"
           />
 
-          <TextInput
-            style={[styles.input, { marginTop: 12 }]}
+          <PasswordInput
+            containerStyle={{ marginTop: 12 }}
             placeholder="Password (at least 8 characters)"
-            placeholderTextColor={appColors.textMuted}
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
           />
 
           <Pressable

@@ -29,6 +29,8 @@ import {
   type PrintRequest,
 } from "../data/printingApi";
 import { Stars, describeSettings, statusConfig } from "./printUi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 export default function PrintRequestDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -79,7 +81,7 @@ export default function PrintRequestDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Print Order Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           {error ? <Text style={styles.errorText}>{error}</Text> : <LoadingSkeleton variant="detail" />}
@@ -101,7 +103,7 @@ export default function PrintRequestDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Print Order Details</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView
@@ -200,7 +202,7 @@ export default function PrintRequestDetailScreen() {
           {request.status === "open" && !isRequester && (
             <Pressable
               style={[styles.primaryBtn, isBusy && styles.btnDisabled]}
-              onPress={() => run(() => acceptPrintRequest(request.id))}
+              onPress={() => confirmAction("Accept Print Job?", "Are you sure you want to accept and print this document?", () => run(() => acceptPrintRequest(request.id)), "Accept")}
               disabled={isBusy}
             >
               {isBusy ? (
@@ -217,7 +219,7 @@ export default function PrintRequestDetailScreen() {
           {request.status === "open" && isTarget && (
             <Pressable
               style={[styles.dangerBtn, isBusy && styles.btnDisabled]}
-              onPress={() => run(() => rejectPrintRequest(request.id))}
+              onPress={() => confirmAction("Decline Print Request?", "Are you sure you want to decline this print request?", () => run(() => rejectPrintRequest(request.id)), "Decline", true)}
               disabled={isBusy}
             >
               <Text style={styles.dangerBtnText}>Decline Print Request</Text>
@@ -227,7 +229,7 @@ export default function PrintRequestDetailScreen() {
           {request.status === "open" && isRequester && (
             <Pressable
               style={[styles.dangerBtn, isBusy && styles.btnDisabled]}
-              onPress={() => run(() => cancelPrintRequest(request.id))}
+              onPress={() => confirmAction("Cancel Print Request?", "Are you sure you want to cancel your print request?", () => run(() => cancelPrintRequest(request.id)), "Cancel Request", true)}
               disabled={isBusy}
             >
               <Text style={styles.dangerBtnText}>Cancel Request</Text>

@@ -37,6 +37,7 @@ class TutorProfile(models.Model):
         default=Decimal("0.00"),
     )
     total_reviews = models.PositiveIntegerField(default=0)
+    is_approved = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

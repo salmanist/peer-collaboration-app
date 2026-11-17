@@ -23,6 +23,7 @@ from .models import (
     TutoringSession,
 )
 from apps.notifications.models import create_user_notification
+from common.notifications import notify_admins
 from .permissions import IsCollaborationCreator, IsProfileOwner, IsSessionParticipant
 from .serializers import (
     AcademicCourseSerializer,
@@ -72,7 +73,7 @@ class TutorProfileListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # You never see yourself in the list of tutors to book.
-        qs = TutorProfile.objects.select_related("user").filter(is_active=True).exclude(user=self.request.user)
+        qs = TutorProfile.objects.select_related("user").filter(is_active=True, is_approved=True).exclude(user=self.request.user)
 
         profile_type = self.request.query_params.get("profile_type")
         if profile_type == "tutor":
@@ -143,6 +144,11 @@ class TutorProfileListCreateView(generics.ListCreateAPIView):
         if TutorProfile.objects.filter(user=self.request.user).exists():
             raise ValidationError({"detail": "You already have a tutor/mentor profile. Use update instead."})
         serializer.save(user=self.request.user)
+        notify_admins(
+            "New Tutor Request in Admin Center",
+            f"{self.request.user.full_name or self.request.user.email} applied to become a peer tutor. Tap to review.",
+            sender=self.request.user,
+        )
 
 
 class TutorProfileDetailView(generics.RetrieveUpdateAPIView):
@@ -187,7 +193,7 @@ class MyTutorProfileView(generics.RetrieveUpdateDestroyAPIView):
                     priority="high",
                     sender=user,
                     category="sessions",
-                    action_url="/(app)/tutoring",
+                    action_url="/(app)/tutoring/sessions/mine",
                 )
             instance.delete()
 
@@ -205,7 +211,7 @@ class TutoringSessionListCreateView(generics.ListCreateAPIView):
         role_filter = self.request.query_params.get("role")
         user = self.request.user
         if role_filter == "tutor":
-            has_active_profile = TutorProfile.objects.filter(user=user, is_active=True).exists()
+            has_active_profile = TutorProfile.objects.filter(user=user, is_active=True, is_approved=True).exists()
             if not has_active_profile:
                 return TutoringSession.objects.none()
             return TutoringSession.objects.select_related("tutor", "learner", "review").filter(tutor=user)
@@ -222,6 +228,8 @@ class TutoringSessionListCreateView(generics.ListCreateAPIView):
         if int(tutor_id) == self.request.user.id:
             raise ValidationError({"detail": "You cannot book a tutoring session with yourself."})
 
+        if not TutorProfile.objects.filter(user_id=tutor_id, is_active=True, is_approved=True).exists():
+            raise ValidationError({"detail": "This tutor is not currently approved or active."})
         session = serializer.save(tutor_id=tutor_id, learner=self.request.user)
         try:
             learner_name = getattr(self.request.user, "full_name", None) or self.request.user.email
@@ -233,7 +241,7 @@ class TutoringSessionListCreateView(generics.ListCreateAPIView):
                 priority="high",
                 sender=self.request.user,
                 category="sessions",
-                action_url="/(app)/tutoring",
+                action_url="/(app)/tutoring/sessions/mine",
             )
         except Exception:
             pass
@@ -277,6 +285,51 @@ class TutoringSessionStatusUpdateView(generics.UpdateAPIView):
 
         session.status = new_status
         session.save(update_fields=["status", "updated_at"])
+        try:
+            actor_name = getattr(request.user, "full_name", None) or request.user.email
+            other_user = session.learner if user_id == session.tutor_id else session.tutor
+            if new_status == TutoringSession.Status.ACCEPTED:
+                create_user_notification(
+                    recipient=session.learner,
+                    title="Tutoring Request Accepted ✅",
+                    message=f"{actor_name} accepted your {session.subject_or_skill} tutoring request.",
+                    priority="high",
+                    sender=request.user,
+                    category="sessions",
+                    action_url=f"/(app)/tutoring/chat/{session.id}",
+                )
+            elif new_status == TutoringSession.Status.DECLINED:
+                create_user_notification(
+                    recipient=session.learner,
+                    title="Tutoring Request Declined",
+                    message=f"{actor_name} declined your {session.subject_or_skill} tutoring request.",
+                    priority="normal",
+                    sender=request.user,
+                    category="sessions",
+                    action_url="/(app)/tutoring/sessions/mine",
+                )
+            elif new_status == TutoringSession.Status.CANCELLED:
+                create_user_notification(
+                    recipient=other_user,
+                    title="Tutoring Session Cancelled",
+                    message=f"{actor_name} cancelled the {session.subject_or_skill} tutoring session.",
+                    priority="high",
+                    sender=request.user,
+                    category="sessions",
+                    action_url="/(app)/tutoring/sessions/mine",
+                )
+            elif new_status == TutoringSession.Status.COMPLETED:
+                create_user_notification(
+                    recipient=session.learner,
+                    title="Tutoring Session Completed",
+                    message=f"Your {session.subject_or_skill} session with {actor_name} is complete. Tap to leave a rating!",
+                    priority="normal",
+                    sender=request.user,
+                    category="sessions",
+                    action_url=f"/(app)/tutoring/chat/{session.id}",
+                )
+        except Exception:
+            pass
         return Response(TutoringSessionSerializer(session).data)
 
 
@@ -385,6 +438,22 @@ class TutoringChatMessageListView(generics.ListCreateAPIView):
             body=body,
             image=image,
         )
+
+        try:
+            recipient = session.learner if self.request.user.id == session.tutor_id else session.tutor
+            sender_name = getattr(self.request.user, "full_name", None) or self.request.user.email
+            preview = body[:80] if body else "Sent an image"
+            create_user_notification(
+                recipient=recipient,
+                title=f"New Tutoring Message ({session.subject_or_skill})",
+                message=f"{sender_name}: {preview}",
+                priority="high",
+                sender=self.request.user,
+                category="sessions",
+                action_url=f"/(app)/tutoring/chat/{session.id}",
+            )
+        except Exception:
+            pass
 
         channel_layer = get_channel_layer()
         if channel_layer:

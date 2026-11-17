@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { OfferedTripCardSkeleton, SkeletonList } from "../../../core/components/Skeleton";
 import { formatTime12h, listMyRides, type Ride } from "../data/ridesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 function rideStatus(ride: Ride) {
   if (ride.status === "cancelled") return { label: "Cancelled", bg: appColors.red50, text: appColors.danger };
@@ -61,7 +62,7 @@ export default function MyRidesScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Offered Trips</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <FlatList

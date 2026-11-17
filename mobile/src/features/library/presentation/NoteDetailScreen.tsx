@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getNote, toggleNoteBookmark, toggleNoteUpvote, type Note } from "../data/notesApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function NoteDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -65,7 +66,7 @@ export default function NoteDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Note Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           <LoadingSkeleton variant="detail" />
@@ -82,7 +83,7 @@ export default function NoteDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Note Details</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

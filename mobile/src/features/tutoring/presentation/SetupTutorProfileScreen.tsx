@@ -41,6 +41,7 @@ import {
   type SkillTopic,
   type TutorProfile,
 } from "../tutoring";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export function SetupTutorProfileScreen() {
   const router = useRouter();
@@ -342,7 +343,7 @@ ${message}`)) void stopBeingTutor();
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Tutor Profile</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <ScrollView style={styles.scrollContainer} contentContainerStyle={[styles.contentContainer, { paddingBottom: 40 }]}>
           <Skeleton width={120} height={20} borderRadius={4} style={{ marginBottom: 8 }} />
@@ -370,7 +371,7 @@ ${message}`)) void stopBeingTutor();
         <Text style={styles.topNavTitle}>
           {existingProfile ? "Edit Tutor Profile" : "Register Tutor Profile"}
         </Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView
@@ -380,6 +381,15 @@ ${message}`)) void stopBeingTutor();
           { paddingBottom: Math.max(insets.bottom + 40, 60) },
         ]}
       >
+
+        {existingProfile && existingProfile.is_approved === false ? (
+          <View style={[styles.errorBanner, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
+            <MaterialCommunityIcons name="clock-outline" size={18} color="#B45309" style={{ marginRight: 8 }} />
+            <Text style={[styles.errorText, { color: "#92400E" }]}>
+              Pending Admin Approval: Your tutor profile will appear in student search once an administrator approves it.
+            </Text>
+          </View>
+        ) : null}
 
         {errorMsg ? (
           <View style={styles.errorBanner}>
@@ -1290,8 +1300,8 @@ const styles = StyleSheet.create({
     borderColor: appColors.primary,
   },
   modalFilterPillActiveGold: {
-    backgroundColor: appColors.surfaceMuted,
-    borderColor: appColors.icon,
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   modalFilterPillText: {
     fontSize: 12,

@@ -30,6 +30,8 @@ import {
 } from "../data/lostAndFoundApi";
 import type { ItemClaim, LostAndFoundItem } from "../lostAndFound";
 import { useLostAndFoundNotificationStore } from "../lostAndFoundNotifications";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 type TabType = "my_notices" | "incoming_claims" | "my_claims";
 
@@ -122,8 +124,12 @@ export default function MyLostAndFoundScreen() {
     try {
       await deleteLostAndFoundItem(itemId);
       void loadData(true);
-    } catch {
-      setErrorMessage("Could not delete notice.");
+    } catch (err: any) {
+      setErrorMessage(
+        err?.response?.data?.detail ||
+        err?.response?.data?.error ||
+        "Could not delete notice."
+      );
     }
   };
 
@@ -138,7 +144,7 @@ export default function MyLostAndFoundScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>My Notices & Claims</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {/* Tabs */}
@@ -328,7 +334,7 @@ export default function MyLostAndFoundScreen() {
 
                   <Pressable
                     style={styles.deleteActionBtn}
-                    onPress={() => void handleDeleteItem(item.id)}
+                    onPress={() => confirmAction("Delete Post?", "Are you sure you want to delete this Lost & Found post?", () => handleDeleteItem(item.id), "Delete", true)}
                   >
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <MaterialCommunityIcons name="trash-can-outline" size={14} color={appColors.danger} style={{ marginRight: 4 }} />
@@ -385,7 +391,7 @@ export default function MyLostAndFoundScreen() {
                 <View style={styles.claimActionsRow}>
                   <Pressable
                     style={styles.acceptBtn}
-                    onPress={() => void handleClaimStatus(item.id, "accepted")}
+                    onPress={() => confirmAction("Accept Claim?", "Are you sure you want to accept this claim and start chatting?", () => handleClaimStatus(item.id, "accepted"), "Accept")}
                   >
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <MaterialCommunityIcons name="check" size={14} color={appColors.white} style={{ marginRight: 4 }} />
@@ -394,7 +400,7 @@ export default function MyLostAndFoundScreen() {
                   </Pressable>
                   <Pressable
                     style={styles.declineBtn}
-                    onPress={() => void handleClaimStatus(item.id, "declined")}
+                    onPress={() => confirmAction("Decline Claim?", "Are you sure you want to decline this claim?", () => handleClaimStatus(item.id, "declined"), "Decline", true)}
                   >
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                       <MaterialCommunityIcons name="close" size={14} color={appColors.danger} style={{ marginRight: 4 }} />

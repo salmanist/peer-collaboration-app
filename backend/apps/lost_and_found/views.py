@@ -71,7 +71,7 @@ class LostAndFoundItemDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def check_object_permissions(self, request, obj):
         super().check_object_permissions(request, obj)
-        if request.method in ["PUT", "PATCH", "DELETE"] and obj.poster_id != request.user.id:
+        if request.method in ["PUT", "PATCH", "DELETE"] and obj.poster_id != request.user.id and not (request.user.is_staff or getattr(request.user, "role", "") == "admin"):
             raise PermissionDenied("You can only edit or delete your own post.")
 
 
@@ -136,7 +136,7 @@ class ItemClaimListCreateView(generics.ListCreateAPIView):
                 priority="high",
                 sender=self.request.user,
                 category="lost_and_found",
-                action_url="/(app)/lost-and-found",
+                action_url="/(app)/lost-and-found/mine",
             )
         except Exception:
             pass
@@ -198,6 +198,31 @@ class ItemClaimStatusUpdateView(generics.UpdateAPIView):
                     status=ItemClaim.Status.PENDING,
                 ).exclude(pk=claim.pk).update(status=ItemClaim.Status.DECLINED)
 
+        try:
+            actor_name = getattr(request.user, "full_name", None) or request.user.email
+            if new_status == ItemClaim.Status.ACCEPTED:
+                create_user_notification(
+                    recipient=claim.claimant,
+                    title="Lost & Found Claim Accepted ✅",
+                    message=f"{actor_name} accepted your claim for '{claim.item.title}'. Tap to chat.",
+                    priority="high",
+                    sender=request.user,
+                    category="lost_and_found",
+                    action_url=f"/(app)/lost-and-found/chat/{claim.id}",
+                )
+            elif new_status == ItemClaim.Status.DECLINED:
+                create_user_notification(
+                    recipient=claim.claimant,
+                    title="Lost & Found Claim Declined",
+                    message=f"{actor_name} declined your claim for '{claim.item.title}'.",
+                    priority="normal",
+                    sender=request.user,
+                    category="lost_and_found",
+                    action_url="/(app)/lost-and-found/mine",
+                )
+        except Exception:
+            pass
+
         return Response(ItemClaimSerializer(claim).data)
 
 
@@ -235,6 +260,22 @@ class ItemClaimChatMessageListView(generics.ListCreateAPIView):
             body=body,
             image=image,
         )
+
+        try:
+            recipient = claim.item.poster if self.request.user.id == claim.claimant_id else claim.claimant
+            sender_name = getattr(self.request.user, "full_name", None) or self.request.user.email
+            preview = body[:80] if body else "Sent an image"
+            create_user_notification(
+                recipient=recipient,
+                title=f"New Message on '{claim.item.title}'",
+                message=f"{sender_name}: {preview}",
+                priority="high",
+                sender=self.request.user,
+                category="lost_and_found",
+                action_url=f"/(app)/lost-and-found/chat/{claim.id}",
+            )
+        except Exception:
+            pass
 
         channel_layer = get_channel_layer()
         if channel_layer:

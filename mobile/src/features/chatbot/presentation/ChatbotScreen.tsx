@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { goBack } from "../../../core/navigation/goBack";
 import { Text, TextInput } from "../../../core/ui/AppText";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 import { colors, headerGrow } from "../../../core/ui/theme";
 import FormattedAnswer from "./FormattedAnswer";
 import { askChatbot, chatbotErrorMessage, ChatbotSource, MAX_QUESTION_LENGTH } from "../data/chatbotApi";
@@ -132,7 +133,8 @@ export default function ChatbotScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={colors.onHeader} />
         </Pressable>
         <MaterialCommunityIcons name="robot-outline" size={22} color={colors.onHeader} />
-        <Text style={styles.title}>University Assistant</Text>
+        <Text style={[styles.title, { flex: 1 }]}>University Assistant</Text>
+        <NotificationBellButton />
       </View>
 
       <FlatList

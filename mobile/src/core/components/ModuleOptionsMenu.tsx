@@ -1,5 +1,6 @@
 import { colors as appColors } from "../ui/theme";
 import { Text } from "../ui/AppText";
+import { NotificationBellButton } from "./NotificationBellButton";
 import React, { useState } from "react";
 import {
   Modal,
@@ -56,15 +57,18 @@ export const ModuleOptionsMenu: React.FC<ModuleOptionsMenuProps> = ({
 
   return (
     <>
-      <TouchableOpacity
-        style={styles.triggerButton}
-        onPress={() => setVisible(true)}
-        activeOpacity={0.7}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <MaterialCommunityIcons name="dots-horizontal" size={18} color={appColors.primary} />
-        {hasNotification && <View style={styles.triggerBadgeDot} />}
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <NotificationBellButton />
+        <TouchableOpacity
+          style={styles.triggerButton}
+          onPress={() => setVisible(true)}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <MaterialCommunityIcons name="dots-horizontal" size={18} color={appColors.primary} />
+          {hasNotification && <View style={styles.triggerBadgeDot} />}
+        </TouchableOpacity>
+      </View>
 
       <Modal
         visible={visible}

@@ -10,6 +10,7 @@ class PrinterProfile(models.Model):
     location_note = models.CharField(max_length=100, blank=True, default="")
     supports_color = models.BooleanField(default=False)
     supports_double_sided = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

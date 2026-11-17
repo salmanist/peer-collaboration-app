@@ -30,6 +30,7 @@ import {
   updateLostAndFoundItemStatus,
 } from "../data/lostAndFoundApi";
 import type { ItemClaim, LostAndFoundItem } from "../lostAndFound";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 function getImageUrl(imagePath: string | null) {
   if (!imagePath) return null;
@@ -139,8 +140,12 @@ export default function LostAndFoundDetailScreen() {
       try {
         await deleteLostAndFoundItem(itemId);
         goBack("/(app)/lost-and-found");
-      } catch {
-        setErrorMessage("Could not delete notice.");
+      } catch (err: any) {
+        setErrorMessage(
+          err?.response?.data?.detail ||
+          err?.response?.data?.error ||
+          "Could not delete notice."
+        );
       }
     };
 
@@ -164,7 +169,7 @@ export default function LostAndFoundDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.compactNavTitle}>Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <LostAndFoundDetailSkeleton />
       </View>
@@ -179,7 +184,7 @@ export default function LostAndFoundDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
           </Pressable>
           <Text style={styles.compactNavTitle}>Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centeredError}>
           <MaterialCommunityIcons name="alert-circle-outline" size={48} color={appColors.red500} style={{ marginBottom: 12 }} />
@@ -204,17 +209,18 @@ export default function LostAndFoundDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.compactNavTitle}>Details</Text>
-        {isOwner ? (
-          <Pressable
-            style={styles.editHeaderBtn}
-            onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}`)}
-          >
-            <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} />
-            <Text style={styles.editHeaderBtnText}>Edit</Text>
-          </Pressable>
-        ) : (
-          <View style={{ width: 36 }} />
-        )}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <NotificationBellButton />
+          {isOwner ? (
+            <Pressable
+              style={styles.editHeaderBtn}
+              onPress={() => router.push(`/(app)/lost-and-found/edit/${item.id}`)}
+            >
+              <MaterialCommunityIcons name="pencil-outline" size={14} color={appColors.primary} />
+              <Text style={styles.editHeaderBtnText}>Edit</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <ScrollView

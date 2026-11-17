@@ -26,6 +26,7 @@ import {
   type LostAndFoundCategory,
   type LostAndFoundPostType,
 } from "../lostAndFound";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function CreateLostAndFoundScreen() {
   const insets = useSafeAreaInsets();
@@ -116,7 +117,7 @@ export default function CreateLostAndFoundScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Post Notice</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

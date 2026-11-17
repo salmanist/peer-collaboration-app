@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getLibraryProject, toggleBookmark, toggleUpvote, type LibraryProject } from "../data/libraryApi";
 import { levelBadge } from "./LevelPicker";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 export default function LibraryDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -66,7 +67,7 @@ export default function LibraryDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
           </Pressable>
           <Text style={styles.topNavTitle}>Project Details</Text>
-          <View style={{ width: 36 }} />
+          <NotificationBellButton />
         </View>
         <View style={styles.centerContainer}>
           <LoadingSkeleton variant="detail" />
@@ -85,7 +86,7 @@ export default function LibraryDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Project Details</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

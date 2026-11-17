@@ -26,6 +26,7 @@ import {
 import { usePolling } from "./usePolling";
 import type { RideLocation } from "../../rides/data/ridesApi";
 import { LocationAutocomplete } from "../../rides/presentation/LocationAutocomplete";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 const POPULAR_LOCATIONS = [
   "Main Campus",
@@ -333,7 +334,7 @@ export function PeerLiftBoard({ isModalOpen, onCloseModal, onOpenModal, searchQu
                 </Text>
                 <Pressable
                   style={styles.cancelBtn}
-                  onPress={() => handleCancelMyPost(myOpenRequest.id)}
+                  onPress={() => confirmAction("Cancel Request?", "Are you sure you want to cancel your ride request?", () => handleCancelMyPost(myOpenRequest.id), "Cancel Request", true)}
                   disabled={actionLoadingId === myOpenRequest.id}
                 >
                   {actionLoadingId === myOpenRequest.id ? (

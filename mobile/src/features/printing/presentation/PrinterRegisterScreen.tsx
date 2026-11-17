@@ -18,10 +18,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { deleteMyPrinterProfile, getMyPrinterProfile, saveMyPrinterProfile } from "../data/printingApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 export default function PrinterRegisterScreen() {
   const insets = useSafeAreaInsets();
   const [isPrinter, setIsPrinter] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [locationNote, setLocationNote] = useState("");
   const [supportsColor, setSupportsColor] = useState(false);
@@ -36,6 +39,7 @@ export default function PrinterRegisterScreen() {
       getMyPrinterProfile()
         .then((profile) => {
           setIsPrinter(!!profile);
+          setIsApproved(!!profile?.is_approved);
           setIsLoaded(true);
           if (profile) {
             setLocationNote(profile.location_note);
@@ -82,7 +86,7 @@ export default function PrinterRegisterScreen() {
     return <View style={styles.rootContainer}>
       <View style={[styles.topNavBar, { paddingTop: topOffset > 0 ? topOffset + 2 : 8 }]}>
         <Pressable style={styles.navBackBtn} onPress={() => goBack("/(app)/printing")} accessibilityLabel="Go back"><MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} /></Pressable>
-        <Text style={styles.topNavTitle}>Printer Setup</Text><View style={{ width: 36 }} />
+        <Text style={styles.topNavTitle}>Printer Setup</Text><NotificationBellButton />
       </View>
       <LoadingSkeleton variant="form" />
     </View>;
@@ -98,7 +102,7 @@ export default function PrinterRegisterScreen() {
         <Text style={styles.topNavTitle}>
           {!isLoaded ? "Printer Setup" : isPrinter ? "Printer Settings" : "Register as Printer"}
         </Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView
@@ -107,6 +111,18 @@ export default function PrinterRegisterScreen() {
           { paddingBottom: Math.max(insets.bottom + 40, 60) },
         ]}
       >
+        {isPrinter && !isApproved && (
+          <View style={[styles.bannerBox, { backgroundColor: "#FEF3C7", borderColor: "#F59E0B" }]}>
+            <MaterialCommunityIcons name="clock-outline" size={22} color="#B45309" />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[styles.bannerTitle, { color: "#92400E" }]}>Pending Admin Approval</Text>
+              <Text style={[styles.bannerSub, { color: "#92400E" }]}>
+                Your printer registration is waiting for administrator approval before you appear in the printer list or accept jobs.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Info Banner */}
         <View style={styles.bannerBox}>
           <View style={styles.bannerIconCircle}>
@@ -186,7 +202,7 @@ export default function PrinterRegisterScreen() {
           {isPrinter && (
             <Pressable
               style={styles.stopBtn}
-              onPress={handleStop}
+              onPress={() => confirmAction("Deactivate Printer Profile?", "Are you sure you want to remove your printer profile?", handleStop, "Deactivate", true)}
               disabled={isBusy}
             >
               <MaterialCommunityIcons name="printer-off" size={16} color={appColors.danger} style={{ marginRight: 6 }} />

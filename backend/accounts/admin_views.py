@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from accounts.models import StudentRoster, User
 from common.models import Department
+from common.notifications import notify
 from apps.lost_and_found.models import ItemClaim, LostAndFoundItem
 from apps.peer_tutoring.models import (
     AcademicCourse,
@@ -16,19 +17,55 @@ from apps.peer_tutoring.models import (
 from apps.resource_sharing.models import PublicResourceRequest, ResourceInterestRequest, ResourceListing
 
 
+def is_platform_admin_user(user):
+    return bool(
+        user
+        and (
+            user.role == User.Role.ADMIN
+            or user.is_staff
+            or user.is_superuser
+            or (user.email and user.email.lower() in User.ADMIN_EMAILS)
+        )
+    )
+
+
 class IsPlatformAdmin(permissions.BasePermission):
     """Allows access only to platform administrators."""
     def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and (
-                request.user.role == User.Role.ADMIN
-                or request.user.is_staff
-                or request.user.is_superuser
-                or (request.user.email and request.user.email.lower() in User.ADMIN_EMAILS)
-            )
-        )
+        return bool(request.user and request.user.is_authenticated and is_platform_admin_user(request.user))
+
+
+class AdminPendingSummaryView(APIView):
+    """Returns counts of pending admin approval requests per module."""
+    permission_classes = [IsPlatformAdmin]
+
+    def get(self, request):
+        from apps.library.models import LibraryProject, Note
+        from apps.printing.models import PrinterProfile
+        from apps.ondemand.models import RideProfile
+
+        library_projects = LibraryProject.objects.filter(status=LibraryProject.Status.PENDING).count()
+        library_notes = Note.objects.filter(status=LibraryProject.Status.PENDING).count()
+        library = library_projects + library_notes
+        printing_printers = PrinterProfile.objects.filter(is_approved=False).count()
+        printing = printing_printers
+        rides_profiles = RideProfile.objects.filter(role=RideProfile.Role.DRIVER, is_approved=False).count()
+        rides = rides_profiles
+        tutoring_tutors = TutorProfile.objects.filter(is_approved=False).count()
+        tutoring = tutoring_tutors
+        total = library + printing + rides + tutoring
+        return Response({
+            "total": total,
+            "library": library,
+            "library_projects": library_projects,
+            "library_notes": library_notes,
+            "printing": printing,
+            "printing_printers": printing_printers,
+            "rides": rides,
+            "rides_profiles": rides_profiles,
+            "tutoring": tutoring,
+            "tutoring_tutors": tutoring_tutors,
+        })
 
 
 class AdminVerifyPasswordView(APIView):
@@ -266,6 +303,7 @@ class AdminTutoringView(APIView):
                 "rating_avg": float(t.average_rating),
                 "rating_count": t.total_reviews,
                 "is_active": t.is_active,
+                "is_approved": t.is_approved,
             })
 
         sessions_data = []
@@ -316,12 +354,19 @@ class AdminTutoringView(APIView):
 
             if "is_active" in request.data:
                 tutor.is_active = bool(request.data["is_active"])
+            if "is_approved" in request.data:
+                tutor.is_approved = bool(request.data["is_approved"])
+                notify(
+                    tutor.user,
+                    f"Your peer tutor profile approval was {'granted' if tutor.is_approved else 'revoked'} by an administrator.",
+                    target=tutor,
+                )
             if "subjects" in request.data:
                 tutor.subjects = request.data["subjects"]
             if "hourly_fee" in request.data:
                 tutor.hourly_fee = request.data["hourly_fee"]
             tutor.save()
-            return Response({"message": "Tutor updated successfully", "id": tutor.id, "is_active": tutor.is_active})
+            return Response({"message": "Tutor updated successfully", "id": tutor.id, "is_active": tutor.is_active, "is_approved": tutor.is_approved})
 
         elif target == "session":
             try:
@@ -380,6 +425,7 @@ class AdminUsersView(APIView):
                 "role": u.role,
                 "is_active": u.is_active,
                 "is_staff": u.is_staff,
+                "is_admin": is_platform_admin_user(u),
                 "is_email_verified": u.is_email_verified,
                 "created_at": u.created_at.isoformat(),
             })
@@ -402,6 +448,11 @@ class AdminUsersView(APIView):
             target_user.role = request.data["role"]
         if "is_email_verified" in request.data:
             target_user.is_email_verified = bool(request.data["is_email_verified"])
+        if "new_password" in request.data:
+            new_pw = str(request.data.get("new_password") or "")
+            if len(new_pw) < 8:
+                return Response({"error": "Password must be at least 8 characters long"}, status=status.HTTP_400_BAD_REQUEST)
+            target_user.set_password(new_pw)
 
         target_user.save()
         return Response({
@@ -410,6 +461,30 @@ class AdminUsersView(APIView):
             "is_active": target_user.is_active,
             "role": target_user.role,
         })
+
+    def delete(self, request):
+        user_id = request.query_params.get("id") or request.data.get("id")
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if target_user.id != request.user.id and is_platform_admin_user(target_user):
+            return Response({"error": "You cannot delete another administrator's account."}, status=status.HTTP_403_FORBIDDEN)
+
+        if target_user.id == request.user.id:
+            has_other_admin = any(is_platform_admin_user(u) for u in User.objects.exclude(id=target_user.id))
+            if not has_other_admin:
+                return Response(
+                    {"error": "You cannot delete your account because you are the only admin."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        target_user.delete()
+        return Response({"message": "User account deleted successfully"})
 
 
 class AdminCatalogView(APIView):

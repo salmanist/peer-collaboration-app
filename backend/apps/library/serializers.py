@@ -86,10 +86,10 @@ class NoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Note
         fields = [
-            "id", "author", "title", "course", "course_title", "department", "semester", "description", "files",
+            "id", "author", "title", "course", "course_title", "department", "semester", "description", "status", "files",
             "created_at", "upvote_count", "is_upvoted", "is_bookmarked",
         ]
-        read_only_fields = ["id", "author", "created_at"]
+        read_only_fields = ["id", "author", "status", "created_at"]
 
     def _caller(self):
         request = self.context.get("request")

@@ -32,6 +32,7 @@ export interface TutorProfile {
   hourly_fee: string | null;
   average_rating: string;
   total_reviews: number;
+  is_approved?: boolean;
   is_active: boolean;
   recent_reviews: SessionReview[];
   created_at: string;

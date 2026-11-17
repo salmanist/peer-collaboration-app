@@ -10,6 +10,7 @@ import { Text } from "../../../core/ui/AppText";
 import { colors as appColors, headerGrow } from "../../../core/ui/theme";
 import { fetchMyPublicResourceOffers, fetchPublicResourceRequest } from "../data/resourcesApi";
 import type { PublicResourceOffer, PublicResourceRequest } from "../resources";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 function getDesiredExchangeLabel(desiredType: string) {
   switch (desiredType) {
@@ -70,7 +71,7 @@ export default function PublicResourceRequestDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>Request Details</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       {isLoading ? (

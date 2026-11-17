@@ -190,7 +190,7 @@ class PublicResourceOfferCreateView(generics.CreateAPIView):
                 priority="normal",
                 sender=self.request.user,
                 category="resources",
-                action_url="/(app)/resources",
+                action_url="/(app)/resources/requests",
             )
         except Exception:
             pass
@@ -366,7 +366,7 @@ class ResourceInterestRequestCreateView(generics.CreateAPIView):
                 priority="normal",
                 sender=self.request.user,
                 category="resources",
-                action_url="/(app)/resources",
+                action_url=f"/(app)/resources/wanted/chat/{offer.id}",
             )
         except Exception:
             pass

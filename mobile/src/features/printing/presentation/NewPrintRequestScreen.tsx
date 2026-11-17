@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { submitPrintRequest } from "../data/printingApi";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
 
 const PRINTABLE_TYPES = [
   "application/pdf",
@@ -86,7 +87,7 @@ export default function NewPrintRequestScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.onHeader} />
         </Pressable>
         <Text style={styles.topNavTitle}>New Print Request</Text>
-        <View style={{ width: 36 }} />
+        <NotificationBellButton />
       </View>
 
       <ScrollView

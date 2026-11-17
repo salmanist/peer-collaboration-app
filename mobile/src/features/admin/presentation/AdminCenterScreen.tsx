@@ -24,6 +24,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSessionStore } from "../../../core/auth/session";
 import { AdminOverviewSkeleton } from "../../../core/components/Skeleton";
 import { ImageSourceModal } from "../../../core/components/ImageSourceModal";
+import { NotificationBellButton } from "../../../core/components/NotificationBellButton";
+import { PasswordInput } from "../../../core/components/PasswordInput";
+import { confirmAction } from "../../../core/ui/confirmAction";
 import { API_BASE_URL } from "../../../core/network/apiClient";
 import {
   AdminCourseItem,
@@ -31,6 +34,7 @@ import {
   AdminListingItem,
   AdminLostFoundItem,
   AdminMetrics,
+  AdminPendingSummary,
   AdminRequestItem,
   AdminReviewItem,
   AdminSessionItem,
@@ -46,12 +50,14 @@ import {
   fetchAdminLostFound,
   fetchAdminMarketplace,
   fetchAdminOverview,
+  fetchAdminPendingSummary,
   fetchAdminTutoring,
   fetchAdminUsers,
   updateAdminCatalogItem,
   updateAdminLostFoundItem,
   updateAdminMarketplaceItem,
   updateAdminTutoring,
+  deleteAdminUser,
   updateAdminUser,
   verifyAdminPassword,
 } from "../data/adminApi";
@@ -65,6 +71,7 @@ export function AdminCenterScreen() {
   const user = useSessionStore((state) => state.user);
   const isHydrated = useSessionStore((state) => state.isHydrated);
   const updateUser = useSessionStore((state) => state.updateUser);
+  const clearSession = useSessionStore((state) => state.clearSession);
 
   const isAdmin =
     user?.role === "admin" ||
@@ -101,6 +108,7 @@ export function AdminCenterScreen() {
 
   // Data states
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [pendingSummary, setPendingSummary] = useState<AdminPendingSummary | null>(null);
   const [listings, setListings] = useState<AdminListingItem[]>([]);
   const [requests, setRequests] = useState<AdminRequestItem[]>([]);
   const [lostFoundItems, setLostFoundItems] = useState<AdminLostFoundItem[]>([]);
@@ -129,6 +137,11 @@ export function AdminCenterScreen() {
   const [formDeptId, setFormDeptId] = useState<number | null>(null);
   const [formDesc, setFormDesc] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // User Password Edit Modal state
+  const [passwordModalUser, setPasswordModalUser] = useState<AdminUserItem | null>(null);
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [isSavingUserPassword, setIsSavingUserPassword] = useState(false);
 
   // Broadcast Notification states
   const [bTitle, setBTitle] = useState("");
@@ -168,8 +181,9 @@ export function AdminCenterScreen() {
 
     try {
       void fetchAdminBroadcasts();
-      const [overviewRes, marketRes, lfRes, tutorRes, usersRes, catalogRes] = await Promise.allSettled([
+      const [overviewRes, pendingRes, marketRes, lfRes, tutorRes, usersRes, catalogRes] = await Promise.allSettled([
         fetchAdminOverview(),
+        fetchAdminPendingSummary(),
         fetchAdminMarketplace(),
         fetchAdminLostFound(),
         fetchAdminTutoring(),
@@ -178,6 +192,7 @@ export function AdminCenterScreen() {
       ]);
 
       if (overviewRes.status === "fulfilled") setMetrics(overviewRes.value.metrics);
+      if (pendingRes.status === "fulfilled") setPendingSummary(pendingRes.value);
       if (marketRes.status === "fulfilled") {
         setListings(marketRes.value.listings);
         setRequests(marketRes.value.requests);
@@ -458,13 +473,29 @@ export function AdminCenterScreen() {
     ]);
   };
 
-  const handleToggleTutorActive = async (id: number, currentActive: boolean) => {
-    try {
-      await updateAdminTutoring("tutor", id, { is_active: !currentActive });
-      setTutors((prev) => prev.map((t) => (t.id === id ? { ...t, is_active: !currentActive } : t)));
-    } catch {
-      Alert.alert("Error", "Failed to update tutor status");
-    }
+  const handleToggleTutorActive = (id: number, currentActive: boolean) => {
+    const actionLabel = currentActive ? "Disable" : "Enable";
+    confirmAction(`${actionLabel} Tutor?`, `Are you sure you want to ${actionLabel.toLowerCase()} this tutor?`, async () => {
+      try {
+        await updateAdminTutoring("tutor", id, { is_active: !currentActive });
+        setTutors((prev) => prev.map((t) => (t.id === id ? { ...t, is_active: !currentActive } : t)));
+      } catch {
+        Alert.alert("Error", "Failed to update tutor status");
+      }
+    }, actionLabel, currentActive);
+  };
+
+  const handleToggleTutorApproval = (id: number, currentApproved: boolean) => {
+    const actionLabel = currentApproved ? "Revoke Approval" : "Approve Tutor";
+    confirmAction(`${actionLabel}?`, `Are you sure you want to ${currentApproved ? "revoke approval for" : "approve"} this tutor?`, async () => {
+      try {
+        await updateAdminTutoring("tutor", id, { is_approved: !currentApproved });
+        setTutors((prev) => prev.map((t) => (t.id === id ? { ...t, is_approved: !currentApproved } : t)));
+        fetchAdminPendingSummary().then(setPendingSummary).catch(() => {});
+      } catch {
+        Alert.alert("Error", "Failed to update tutor approval");
+      }
+    }, currentApproved ? "Revoke" : "Approve", currentApproved);
   };
 
   const handleDeleteReview = (id: number) => {
@@ -664,13 +695,94 @@ export function AdminCenterScreen() {
     }
   };
 
-  const handleToggleUserActive = async (id: number, currentActive: boolean) => {
-    try {
-      await updateAdminUser(id, { is_active: !currentActive });
-      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, is_active: !currentActive } : u)));
-    } catch {
-      Alert.alert("Error", "Failed to update user status");
+  const handleToggleUserActive = (id: number, currentActive: boolean) => {
+    const label = currentActive ? "Deactivate" : "Activate";
+    confirmAction(`${label} Account?`, `Are you sure you want to ${label.toLowerCase()} this user's account?`, async () => {
+      try {
+        await updateAdminUser(id, { is_active: !currentActive });
+        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, is_active: !currentActive } : u)));
+      } catch {
+        Alert.alert("Error", "Failed to update user status");
+      }
+    }, label, currentActive);
+  };
+
+  const handleSaveUserPassword = async () => {
+    if (!passwordModalUser) return;
+    if (newUserPassword.length < 8) {
+      Alert.alert("Invalid Password", "Password must be at least 8 characters long.");
+      return;
     }
+    confirmAction("Update Password?", `Are you sure you want to change the password for ${passwordModalUser.email}?`, async () => {
+      setIsSavingUserPassword(true);
+      try {
+        await updateAdminUser(passwordModalUser.id, { new_password: newUserPassword });
+        setPasswordModalUser(null);
+        setNewUserPassword("");
+        Alert.alert("Success", "Student password updated successfully.");
+      } catch (err: any) {
+        Alert.alert("Error", err?.response?.data?.error || "Failed to update password");
+      } finally {
+        setIsSavingUserPassword(false);
+      }
+    }, "Update");
+  };
+
+  const isUserAdmin = (u: AdminUserItem) => Boolean(u.is_admin || u.role === "admin" || u.is_staff);
+
+  const showNotice = (title: string, msg: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${msg}`);
+    } else {
+      Alert.alert(title, msg);
+    }
+  };
+
+  const handleDeleteUser = (u: AdminUserItem) => {
+    if (u.id !== user?.id && isUserAdmin(u)) {
+      showNotice("Not Allowed", "You cannot delete another administrator's account.");
+      return;
+    }
+
+    if (u.id === user?.id) {
+      const otherAdminsCount = users.filter((item) => item.id !== u.id && isUserAdmin(item)).length;
+      if (otherAdminsCount === 0) {
+        showNotice("Cannot Delete Account", "You cannot delete your account because you are the only admin.");
+        return;
+      }
+      confirmAction(
+        "Delete Your Account?",
+        "Are you sure you want to permanently delete your own admin account? You will be signed out immediately.",
+        async () => {
+          try {
+            await deleteAdminUser(u.id);
+            await clearSession();
+            router.replace("/(auth)/login");
+          } catch (err: any) {
+            showNotice("Error", err?.response?.data?.error || "Failed to delete your account");
+          }
+        },
+        "Delete",
+        true,
+      );
+      return;
+    }
+
+    confirmAction(
+      "Delete Account?",
+      `Are you sure you want to permanently delete ${u.full_name} (${u.email})? This action cannot be undone.`,
+      async () => {
+        try {
+          await deleteAdminUser(u.id);
+          setUsers((prev) => prev.filter((item) => item.id !== u.id));
+          showNotice("Deleted", "User account deleted successfully.");
+        } catch (err: any) {
+          showNotice("Error", err?.response?.data?.error || "Failed to delete user account");
+        }
+      },
+      "Delete",
+      true,
+    );
   };
 
   return (
@@ -681,7 +793,7 @@ export function AdminCenterScreen() {
           <MaterialCommunityIcons name="arrow-left" size={20} color={appColors.primary} />
         </Pressable>
         <Text style={styles.topNavTitle}>Admin Center</Text>
-        <View style={styles.navSpacer} />
+        <NotificationBellButton />
       </View>
 
       {/* Main Tab Navigation Strip */}
@@ -692,10 +804,10 @@ export function AdminCenterScreen() {
             { key: "broadcasts", label: "Broadcasts", icon: "bullhorn-outline" as const },
             { key: "marketplace", label: "Marketplace", icon: "storefront-outline" as const },
             { key: "lost_found", label: "Lost & Found", icon: "magnify" as const },
-            { key: "tutoring", label: "Peer Tutoring", icon: "school-outline" as const },
-            { key: "printing", label: "Print Center", icon: "printer" as const },
-            { key: "library", label: "Digital Library", icon: "bookshelf" as const },
-            { key: "rides", label: "Ride Sharing", icon: "car-outline" as const },
+            { key: "tutoring", label: "Peer Tutoring", icon: "school-outline" as const, badge: pendingSummary?.tutoring || 0 },
+            { key: "printing", label: "Print Center", icon: "printer" as const, badge: pendingSummary?.printing || 0 },
+            { key: "library", label: "Digital Library", icon: "bookshelf" as const, badge: pendingSummary?.library || 0 },
+            { key: "rides", label: "Ride Sharing", icon: "car-outline" as const, badge: pendingSummary?.rides || 0 },
             { key: "catalog", label: "Academics", icon: "book-education-outline" as const },
             { key: "users", label: "Students", icon: "account-group-outline" as const },
           ].map((tab) => {
@@ -718,6 +830,13 @@ export function AdminCenterScreen() {
                 <Text style={[styles.tabButtonText, isSelected && styles.tabButtonTextActive]}>
                   {tab.label}
                 </Text>
+                {(tab as any).badge > 0 && (
+                  <View style={{ backgroundColor: appColors.danger, borderRadius: 9, minWidth: 18, height: 18, paddingHorizontal: 5, marginLeft: 5, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ color: appColors.white, fontSize: 10, fontWeight: "800" }}>
+                      {(tab as any).badge}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             );
           })}
@@ -737,7 +856,21 @@ export function AdminCenterScreen() {
         >
           {/* TAB 1: OVERVIEW */}
           {(activeTab === "printing" || activeTab === "library" || activeTab === "rides") && (
-            <AdminModulePanel key={activeTab} module={activeTab} refreshing={isRefreshing} />
+            <AdminModulePanel
+              key={activeTab}
+              module={activeTab}
+              refreshing={isRefreshing}
+              pendingCounts={
+                activeTab === "library"
+                  ? { projects: pendingSummary?.library_projects || 0, notes: pendingSummary?.library_notes || 0 }
+                  : activeTab === "printing"
+                  ? { printers: pendingSummary?.printing_printers || 0 }
+                  : { profiles: pendingSummary?.rides_profiles || 0 }
+              }
+              onMutate={() => {
+                fetchAdminPendingSummary().then(setPendingSummary).catch(() => {});
+              }}
+            />
           )}
           {activeTab === "overview" && metrics && (
             <View style={styles.tabSection}>
@@ -1229,9 +1362,18 @@ export function AdminCenterScreen() {
                     style={[styles.subTabBtn, tutoringSubTab === tab && styles.subTabBtnActive]}
                     onPress={() => setTutoringSubTab(tab)}
                   >
-                    <Text style={[styles.subTabBtnText, tutoringSubTab === tab && styles.subTabBtnTextActive]}>
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                      <Text style={[styles.subTabBtnText, tutoringSubTab === tab && styles.subTabBtnTextActive]}>
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </Text>
+                      {tab === "tutors" && (pendingSummary?.tutoring_tutors || 0) > 0 && (
+                        <View style={{ backgroundColor: appColors.danger, borderRadius: 9, minWidth: 16, height: 16, paddingHorizontal: 4, alignItems: "center", justifyContent: "center" }}>
+                          <Text style={{ color: appColors.white, fontSize: 10, fontWeight: "800" }}>
+                            {pendingSummary?.tutoring_tutors}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </Pressable>
                 ))}
               </View>
@@ -1246,14 +1388,24 @@ export function AdminCenterScreen() {
                           {tutor.department || "LGU"} • {tutor.email} {tutor.roll_no ? `(Roll #${tutor.roll_no})` : ""}
                         </Text>
                       </View>
-                      <Pressable
-                        style={[styles.toggleActiveBtn, tutor.is_active ? styles.toggleActiveBtnOn : styles.toggleActiveBtnOff]}
-                        onPress={() => void handleToggleTutorActive(tutor.id, tutor.is_active)}
-                      >
-                        <Text style={styles.toggleActiveBtnText}>
-                          {tutor.is_active ? "Active Tutor" : "Disabled"}
-                        </Text>
-                      </Pressable>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Pressable
+                          style={[styles.toggleActiveBtn, tutor.is_approved ? styles.toggleActiveBtnOn : { backgroundColor: "#D97706" }]}
+                          onPress={() => handleToggleTutorApproval(tutor.id, !!tutor.is_approved)}
+                        >
+                          <Text style={[styles.toggleActiveBtnText, !tutor.is_approved && { color: appColors.white }]}>
+                            {tutor.is_approved ? "Approved" : "Approve"}
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.toggleActiveBtn, tutor.is_active ? styles.toggleActiveBtnOn : styles.toggleActiveBtnOff]}
+                          onPress={() => handleToggleTutorActive(tutor.id, tutor.is_active)}
+                        >
+                          <Text style={styles.toggleActiveBtnText}>
+                            {tutor.is_active ? "Active" : "Disabled"}
+                          </Text>
+                        </Pressable>
+                      </View>
                     </View>
 
                     <View style={styles.cardMetaRow}>
@@ -1533,12 +1685,31 @@ export function AdminCenterScreen() {
                       </View>
                       <Pressable
                         style={[styles.toggleActiveBtn, u.is_active ? styles.toggleActiveBtnOn : styles.toggleActiveBtnOff]}
-                        onPress={() => void handleToggleUserActive(u.id, u.is_active)}
+                        onPress={() => handleToggleUserActive(u.id, u.is_active)}
                       >
                         <Text style={styles.toggleActiveBtnText}>
                           {u.is_active ? "Active" : "Inactive"}
                         </Text>
                       </Pressable>
+                    </View>
+                    <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+                      <Pressable
+                        style={[styles.toggleActiveBtn, { backgroundColor: appColors.primary }]}
+                        onPress={() => {
+                          setPasswordModalUser(u);
+                          setNewUserPassword("");
+                        }}
+                      >
+                        <Text style={[styles.toggleActiveBtnText, { color: appColors.white }]}>Edit Password</Text>
+                      </Pressable>
+                      {(!isUserAdmin(u) || u.id === user?.id) && (
+                        <Pressable
+                          style={[styles.toggleActiveBtn, { backgroundColor: appColors.danger }]}
+                          onPress={() => handleDeleteUser(u)}
+                        >
+                          <Text style={[styles.toggleActiveBtnText, { color: appColors.white }]}>Delete Account</Text>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
                 ))}
@@ -1546,6 +1717,42 @@ export function AdminCenterScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* Modal for Editing Student Password */}
+      <Modal visible={!!passwordModalUser} transparent animationType="fade" onRequestClose={() => setPasswordModalUser(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Reset Password</Text>
+              <Pressable onPress={() => setPasswordModalUser(null)} style={styles.modalCloseBtn}>
+                <MaterialCommunityIcons name="close" size={20} color={appColors.textSecondary} />
+              </Pressable>
+            </View>
+            <View style={styles.modalForm}>
+              <Text style={styles.cardOwner}>
+                Setting new password for {passwordModalUser?.full_name} ({passwordModalUser?.email})
+              </Text>
+              <PasswordInput
+                containerStyle={{ marginTop: 12 }}
+                placeholder="New password (min 8 characters)"
+                value={newUserPassword}
+                onChangeText={setNewUserPassword}
+              />
+              <Pressable
+                style={[styles.submitModalBtn, isSavingUserPassword && { opacity: 0.6 }, { marginTop: 16 }]}
+                onPress={() => void handleSaveUserPassword()}
+                disabled={isSavingUserPassword}
+              >
+                {isSavingUserPassword ? (
+                  <ActivityIndicator color={appColors.white} size="small" />
+                ) : (
+                  <Text style={styles.submitModalBtnText}>Save Password</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal for Add / Edit Course, Skill, or Department */}
       <Modal visible={isModalOpen} transparent animationType="slide" onRequestClose={() => setIsModalOpen(false)}>

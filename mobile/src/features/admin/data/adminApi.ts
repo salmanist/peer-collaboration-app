@@ -87,6 +87,7 @@ export interface AdminTutorItem {
   hourly_rate: string | null;
   rating_avg: number;
   rating_count: number;
+  is_approved?: boolean;
   is_active: boolean;
 }
 
@@ -129,6 +130,7 @@ export interface AdminUserItem {
   role: string;
   is_active: boolean;
   is_staff: boolean;
+  is_admin?: boolean;
   is_email_verified: boolean;
   created_at: string;
 }
@@ -204,6 +206,28 @@ export async function updateAdminUser(
   payload: Record<string, any>
 ): Promise<void> {
   await apiClient.patch("/admin/users/", { id, ...payload });
+}
+
+export async function deleteAdminUser(id: number): Promise<void> {
+  await apiClient.delete(`/admin/users/?id=${id}`);
+}
+
+export interface AdminPendingSummary {
+  total: number;
+  library: number;
+  library_projects: number;
+  library_notes: number;
+  printing: number;
+  printing_printers: number;
+  rides: number;
+  rides_profiles: number;
+  tutoring: number;
+  tutoring_tutors: number;
+}
+
+export async function fetchAdminPendingSummary(): Promise<AdminPendingSummary> {
+  const { data } = await apiClient.get<AdminPendingSummary>("/admin/pending-summary/");
+  return data;
 }
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {

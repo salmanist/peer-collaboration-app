@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.geo import haversine_km
-from common.notifications import notify
+from common.notifications import notify, notify_admins
 
 from apps.rides.active import ensure_free
 
@@ -64,6 +64,11 @@ class DriverApplyView(APIView):
         serializer.is_valid(raise_exception=True)
         # A pending application is a driver row that is not approved yet; the admin approves or rejects it.
         serializer.save(role=RideProfile.Role.DRIVER, is_approved=False)
+        notify_admins(
+            "New Driver Request in Admin Center",
+            f"{request.user.full_name or request.user.email} applied to become a driver. Tap to review.",
+            sender=request.user,
+        )
         return Response(RideProfileSerializer(profile).data)
 
 

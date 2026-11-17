@@ -21,6 +21,7 @@ import {
 } from "../data/tutoringApi";
 
 import type { CollaborationRequest } from "../tutoring";
+import { confirmAction } from "../../../core/ui/confirmAction";
 
 const COLLAB_CATEGORIES = [
   "All",
@@ -235,7 +236,7 @@ export function CollaborationBoardScreen() {
                         </Text>
                       </Pressable>
 
-                      <Pressable style={styles.deleteBtn} onPress={() => handleDelete(item.id)}>
+                      <Pressable style={styles.deleteBtn} onPress={() => confirmAction("Delete Post?", "Are you sure you want to delete this collaboration post?", () => handleDelete(item.id), "Delete", true)}>
                         <Text style={styles.deleteBtnText}>Delete</Text>
                       </Pressable>
                     </View>

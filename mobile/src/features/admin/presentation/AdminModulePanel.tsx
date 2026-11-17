@@ -1,22 +1,24 @@
 import { colors as appColors } from "../../../core/ui/theme";
 import { LoadingSkeleton } from "../../../core/components/LoadingSkeleton";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, StyleSheet, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Text, TextInput } from "../../../core/ui/AppText";
 import { apiClient } from "../../../core/network/apiClient";
 
 export type ManagedModule = "library" | "printing" | "rides";
-type RecordItem = { id: number; title: string; description: string; owner_email: string; status: string; actions: string[] };
+type RecordFile = { name: string; url: string };
+type RecordItem = { id: number; title: string; description: string; owner_email: string; status: string; actions: string[]; files?: RecordFile[] };
 type Result = { count: number; next: string | null; previous: string | null; results: RecordItem[] };
 const sections = {
   library: [{ key: "projects", label: "Projects" }, { key: "notes", label: "Notes" }],
   printing: [{ key: "requests", label: "Print Requests" }, { key: "printers", label: "Printers" }, { key: "ratings", label: "Ratings" }],
   rides: [{ key: "rides", label: "Shared Rides" }, { key: "requests", label: "Join Requests" }, { key: "on_demand", label: "On-demand Rides" }, { key: "profiles", label: "Driver Approvals" }],
 };
-const labels: Record<string, string> = { approve: "Approve driver", revoke: "Revoke approval", approved: "Approve", rejected: "Reject", pending: "Mark pending", cancel: "Cancel", decline: "Decline", delete: "Delete" };
+const labels: Record<string, string> = { approve: "Approve", revoke: "Revoke approval", approved: "Approve", rejected: "Reject", pending: "Mark pending", cancel: "Cancel", decline: "Decline", delete: "Delete" };
 const errorMessage = (err: any) => err?.response?.data?.detail || "Could not complete the request. Please try again.";
 
-export function AdminModulePanel({ module, refreshing }: { module: ManagedModule; refreshing: boolean }) {
+export function AdminModulePanel({ module, refreshing, pendingCounts, onMutate }: { module: ManagedModule; refreshing: boolean; pendingCounts?: Record<string, number>; onMutate?: () => void }) {
   const [kind, setKind] = useState(sections[module][0].key);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -49,6 +51,7 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
     try {
       await apiClient.patch(`/admin/modules/${module}/`, { id: pending.item.id, action: pending.action }, { params: { kind } });
       setPending(null);
+      onMutate?.();
       if (data?.results.length === 1 && page > 1) setPage(page - 1);
       else setRevision(value => value + 1);
     } catch (err) {
@@ -58,9 +61,13 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
   }, [pending, busy, module, kind, data, page]);
 
   return <View style={styles.section}>
-    <View style={styles.row}>{sections[module].map(tab => <Pressable key={tab.key} style={[styles.tab, kind === tab.key && styles.selected]} onPress={() => { setKind(tab.key); setPage(1); setSearch(""); setQuery(""); }}>
-      <Text style={{ color: kind === tab.key ? appColors.white : appColors.primary }}>{tab.label}</Text>
-    </Pressable>)}</View>
+    <View style={styles.row}>{sections[module].map(tab => {
+      const badge = pendingCounts?.[tab.key] || 0;
+      return <Pressable key={tab.key} style={[styles.tab, { flexDirection: "row", alignItems: "center", gap: 6 }, kind === tab.key && styles.selected]} onPress={() => { setKind(tab.key); setPage(1); setSearch(""); setQuery(""); }}>
+        <Text style={{ color: kind === tab.key ? appColors.white : appColors.primary }}>{tab.label}</Text>
+        {badge > 0 && <View style={{ backgroundColor: appColors.danger, borderRadius: 9, minWidth: 18, height: 18, paddingHorizontal: 5, alignItems: "center", justifyContent: "center" }}><Text style={{ color: appColors.white, fontSize: 10, fontWeight: "800" }}>{badge}</Text></View>}
+      </Pressable>;
+    })}</View>
     <TextInput accessibilityLabel="Search admin records" placeholder="Search by title, email, or record ID" value={search} onChangeText={setSearch} style={styles.input} />
     <View style={styles.row}><Text>{data?.count ?? 0} records</Text><Pressable onPress={() => setRevision(v => v + 1)}><Text style={styles.link}>Refresh</Text></Pressable></View>
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
@@ -69,6 +76,27 @@ export function AdminModulePanel({ module, refreshing }: { module: ManagedModule
       <Text style={styles.meta}>#{item.id} · {item.owner_email}</Text>
       {!!item.description && <Text>{item.description}</Text>}
       {!!item.status && <Text style={styles.link}>Status: {item.status.replaceAll("_", " ")}</Text>}
+      {!!item.files?.length && (
+        <View style={styles.row}>
+          {item.files.map((f, idx) => (
+            <Pressable
+              key={`${item.id}-file-${idx}`}
+              style={styles.fileChip}
+              onPress={() => {
+                if (Platform.OS === "web" && typeof window !== "undefined") {
+                  window.open(f.url, "_blank", "noopener,noreferrer");
+                } else {
+                  void Linking.openURL(f.url);
+                }
+              }}
+            >
+              <MaterialCommunityIcons name="file-document-outline" size={15} color={appColors.primary} />
+              <Text style={styles.fileChipText} numberOfLines={1}>{f.name}</Text>
+              <MaterialCommunityIcons name="open-in-new" size={13} color={appColors.primary} />
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View style={styles.row}>{item.actions.map(action => <Pressable key={action} disabled={busy} style={styles.action} onPress={() => setPending({ item, action })}>
         <Text style={{ color: action === "delete" ? appColors.red700 : appColors.primary }}>{labels[action] || action}</Text>
       </Pressable>)}</View>
@@ -101,4 +129,6 @@ const styles = StyleSheet.create({
   link: { color: appColors.primary, fontWeight: "600" }, error: { color: appColors.red700 }, action: { padding: 10, borderRadius: 8, backgroundColor: appColors.border },
   overlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: appColors.blackA30, padding: 24 },
   dialog: { backgroundColor: appColors.white, borderRadius: 16, padding: 24, gap: 16, width: "100%", maxWidth: 440 },
+  fileChip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: appColors.surfaceMuted, borderWidth: 1, borderColor: appColors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, maxWidth: "100%" },
+  fileChipText: { color: appColors.primary, fontSize: 12, fontWeight: "600", flexShrink: 1 },
 });

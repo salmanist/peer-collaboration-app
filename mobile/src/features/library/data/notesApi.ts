@@ -23,6 +23,7 @@ export interface Note {
   department: string;
   semester: string;
   description: string;
+  status?: "pending" | "approved" | "rejected";
   files: NoteFile[];
   created_at: string;
   upvote_count: number;
