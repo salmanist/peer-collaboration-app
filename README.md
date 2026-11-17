@@ -1,0 +1,1 @@
+This repo is a Final year project, contains code and documentation for Academic Peer collaboration and networking mobile app. An app that connects whole university students with each other, students can help each other in every way possible, whether it is ride sharing, peer tutoring, resource sharing etc.
