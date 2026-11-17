@@ -147,7 +147,7 @@ export default function ForgotPasswordScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="LGU Email Address (e.g. zahra@lgu.edu.pk)"
+              placeholder="LGU Email Address (e.g. Sp-23-bscs-118@lgu.edu.pk)"
               placeholderTextColor={appColors.textMuted}
               value={email}
               onChangeText={setEmail}

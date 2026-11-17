@@ -185,7 +185,7 @@ export function CreateCollaborationScreen() {
         style={[styles.input, { marginTop: 12 }]}
         value={contactInfo}
         onChangeText={setContactInfo}
-        placeholder="Contact Email or Phone (e.g. student@lgu.edu.pk or WhatsApp number)"
+        placeholder="Contact Email or Phone (e.g. Sp-23-bscs-118@lgu.edu.pk or WhatsApp number)"
         placeholderTextColor={appColors.textMuted}
       />
 

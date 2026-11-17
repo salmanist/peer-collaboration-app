@@ -1201,3 +1201,5 @@ One posted ride at a time: apps/rides/active.py ensure_can_offer() blocks POST /
 open rides past the 30-minute grace do not count). List order and colours: RideListCreateView puts live-chat rides first, then your own posted
 ride; TripCard shows your own ride in light green (green50) and a live-chat ride in a deeper green (successBg, emerald border) with a "Live chat
 open" line.
+
+Current location: LocationAutocomplete (enablePin) offers 'Use my current location' at the top of the dropdown; it requests foreground location permission via expo-location, reads the position, rejects points outside the Lahore box and otherwise fills the field as 'My current location' with a pin (RideLocation id 0).

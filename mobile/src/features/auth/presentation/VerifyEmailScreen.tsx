@@ -107,7 +107,7 @@ export default function VerifyEmailScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="LGU Email (you@lgu.edu.pk)"
+            placeholder="LGU Email (e.g. Sp-23-bscs-118@lgu.edu.pk)"
             placeholderTextColor={appColors.textMuted}
             value={email}
             onChangeText={setEmail}

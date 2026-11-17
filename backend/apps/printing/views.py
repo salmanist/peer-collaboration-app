@@ -112,7 +112,7 @@ class PrintRequestActionView(APIView):
     """Shared accept / reject / release / complete / cancel flow, one subclass per action."""
 
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     # Subclasses fill this in.
     from_status = None
 
